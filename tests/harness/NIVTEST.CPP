@@ -279,9 +279,9 @@ static int cmd_system(int argc, char **argv)
 {
 	double x = argd(argc, argv, "-x", 0);
 	double y = argd(argc, argv, "-y", 0);
-	double z = argd(argc, argv, "-z", 0);
+ 	double z = argd(argc, argv, "-z", 0);
 	gen_system(x, y, z);
-	out("=== SYSTEM ===\n");
+ 	out("=== SYSTEM ===\n");
 	dump_system_props();
 	return 0;
 }

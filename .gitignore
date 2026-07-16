@@ -1,11 +1,13 @@
-data/CURRENT.BIN
-data/SURFACE.BIN
-data/GOESFILE.TXT
+ data/CURRENT.BIN
+ data/SURFACE.BIN
+ data/GOESFILE.TXT
+ 
+ modules/NOCTIS.EXE
+ 
+ gallery/*
+ movies/*
+ source/BIN/*
+ 
+ *.zip
 
-modules/NOCTIS.EXE
-
-gallery/*
-movies/*
-source/BIN/*
-
-*.zip
+ tests/nivgen/target/

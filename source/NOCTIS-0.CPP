@@ -3985,6 +3985,7 @@ void extract_ap_target_infos ()
 
 float zrandom (int range) { return (random(range) - random(range)); }
 
+
 /* Parte della gestione della cartografia.
    E' stata spostata qui perch� possa essere chiamata da "prepare_nearstar".
    -------------------------------------------------------------------------

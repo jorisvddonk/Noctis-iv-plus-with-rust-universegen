@@ -1,0 +1,16 @@
+[package]
+name = "nivgen"
+version = "0.1.0"
+edition = "2021"
+description = "Bug-for-bug Rust reimplementation of the Noctis IV Plus universe generator"
+license = "MIT"
+
+[dependencies]
+
+[lib]
+name = "nivgen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nivgen"
+path = "src/main.rs"
