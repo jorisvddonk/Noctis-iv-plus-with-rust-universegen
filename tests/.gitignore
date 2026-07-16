@@ -1,0 +1,6 @@
+# Fetched/assembled Turbo C++ 3.0 (DOS) toolchain (large binaries).
+# Acquire with: tests/scripts/fetch-toolchain.sh tests/niv-toolchain
+niv-toolchain/
+
+# Optional raw binary dumps produced with --dump
+results/*.DMP

@@ -1,0 +1,7 @@
+=== SYSTEM ===
+STAR x=3812345 y=-4287654 z=-912321
+  identity=14912.813926
+  class=7 ray=2.434000 spin=6 rgb=10,20,63
+  nop=1 nob=1 labeled=0
+  BODY  0 type=9 owner=-1 moonid=0 ray=0.354000 orb_ray=272.291582
+          tilt=-0.01400000 orb_tilt=-0.01060000 orb_orient=1.51843645 orb_ecc=0.99800000 orb_seed=104.420000 ring=0.531000

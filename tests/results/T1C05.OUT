@@ -1,0 +1,11 @@
+=== SYSTEM ===
+STAR x=3812345 y=-4287654 z=-25603
+  identity=418.507055
+  class=5 ray=1.259000 spin=0 rgb=32,16,10
+  nop=3 nob=3 labeled=0
+  BODY  0 type=6 owner=-1 moonid=0 ray=0.172032 orb_ray=6.949680
+          tilt=0.04400000 orb_tilt=0.00140000 orb_orient=4.18879020 orb_ecc=0.99800000 orb_seed=5.237000 ring=0.000000
+  BODY  1 type=1 owner=-1 moonid=0 ray=0.007812 orb_ray=14.926754
+          tilt=-0.04000000 orb_tilt=0.00780000 orb_orient=4.11897703 orb_ecc=0.99950000 orb_seed=10.384000 ring=0.017577
+  BODY  2 type=1 owner=-1 moonid=0 ray=0.009828 orb_ray=26.452976
+          tilt=0.13800000 orb_tilt=0.01360000 orb_orient=1.95476876 orb_ecc=0.99750000 orb_seed=19.654999 ring=0.000000

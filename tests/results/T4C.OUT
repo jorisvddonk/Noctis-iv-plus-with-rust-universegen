@@ -1,0 +1,5 @@
+=== SURFACE SECTOR (texture) ===
+SURFTEX body=0 type=6 lon=0 lat=60 sctype=2 albedo=32
+  T_SCALE=32 quartz=0 groundflares=0 gtx=1
+  rockscaling=500.000 rockpeaking=250.000 rockdensity=15 treescaling=2369.559
+surf_texture     len=65536  fnv=AAA78345 crc=10B830AE

@@ -1,0 +1,27 @@
+=== SELFTEST ===
+-- hash vectors --
+  "" fnv=811C9DC5 crc=00000000
+  "a" fnv=E40C292C crc=E8B7BE43
+  "abc" fnv=1A47E90B crc=352441C2
+  "The quick brown fox jumps over the lazy dog" fnv=048FFF90 crc=414FA339
+-- Borland random() sequence, srand(1) --
+  rand=346
+  rand=130
+  rand=10982
+  rand=1090
+  rand=11656
+  rand=7117
+  rand=17595
+  rand=6415
+-- fast_random() sequence, fast_srand(12345) --
+  fast=11673
+  fast=14109
+  fast=2627
+  fast=8846
+  fast=6091
+  fast=22323
+  fast=4112
+  fast=10725
+-- flandom()/fast_flandom() --
+  flandom=0.01052871
+  fast_flandom=0.00027466
