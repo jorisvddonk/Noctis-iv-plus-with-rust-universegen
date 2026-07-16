@@ -25,6 +25,29 @@ against the original Turbo/Borland C++ 3.0 source compiled under DOSBox.
 3. Never commit `tests/nivgen/target/` (already gitignored).
 
 ## Current status
-- `system` generation (T1C00–T1C11, 12 fixtures): all passing.
-- Remaining fixture families (T2 planet, T3, T4, T5 sector/surface)
-  still to be run and validated against the C reference.
+- `system` generation (T1C00–T1C11, 12 fixtures): **all passing**.
+- `starsystem-scan` (T5A/T5B): passing (reuses system-gen).
+- `planet` / `sector` / `surftex` (T2P00–09, T3A–D, T4A–D):
+  **NOT YET PORTED**. `cmd_planet` / `cmd_sector` / `cmd_surftex` in
+  `tests/nivgen/src/main.rs` are stubs (`eprintln!("… not yet
+  implemented")`). The real work — porting `surface()` / `build_surface()`
+  from `source/NOCTIS-1.CPP` into `SystemGen` — is outstanding.
+  These functions drive the planet texture (`p_background` 360×180 map,
+  atmosphere overlay, palette) and the sector heightmap / surface texture,
+  and exercise the `fast_random` RNG (see `rng.rs::FastRng`, already
+  ported + validated) alongside the Borland LCG. Expect the same class of
+  bugs as T1C (16-bit `int`/`unsigned` overflow via `i16()`, x87 80-bit
+  float via `f80`) when porting them.
+
+## Porting checklist for T2/T3/T4
+1. Port `surface()` (NOCTIS-1.CPP) → a `SystemGen` method; emit the
+   same CRLF lines + FNV/CRC hashes the harness does (see
+   `tests/harness/NIVTEST.CPP` `cmd_planet`/`cmd_sector`/`cmd_surftex`).
+2. `fast_srand`/`fast_random` are already bit-exact (`FastRng`); re-seed
+   them exactly where the C code does (`seedval + 4112`, `seedval * 10`, …).
+3. Watch 16-bit overflow on `random()`/`zrandom()` args → wrap with `i16()`.
+4. Watch x87 80-bit float on any chained `double` expression that later
+   feeds `srand`/`fast_srand` or an `int` cast → use `f80::F80`.
+5. Validate each fixture with `tests/scripts/run-niv-tests.sh --rebuild`
+   (regenerates the C reference) then diff the Rust output byte-for-byte
+   (CRLF-sensitive).
