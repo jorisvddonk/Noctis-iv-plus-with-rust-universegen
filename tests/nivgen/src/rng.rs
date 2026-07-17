@@ -80,13 +80,22 @@ impl FastRng {
     }
 
     pub fn srand(&mut self, seed: u32) {
-        let low = (seed | 3) as u16;
-        // Only the low 16 bits are written; high 16 bits are left unchanged
-        // (here they are zero-initialised, matching a freshly started process).
-        self.seed = low as u32;
+        // `fast_srand(long seed)` (NOCTIS-0.CPP:1076). Every operand carries
+        // the 0x66 operand-size prefix, so the `word ptr`/`ax` accesses are
+        // actually 32-bit: `or dword ptr seed, 3` then
+        // `mov eax, dword ptr seed` -> `flat_rnd_seed = seed | 3` (full 32-bit).
+        self.seed = seed | 3;
     }
 
-    /// `fast_random(mask)` - returns `(ax_after_mix) & mask`.
+    /// `fast_random(mask)` (NOCTIS-0.CPP:1087).
+    ///
+    /// All operands carry the 0x66 32-bit prefix, so this is a 32-bit
+    /// self-multiply: `eax = flat_rnd_seed; edx = flat_rnd_seed; mul edx`
+    /// -> `edx:eax = eax*edx` (64-bit product). `al += dl` mixes the low
+    /// byte of `eax` (low byte of the 32-bit product) with the low byte of
+    /// `edx` (low byte of the HIGH 32 bits of the 64-bit product). The full
+    /// 32-bit `eax` (with the mixed low byte) is added back into
+    /// `flat_rnd_seed` (32-bit add), and the result is `eax & mask`.
     pub fn fast_random(&mut self, mask: u32) -> u32 {
         let eax = self.seed;
         let edx = self.seed;
@@ -98,9 +107,9 @@ impl FastRng {
         let dl = (edx_hi & 0xFF) as u8;
         let al = al.wrapping_add(dl);
         let eax_new = (eax_lo & 0xFFFF_FF00) | (al as u32);
-        // 32-bit add back into seed
+        // 32-bit add back into the seed
         self.seed = self.seed.wrapping_add(eax_new);
-        (eax_new & mask)
+        eax_new & mask
     }
 
     pub fn ranged(&mut self, range: i32) -> i32 {

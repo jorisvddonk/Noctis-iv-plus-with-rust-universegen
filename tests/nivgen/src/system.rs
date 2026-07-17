@@ -118,7 +118,39 @@ pub struct SystemGen {
     pub s_m: f64,
     pub secs: f64,
 
-    rng: BorlandRng,
+    // surface() buffers + scratch globals (ported from NOCTIS-0.CPP)
+    pub p_background: Vec<u8>, // 64800 (360x180)
+    pub s_background: Vec<u8>, // 64800
+    pub objectschart: Vec<u8>, // 32400 (atmosphere overlay, hashed as bytes)
+    pub tmppal: Vec<u8>,       // 768
+    pub lft_sin: [f64; 361],
+    pub lft_cos: [f64; 361],
+    pub quadwords: i32,
+    // surface() scratch (16-bit-friendly)
+    pub s_c: i32,
+    pub s_gr: i32,
+    pub s_r: i32,
+    pub s_g: i32,
+    pub s_b: i32,
+    pub s_cr: i32,
+    pub s_cx: i32,
+    pub s_cy: i32,
+    pub s_a: f64,
+    pub s_kfract: f64,
+    pub s_lawe: i32,
+    pub s_cray: i32,
+    pub s_px: u16,
+    pub s_py: u16,
+    pub s_plwp: i32,
+    pub plx: f64,
+    pub ply: f64,
+    pub plz: f64,
+    pub pixilating_effect: u8,
+    pub pixel_spreads: u8,
+    pub multicolormask: u8,
+
+    pub(crate) rng: BorlandRng,
+    pub(crate) frng: crate::rng::FastRng,
 }
 
 impl SystemGen {
@@ -163,7 +195,36 @@ impl SystemGen {
             p_term_end: [0; MAXBODIES],
             s_m: 0.0,
             secs: 0.0,
+            p_background: vec![0u8; 64800],
+            s_background: vec![0u8; 64800],
+            objectschart: vec![0u8; 32400],
+            tmppal: vec![0u8; 768],
+            lft_sin: [0.0; 361],
+            lft_cos: [0.0; 361],
+            quadwords: 16000,
+            s_c: 0,
+            s_gr: 0,
+            s_r: 0,
+            s_g: 0,
+            s_b: 0,
+            s_cr: 0,
+            s_cx: 0,
+            s_cy: 0,
+            s_a: 0.0,
+            s_kfract: 0.0,
+            s_lawe: 0,
+            s_cray: 0,
+            s_px: 0,
+            s_py: 0,
+            s_plwp: 0,
+            plx: 0.0,
+            ply: 0.0,
+            plz: 0.0,
+            pixilating_effect: 0,
+            pixel_spreads: 0,
+            multicolormask: 0,
             rng: BorlandRng::new(),
+            frng: crate::rng::FastRng::new(),
         }
     }
 

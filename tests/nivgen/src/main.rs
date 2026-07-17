@@ -147,6 +147,57 @@ fn fnv1a_update_str(mut h: u32, s: &str) -> u32 {
 }
 
 // Placeholder commands; implemented in later stages.
-fn cmd_planet(_args: &[String]) { eprintln!("planet: not yet implemented"); }
+fn cmd_planet(args: &[String]) {
+    let mut f = out_file(args);
+    let x = argd(args, "-x", 0.0);
+    let y = argd(args, "-y", 0.0);
+    let z = argd(args, "-z", 0.0);
+    let p = argl(args, "-p", 0) as i32;
+    let secs = argd(args, "-secs", 0.0);
+
+    let mut g = SystemGen::new();
+    g.secs = secs;
+    g.generate(x, y, z);
+    if p < 0 || p as usize >= g.nearstar_nob as usize {
+        emit!(f, "; ERROR body index {} out of range (nob={})\n", p, g.nearstar_nob);
+        return;
+    }
+    emit!(f, "=== PLANET TEXTURE ===\n");
+    g.gen_planet_surface(p);
+    report_planet(&mut f, &g, p);
+}
+
 fn cmd_sector(_args: &[String]) { eprintln!("sector: not yet implemented"); }
 fn cmd_surftex(_args: &[String]) { eprintln!("surftex: not yet implemented"); }
+
+fn hashline(f: &mut Option<std::fs::File>, label: &str, buf: &[u8]) {
+    let fnv = fnv1a(buf);
+    let crc = crc32(buf);
+    emit!(f, "{:<16} len={:<6} fnv={:08X} crc={:08X}\n", label, buf.len(), fnv, crc);
+}
+
+fn report_planet(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
+    let p = p as usize;
+    let is_moon = g.p_owner[p] > -1;
+    let surf = if is_moon { &g.s_background } else { &g.p_background };
+    let seedval = g.surface_seedval_for(p as i32);
+    let desc = if g.p_type[p] as i32 <= 10 {
+        nivgen::system::PLANET_DESCRIPTION[g.p_type[p] as usize]
+    } else {
+        "?"
+    };
+    emit!(f, "PLANET body={} type={} ({}) owner={} seedval={:.6}\n",
+        p, g.p_type[p], desc, g.p_owner[p], seedval);
+    emit!(f, "  rtperiod={} rotation={} term_start={} term_end={}\n",
+        g.p_rtperiod[p], g.p_rotation[p], g.p_term_start[p], g.p_term_end[p]);
+
+    if g.p_type[p] as i32 == 10 {
+        emit!(f, "  (companion star - surface() is a no-op)\n");
+        return;
+    }
+
+    hashline(f, "surface_map", surf);
+    hashline(f, "atmo_overlay", &g.objectschart[0..32400]);
+    let base3 = (if is_moon { 128 } else { 192 }) * 3;
+    hashline(f, "palette64", &g.tmppal[base3..base3 + 192]);
+}
