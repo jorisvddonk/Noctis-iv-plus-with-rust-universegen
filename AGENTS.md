@@ -27,17 +27,18 @@ against the original Turbo/Borland C++ 3.0 source compiled under DOSBox.
 ## Current status
 - `system` generation (T1C00–T1C11, 12 fixtures): **all passing**.
 - `starsystem-scan` (T5A/T5B): passing (reuses system-gen).
-- `planet` / `sector` / `surftex` (T2P00–09, T3A–D, T4A–D):
-  **NOT YET PORTED**. `cmd_planet` / `cmd_sector` / `cmd_surftex` in
-  `tests/nivgen/src/main.rs` are stubs (`eprintln!("… not yet
-  implemented")`). The real work — porting `surface()` / `build_surface()`
-  from `source/NOCTIS-1.CPP` into `SystemGen` — is outstanding.
-  These functions drive the planet texture (`p_background` 360×180 map,
-  atmosphere overlay, palette) and the sector heightmap / surface texture,
-  and exercise the `fast_random` RNG (see `rng.rs::FastRng`, already
-  ported + validated) alongside the Borland LCG. Expect the same class of
-  bugs as T1C (16-bit `int`/`unsigned` overflow via `i16()`, x87 80-bit
-  float via `f80`) when porting them.
+- `planet` texture surface_map/atmo_overlay (T2P00–09):
+  - `rndpat` **fixed**: signed 16-bit IMUL, `ax = (prod.low + prod.high) & 0xFFFF`.
+    D0_rnd (rndpat output) FNV `0954CC8F` matches C.
+  - `ssmooth` **fixed**: mask is `0xFCFCFCFC` (was `0xFCFFFC`),
+    in-place reads via raw pointer (not clone). D1_smo FNV `A273E703` matches C.
+  - `lssmooth`: in-place reads via raw pointer.
+  - `band`: unsigned borrow check (`>=` not signed `as i8`).
+  - `palette64`: FNV `6BC1A116` matches C.
+  - **Still diverging**: `surface_map` and `atmo_overlay` —
+    root cause is `wave()` sin precision (f64::sin vs x87 fsin) or RNG parameter
+    mismatch in the band/wave loop. D2 stage (after band/wave) first diverges.
+- `sector` / `surftex` (T3A–D, T4A–D): `build_surface()` not yet ported.
 
 ## Porting checklist for T2/T3/T4
 1. Port `surface()` (NOCTIS-1.CPP) → a `SystemGen` method; emit the
