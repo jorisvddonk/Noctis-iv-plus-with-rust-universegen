@@ -46,9 +46,16 @@ fn f_to_u16_trunc(x: f64) -> u16 {
     (x.trunc() as i64 & 0xFFFF) as u16
 }
 
+// C's `(unsigned long)(f64)` truncates (mod 2^32); Rust's `f64 as u32`
+// SATURATES on overflow, so large `seedval*10` values collapse to 0xFFFFFFFF
+// and every body gets the same rndpat seed. Mirror the C truncation here.
+fn f64_to_u32_trunc(x: f64) -> u32 {
+    (x.rem_euclid(4294967296.0)) as u32
+}
+
 #[allow(dead_code)]
 fn dbg_dump(name: &str, buf: &[u8]) {
-    if CURRENT_BODY.load(Ordering::Relaxed) != CAPTURE_BODY {
+    if CURRENT_BODY.load(Ordering::Relaxed) != capture_body() {
         return;
     }
     let _ = std::fs::create_dir_all("/tmp/rchk");
@@ -57,9 +64,19 @@ fn dbg_dump(name: &str, buf: &[u8]) {
 }
 
 use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::OnceLock;
 // Validation-only: capture checkpoints only for this body (C's `planet -n N`
 // generates a single body; Rust's generate() hits many — avoid contamination).
-static CAPTURE_BODY: i32 = 0;
+// Tunable via env CAPTURE_BODY (default 0).
+fn capture_body() -> i32 {
+    static V: OnceLock<i32> = OnceLock::new();
+    *V.get_or_init(|| {
+        std::env::var("CAPTURE_BODY")
+            .ok()
+            .and_then(|s| s.parse::<i32>().ok())
+            .unwrap_or(0)
+    })
+}
 static CURRENT_BODY: AtomicI32 = AtomicI32::new(-1);
 
 /// Borland signed-16-bit wrap.
@@ -202,8 +219,8 @@ impl SystemGen {
                 let px = self.s_cx as f64 + g as f64 * a.cos();
                 let mut py = self.s_cy as f64 + g as f64 * a.sin();
                 py *= 360.0;
-                self.s_px = f_to_u16_rne(px);
-                self.s_py = f_to_u16_rne(py);
+                self.s_px = f_to_u16_trunc(px);
+                self.s_py = f_to_u16_trunc(py);
                 self.spot();
                 a += 4.0 * DEG;
             }
@@ -649,14 +666,14 @@ impl SystemGen {
     pub fn surface(&mut self, logical_id: i32, ptype: i32, seedval: f64, colorbase: i32) {
         CURRENT_BODY.store(logical_id, Ordering::Relaxed);
         if std::env::var("NIVDBG").is_ok() {
-            eprintln!("surface entry logical_id={} ptype={} capture={}", logical_id, ptype, CAPTURE_BODY);
+            eprintln!("surface entry logical_id={} ptype={} capture={}", logical_id, ptype, capture_body());
         }
         if ptype == 10 {
             return;
         }
         let qw = self.quadwords;
 
-        self.frng.srand((seedval + 4112.0) as u32);
+        self.frng.srand(f64_to_u32_trunc(seedval + 4112.0));
 
         let rtperiod = 10 * (self.frng.ranged(50) + 1)
             + 10 * self.frng.ranged(25)
@@ -675,7 +692,7 @@ impl SystemGen {
             plwp += 360;
         }
 
-        self.frng.srand((seedval * 10.0) as u32);
+        self.frng.srand(f64_to_u32_trunc(seedval * 10.0));
         let seed = self.frng.fast_random(0xFFFF) as u16;
 
         self.rng.srand(seed as u32);
