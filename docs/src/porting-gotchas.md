@@ -28,6 +28,27 @@ Read this before touching `rng.rs`, `system.rs`, or `f80.rs`.
 * `wave()` first column (`px==360`) IS deterministic and bit-exact once the
   `bx=cy` special case is used. Only the `px<360` garbage columns are
   build-dependent (§9f).
+* **T2P00–09 sweep result (2026-07-18):** ALL ten `planet` fixtures are the
+  same type-6 body (body 0) for the same coords — the harness `cmd_planet`
+  ignores `-n`, so T2P01/03/04/07/08/09 are byte-identical inputs to T2P00.
+  Only T2P02 uses different coords (`-4224317 -468962`). Both coord sets are
+  type 6, so **every T2P fixture exercises `wave()`** — there is NO fixture
+  that validates the clean (non-wave) `surf_case6` stages. Hence T2P cannot
+  confirm the bands/ssmooth/storm paths in isolation; those were validated via
+  the stage dumps (`0_RN`/`1_SMO`/`2A_B` match C) instead.
+* The C fixtures are themselves **non-deterministic run-to-run**: for the same
+  coords, T2P00/03/05/06 give `surface_map=DC903119` but T2P01=`AA64B3EB`,
+  T2P04=`AF74278D`, T2P07/08=`10989DFF`, T2P09=`325D07EE`. This is the `wave()`
+  garbage-base bug surfacing — proof it cannot be reproduced bit-for-bit.
+* `atmo_overlay` divergence (`3A_S` = 17805 diffs) is a **downstream effect of
+  the wave base mismatch**, not an independent storm bug: `storm()` → `cirrus()`
+  reads `p_background` (which `wave()` corrupted differently), so a wrong wave
+  base poisons the overlay too. `2A_B` (objectschart right after the band/wave
+  loop) matches C (0 diffs), confirming the storm *logic* is fine pre-wave.
+* Net: Rust type-6 output is fully **deterministic** (always `D553C614` for
+  coords A, `9D6323C1` for coords B) and internally consistent, but cannot
+  match the non-deterministic C `surface_map`/`atmo_overlay` FNVs without
+  pinning the exact C build. Do NOT block T2P validation on type-6 FNV.
 
 ## 1. `srand` takes a **16-bit** `unsigned int` 🔴 (the big one)
 
