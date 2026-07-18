@@ -8,9 +8,59 @@
 //! since Borland `int`/`unsigned` are 16-bit and Rust's `as i16` saturates.
 
 use crate::system::SystemGen;
+use crate::f80::F80;
 use std::f64::consts::PI;
+use std::io::Write;
 
 pub const DEG: f64 = PI / 180.0;
+
+/// C `wave()` memory-corruption base offset (see `wave()`). The far-write
+/// aliases `cy`, turning the `add py, bx` base into `cy + WAVE_CORRUPT_BASE`.
+/// Tunable via env `WAVE_BASE` for matching a specific C build's layout.
+pub static mut WAVE_CORRUPT_BASE: i32 = 28092;
+fn wave_corrupt_base() -> i32 {
+    if let Ok(s) = std::env::var("WAVE_BASE") {
+        s.parse().unwrap_or(28092)
+    } else {
+        28092
+    }
+}
+
+/// x87 `fistp` round-to-nearest-even on a `f64` value (the FPU keeps 80-bit
+/// intermediates; promoting to `F80` before rounding reproduces the 8087's
+/// default rounding mode, which the generator's many `(int)`/`(unsigned)`
+/// assignments from `double` rely on — they are NOT truncations).
+fn f_to_i32_rne(x: f64) -> i32 {
+    F80::from_f64(x).to_i32_rne()
+}
+fn f_to_u16_rne(x: f64) -> u16 {
+    // Plain C `(unsigned)(double)` cast: truncate toward zero, then mod 2^16.
+    // (The band/cloud/spot s_px/s_py assignments come from `(unsigned)` casts,
+    // not x87 `fistp` stores. `wave()`'s `fistp py` is handled inline via F80.)
+    (x.trunc() as i64 & 0xFFFF) as u16
+}
+/// Plain C `(unsigned)(double)` cast = truncation toward zero, then mod 2^16.
+/// Used for s_px/s_py assignments that come from a C `(unsigned)` cast, NOT an
+/// x87 `fistp` store (those use `f_to_u16_rne`).
+fn f_to_u16_trunc(x: f64) -> u16 {
+    (x.trunc() as i64 & 0xFFFF) as u16
+}
+
+#[allow(dead_code)]
+fn dbg_dump(name: &str, buf: &[u8]) {
+    if CURRENT_BODY.load(Ordering::Relaxed) != CAPTURE_BODY {
+        return;
+    }
+    let _ = std::fs::create_dir_all("/tmp/rchk");
+    let _ = std::fs::File::create(format!("/tmp/rchk/CHK_{}.BIN", name))
+        .and_then(|mut f| f.write_all(buf));
+}
+
+use std::sync::atomic::{AtomicI32, Ordering};
+// Validation-only: capture checkpoints only for this body (C's `planet -n N`
+// generates a single body; Rust's generate() hits many — avoid contamination).
+static CAPTURE_BODY: i32 = 0;
+static CURRENT_BODY: AtomicI32 = AtomicI32::new(-1);
 
 /// Borland signed-16-bit wrap.
 pub fn i16w(x: f64) -> i32 {
@@ -134,7 +184,7 @@ impl SystemGen {
 
     // --- spot (NOCTIS-0.CPP:4485) ---
     fn spot(&mut self) {
-        let di = (self.s_py + self.s_px) as usize; // py + px (px,py are byte offsets)
+        let di = (self.s_py.wrapping_add(self.s_px)) as usize; // py + px (px,py are byte offsets)
         if di >= self.p_background.len() {
             return;
         }
@@ -152,8 +202,8 @@ impl SystemGen {
                 let px = self.s_cx as f64 + g as f64 * a.cos();
                 let mut py = self.s_cy as f64 + g as f64 * a.sin();
                 py *= 360.0;
-                self.s_px = (px) as u16;
-                self.s_py = (py) as u16;
+                self.s_px = f_to_u16_rne(px);
+                self.s_py = f_to_u16_rne(py);
                 self.spot();
                 a += 4.0 * DEG;
             }
@@ -169,7 +219,7 @@ impl SystemGen {
             while gr < self.s_cr {
                 let px = self.s_cx as f64 + a.cos() * gr as f64;
                 let py = self.s_cy as f64 + a.sin() * gr as f64;
-                let vptr = (px as u16 as i64 + 360 * py as u16 as i64);
+                let vptr = (f_to_u16_rne(px) as i64 + 360 * f_to_u16_rne(py) as i64);
                 let di = vptr as usize;
                 if di < self.p_background.len() {
                     let al = self.p_background[di];
@@ -199,7 +249,7 @@ impl SystemGen {
                         while gr2 < b {
                             let px = self.s_cx as f64 + a.cos() * gr2 as f64;
                             let py = self.s_cy as f64 + a.sin() * gr2 as f64;
-                            let vptr = (px as u16 as i64 + 360 * py as u16 as i64);
+                            let vptr = (f_to_u16_rne(px) as i64 + 360 * f_to_u16_rne(py) as i64);
                             let di = vptr as usize;
                             if di < self.p_background.len() {
                                 let al = self.p_background[di];
@@ -222,11 +272,13 @@ impl SystemGen {
 
     // --- band (NOCTIS-0.CPP:4554) ---
     fn band(&mut self) {
-        let base = self.s_py as usize;
-        let mut di = base;
-        let mut cx = self.s_cr;
+        // C: `les di, p_background; add di, py` then `inc di` per iteration.
+        // `di` is a 16-bit register, so it WRAPS at 0x10000.
+        let base = (self.s_py & 0xFFFF) as usize;
+        let cx = self.s_cr as usize;
         let ah = (self.s_g & 0xFF) as u8;
-        while cx > 0 {
+        for i in 0..cx {
+            let di = (base + i) & 0xFFFF;
             if di < self.p_background.len() {
                 // C: sub al,ah ; jnc min (jump if no borrow = al >= ah)
                 let al = if self.p_background[di] >= ah {
@@ -236,22 +288,25 @@ impl SystemGen {
                 };
                 self.p_background[di] = al;
             }
-            di += 1;
-            cx -= 1;
         }
     }
 
     // --- wave (NOCTIS-0.CPP:4571) ---
     fn wave(&mut self) {
         let mut px = 360i32;
-        let bx = (self.s_cy as i32) & 0xFFFF;
+        // C `wave()` bug: the `add py, bx` base (`bx` = `cy`) is corrupted by the
+        // `mov byte ptr es:[di], 0` far-write aliasing `cy`'s memory. After the
+        // first column the base becomes a garbage large value (G); we replicate
+        // that by adding a constant corruption offset to `bx` for px < 360.
+        let bx0 = (self.s_cy as i32) & 0xFFFF;
         while px > 0 {
             let f = (px as f64) * self.s_a;
-            let py = ((f.sin() * self.s_cr as f64) as i32) + bx;
+            let prod = F80::from_f64(f.sin()).mul(&F80::from_f64(self.s_cr as f64));
+            let bx = if px == 360 { bx0 } else { bx0 + wave_corrupt_base() };
+            let py = (prod.to_i32_rne() + bx) & 0xFFFF;
             let ax = (py & 0xFFFF) as i32;
-            let prod = (ax as i32 as i64).wrapping_mul(360i64) & 0xFFFF;
-            let mut di = (prod as i32 + 4 + (px & 0xFFFF)) as usize;
-            di &= 0xFFFF;
+            let prod = (ax as i64).wrapping_mul(360i64) & 0xFFFF;
+            let di = ((prod + (px as i64 & 0xFFFF)) & 0xFFFF) as usize;
             if di < self.p_background.len() {
                 self.p_background[di] = 0;
             }
@@ -393,7 +448,7 @@ impl SystemGen {
 
     // --- cirrus (NOCTIS-0.CPP:4715) overlay helper ---
     fn cirrus(&mut self) {
-        let bx = (self.s_py + self.s_px) as usize;
+        let bx = (self.s_py.wrapping_add(self.s_px)) as usize;
         let idx = (bx >> 1) + 0; // objectschart base is 0; px,py already halved via shr
         if idx < self.objectschart.len() {
             let mut al = self.objectschart[idx].wrapping_add((self.s_gr & 0xFF) as u8);
@@ -410,18 +465,18 @@ impl SystemGen {
             let px = self.s_cx as f64 + cr as f64 * self.s_a.cos();
             let mut py = self.s_cy as f64 + cr as f64 * self.s_a.sin();
             py *= 360.0;
-            self.s_px = (px) as u16;
-            self.s_py = (py) as u16;
+            self.s_px = f_to_u16_rne(px);
+            self.s_py = f_to_u16_rne(py);
             self.cirrus();
-            self.s_px = ((px + self.rng.random(4) as f64)) as u16;
+            self.s_px = f_to_u16_rne(px + self.rng.random(4) as f64);
             self.cirrus();
-            self.s_py = ((py + 359.0)) as u16;
+            self.s_py = f_to_u16_rne(py + 359.0);
             self.cirrus();
-            self.s_px = ((px - self.rng.random(4) as f64)) as u16;
+            self.s_px = f_to_u16_rne(px - self.rng.random(4) as f64);
             self.cirrus();
-            self.s_py = ((py + 361.0)) as u16;
+            self.s_py = f_to_u16_rne(py + 361.0);
             self.cirrus();
-            self.s_px = ((px + self.rng.random(4) as f64)) as u16;
+            self.s_px = f_to_u16_rne(px + self.rng.random(4) as f64);
             self.cirrus();
             b += 1;
             b %= self.s_g;
@@ -441,8 +496,8 @@ impl SystemGen {
                 let px = self.s_cx as f64 + g as f64 * a.cos();
                 let mut py = self.s_cy as f64 + g as f64 * a.sin();
                 py *= 360.0;
-                self.s_px = (px) as u16;
-                self.s_py = (py) as u16;
+                self.s_px = f_to_u16_rne(px);
+                self.s_py = f_to_u16_rne(py);
                 self.cirrus();
                 a += 4.0 * DEG;
             }
@@ -592,6 +647,10 @@ impl SystemGen {
 
     // --- surface() main (NOCTIS-0.CPP:4766) ---
     pub fn surface(&mut self, logical_id: i32, ptype: i32, seedval: f64, colorbase: i32) {
+        CURRENT_BODY.store(logical_id, Ordering::Relaxed);
+        if std::env::var("NIVDBG").is_ok() {
+            eprintln!("surface entry logical_id={} ptype={} capture={}", logical_id, ptype, CAPTURE_BODY);
+        }
         if ptype == 10 {
             return;
         }
@@ -621,6 +680,8 @@ impl SystemGen {
 
         self.rng.srand(seed as u32);
         self.rndpat(seed);
+        dbg_dump("0_RN", &self.p_background);
+        dbg_dump("0A_O", &self.objectschart);
 
         // overlay (objectschart) cleared to 0 (32400 bytes)
         for i in self.objectschart.iter_mut() {
@@ -694,6 +755,7 @@ impl SystemGen {
             py += 2;
             px += 1;
         }
+        { dbg_dump("5_ME", &self.p_background); dbg_dump("5A_M", &self.objectschart); }
 
         if ptype == 2 {
             if self.rng.random(3) == 0 {
@@ -750,6 +812,7 @@ impl SystemGen {
                 self.ssmooth();
             }
         }
+        { dbg_dump("6_FI", &self.p_background); dbg_dump("6A_F", &self.objectschart); }
 
         if colorbase == 255 {
             self.quadwords = qw;
@@ -1047,6 +1110,7 @@ impl SystemGen {
         for _c in 0..r {
             self.ssmooth();
         }
+        dbg_dump("1_SMO", &self.p_background);
         let r = 50 + self.frng.ranged(100);
         for _c in 0..r {
             self.s_cr = self.frng.ranged(10) + 1;
@@ -1057,13 +1121,17 @@ impl SystemGen {
                 self.s_g = 1 + self.frng.ranged(self.s_gr);
                 self.s_py = ((self.s_cy * 360)) as u16;
                 self.s_cr *= 360;
+                eprintln!("B cr={} cy={} gr={} g={} py={}", self.s_cr, self.s_cy, self.s_gr, self.s_g, self.s_py);
                 self.band();
             } else {
-                self.s_a = ((5 + self.frng.ranged(10)) as f32 / 30.0_f32) as f64;
+                let raw = self.frng.ranged(10);
+                self.s_a = ((5 + raw) as f32 / 30.0_f32) as f64;
                 self.s_cr = self.s_cr / 4 + 1;
+                eprintln!("W cr={} cy={} raw={} a={}", self.s_cr, self.s_cy, raw, self.s_a);
                 self.wave();
             }
         }
+        { dbg_dump("2_BW", &self.p_background); dbg_dump("2A_B", &self.objectschart); }
         let r = 50 + self.frng.ranged(100);
         for _c in 0..r {
             self.s_cr = self.frng.ranged(15) + 1;
@@ -1077,10 +1145,12 @@ impl SystemGen {
             }
             self.storm();
         }
+        { dbg_dump("3_ST", &self.p_background); dbg_dump("3A_S", &self.objectschart); }
         self.lssmooth();
         if self.frng.ranged(3) == 0 {
             self.negate();
         }
+        { dbg_dump("4_LS", &self.p_background); dbg_dump("4A_L", &self.objectschart); }
     }
 
     fn surf_case7(&mut self) {

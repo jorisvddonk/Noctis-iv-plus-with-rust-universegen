@@ -286,6 +286,69 @@ impl F80 {
             v
         }
     }
+
+    /// Round to nearest, ties to even, to `i32`. Mirrors the x87 `fistp` /
+    /// `fist` store-with-rounding behaviour under the default rounding mode
+    /// (RC = round-to-nearest-even). This is what `fild`/`fmul`/`fistp`
+    /// sequences in the generator actually do — NOT a truncation.
+    pub fn to_i32_rne(&self) -> i32 {
+        if self.exp == 0 && self.mant == 0 {
+            return 0;
+        }
+        let unbiased = (self.exp - BIAS) - 63;
+        // value = mant * 2^unbiased, mant in [2^63, 2^64).
+        //   unbiased <= -65  -> value < 0.25  -> rounds to 0
+        //   unbiased == -64  -> value in [0.5, 1.0)
+        //   unbiased == -63  -> value in [1.0, 2.0)
+        if unbiased < -64 {
+            return 0; // |value| < 0.5 -> rounds to 0
+        }
+        if unbiased > 30 {
+            // |value| >= 2^31, out of i32 range
+            return if self.neg { i32::MIN } else { i32::MAX };
+        }
+        // s = number of fractional bits (bits below the units place).
+        let s: u32 = if unbiased >= 0 {
+            0
+        } else if unbiased < -64 {
+            64 // all fractional (handled by the early return above, but keep safe)
+        } else {
+            (-unbiased) as u32 // 1..64
+        };
+        // Integer part (mantissa shifted so the units bit is at bit 0).
+        let int_part: i64 = if s == 0 {
+            self.mant as i64
+        } else if s >= 64 {
+            0
+        } else {
+            (self.mant >> s) as i64
+        };
+        // Top fractional bit (the "half" bit) and any bits strictly below it.
+        // s ranges 1..64; bit index (s-1) is always a valid 0..63 shift.
+        let half_bit = if s == 0 {
+            false
+        } else {
+            (self.mant >> (s - 1)) & 1 == 1
+        };
+        let lower_bits = if s <= 1 {
+            0u64
+        } else {
+            self.mant & ((1u64 << (s - 1)) - 1)
+        };
+        let exactly_half = half_bit && lower_bits == 0;
+        let above_half = half_bit && lower_bits != 0;
+
+        let mut result = int_part;
+        if above_half || (exactly_half && (int_part & 1) == 1) {
+            result += 1;
+        }
+        let v = result as i32;
+        if self.neg {
+            -v
+        } else {
+            v
+        }
+    }
 }
 
 #[cfg(test)]
@@ -324,5 +387,82 @@ mod tests {
         let c = F80::from_f64(7.0);
         let d = F80::from_f64(2.0);
         assert!((c.div(&d).to_f64() - 3.5).abs() < 1e-12);
+    }
+}
+
+#[cfg(test)]
+mod rne_tests {
+    use super::F80;
+    #[test]
+    fn rne_basic() {
+        assert_eq!(F80::from_f64(2.4).to_i32_rne(), 2);
+        assert_eq!(F80::from_f64(2.5).to_i32_rne(), 2); // tie to even
+        assert_eq!(F80::from_f64(3.5).to_i32_rne(), 4); // tie to even
+        assert_eq!(F80::from_f64(2.6).to_i32_rne(), 3);
+        assert_eq!(F80::from_f64(-2.5).to_i32_rne(), -2); // tie to even (neg even)
+        assert_eq!(F80::from_f64(-2.6).to_i32_rne(), -3);
+        assert_eq!(F80::from_f64(0.0).to_i32_rne(), 0);
+    }
+    #[test]
+    fn rne_wave1() {
+        let cr = 3.0f64; let a = 8.0/30.0;
+        let mut diff=0;
+        for px in 1..=360 {
+            let prod = ((px as f64)*a).sin()*cr;
+            let trunc = prod as i32;
+            let rne = F80::from_f64(prod).to_i32_rne();
+            if rne != trunc { diff+=1; }
+        }
+        println!("wave1 rne!=trunc count: {}", diff);
+        assert!(diff > 0); // should differ (rounding mode matters)
+    }
+}
+
+#[cfg(test)]
+mod wave_test {
+    use super::F80;
+    #[test]
+    fn wave1_check() {
+        let cr = 3.0f64; let a = 8.0/30.0;
+        // expected (recovered from C buffer): px -> py
+        let exp = [(1,147),(2,148),(3,148),(4,149),(8,149),(13,145),(16,143),(20,144),(50,148),(100,149),(200,146),(300,143),(359,149)];
+        for (px,ey) in exp.iter() {
+            let f = (*px as f64)*a;
+            let prod = F80::from_f64(f.sin()).mul(&F80::from_f64(cr));
+            let py = (prod.to_i32_rne() + 146) & 0xFFFF;
+            println!("px={} rust_py={} exp={}", px, py, ey);
+            assert_eq!(py, *ey, "px={}", px);
+        }
+    }
+}
+
+#[cfg(test)]
+mod dbg_rne {
+    use super::F80;
+    #[test]
+    fn dbg_0791() {
+        let x = F80::from_f64(0.791);
+        println!("exp={} BIAS={} mant={:x} unbiased={}", x.exp, super::BIAS, x.mant, (x.exp as i32 - super::BIAS) - 63);
+        println!("to_i32_rne={}", x.to_i32_rne());
+        let y = F80::from_f64(0.2637*3.0);
+        println!("y=0.7911 to_i32_rne={}", y.to_i32_rne());
+    }
+}
+
+#[cfg(test)]
+mod wave_all_test {
+    use super::F80;
+    use std::fs;
+    #[test]
+    fn wave_all_dump() {
+        let cr = 3.0f64; let a = 8.0/30.0;
+        let mut out = String::new();
+        for px in (1..=360).rev() {  // wave iterates 360..1
+            let f = (px as f64)*a;
+            let prod = F80::from_f64(f.sin()).mul(&F80::from_f64(cr));
+            let py = (prod.to_i32_rne() + 146) & 0xFFFF;
+            out.push_str(&format!("{} {}\n", px, py));
+        }
+        let _ = fs::write("/tmp/rust_wave1.txt", out);
     }
 }
