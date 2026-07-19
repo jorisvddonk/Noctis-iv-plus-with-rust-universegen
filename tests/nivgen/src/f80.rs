@@ -168,15 +168,16 @@ impl F80 {
             b = ob.mant; eb = ob.exp;
             let diff = ob.exp - self.exp;
             a = if diff >= 64 { 0 } else { self.mant >> diff };
-            ea = self.exp;
+            ea = ob.exp; // after shifting a right, its effective exponent is the larger one
         }
         let (res_neg, res_mant, res_exp);
         if self.neg == ob.neg {
             let s = a as u128 + b as u128;
-            // s may have a carry into bit 64
-            let (m, carry) = if s >> 63 == 1 {
-                // already normalised (top bit integer bit), but could have 2 int bits
+            // s may have a carry into bit 64 (or beyond).
+            let (m, carry) = if (s >> 63) != 0 {
+                // integer bit at bit 63 or higher — already (or over-) normalised.
                 if (s >> 64) & 1 == 1 {
+                    // two integer bits: shift right and bump exponent
                     ((s >> 1) as u64, ea + 1)
                 } else {
                     (s as u64, ea)
