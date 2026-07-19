@@ -7,6 +7,23 @@
 use crate::rng::BorlandRng;
 use crate::f80::F80;
 
+/// Full DOS segment size the surface buffers occupy (16-bit `di` range).
+///
+/// Both surface buffers are sized to a full 64 KB segment (not the 64800-byte
+/// map) so the `.len()`-based bounds checks in `surface.rs` reproduce C's 16-bit
+/// `di` addressing (`[0, 0xFFFF]`) exactly. `lssmooth`/`psmooth_grays` read a
+/// few bytes past the 64800-byte map near the south pole; in C those land in the
+/// adjacent far-heap allocation (`p_background`). We do NOT model that scratch
+/// tail because it is never hashed: the globe renderer only samples rows 0..121,
+/// and hashing is restricted to rows 0..127 (see `SAMPLED_BYTES` in main.rs).
+pub const BG_SEGMENT: usize = 65536;
+/// The surface map proper (360 x 180).
+pub const BG_SURFACE: usize = 64800;
+
+fn make_bg() -> Vec<u8> {
+    vec![0u8; BG_SEGMENT]
+}
+
 /// Wrap a `double`/`f64` value the way Borland's 16-bit `int` would when a
 /// C expression like `10 * nearstar_p_orb_seed[n]` (whose operands are `int`)
 /// is passed to `random()`/`zrandom()`. The product is computed in `int` (which
@@ -118,9 +135,15 @@ pub struct SystemGen {
     pub s_m: f64,
     pub secs: f64,
 
-    // surface() buffers + scratch globals (ported from NOCTIS-0.CPP)
-    pub p_background: Vec<u8>, // 64800 (360x180)
-    pub s_background: Vec<u8>, // 64800
+    // surface() buffers + scratch globals (ported from NOCTIS-0.CPP).
+    // Both are sized to a full 64 KB segment (65536) to reproduce the DOS
+    // far-heap layout: surface() uses a 16-bit `di` register, so it can read
+    // and write anywhere in [0, 0xFFFF]. The surface map proper is the first
+    // 64800 bytes; the tail 64800..65536 mirrors the bytes the harness's
+    // farmalloc heap leaves after each buffer (see BG_TAIL_* below). This is
+    // what lssmooth/psmooth_grays read out-of-bounds near the south pole.
+    pub p_background: Vec<u8>, // 65536 (surface map = first 64800)
+    pub s_background: Vec<u8>, // 65536 (surface map = first 64800)
     pub objectschart: Vec<u8>, // 32400 (atmosphere overlay, hashed as bytes)
     pub tmppal: Vec<u8>,       // 768
     pub lft_sin: [f64; 361],
@@ -195,8 +218,8 @@ impl SystemGen {
             p_term_end: [0; MAXBODIES],
             s_m: 0.0,
             secs: 0.0,
-            p_background: vec![0u8; 64800],
-            s_background: vec![0u8; 64800],
+            p_background: make_bg(),
+            s_background: make_bg(),
             objectschart: vec![0u8; 32400],
             tmppal: vec![0u8; 768],
             lft_sin: [0.0; 361],

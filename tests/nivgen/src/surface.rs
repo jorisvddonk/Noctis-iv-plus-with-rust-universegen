@@ -346,33 +346,42 @@ impl SystemGen {
 
     // --- fracture (NOCTIS-0.CPP:4594) ---
     fn fracture(&mut self, max_latitude: f64) {
-        // C: `a = random(360) * deg` where `a` is `double` and `deg` is
-        // `const double deg = M_PI/180.0`. Compute in f64, not f32.
-        self.s_a = self.rng.random(360) as f64 * DEG;
+        // C: `a = random(360) * deg` where the global `a` is `float` (line
+        // 4444) and `deg` is `const double`. `random(360)*deg` is computed in
+        // double then STORED into the float `a`, rounding to f32. Each `a +=`
+        // accumulates back into the f32 variable, so every step re-rounds to
+        // 32-bit. cos(a)/sin(a) then promote the f32 back to double.
+        let mut a: f32 = (self.rng.random(360) as f64 * DEG) as f32;
         self.s_gr += 1;
-        let mut px = self.s_cx as f64;
-        let mut py = self.s_cy as f64;
+        // C: `float px = cx; float py = cy;` — px/py are f32 locals that
+        // accumulate in 32-bit precision. kfract is a global `float`.
+        let kfract = self.s_kfract as f32;
+        let mut px: f32 = self.s_cx as f32;
+        let mut py: f32 = self.s_cy as f32;
+        let maxlat = max_latitude as f32;
         loop {
-            self.s_a += (self.rng.random(self.s_g) - self.rng.random(self.s_g)) as f64 * DEG;
-            px += self.s_kfract * self.s_a.cos();
+            a = (a as f64 + (self.rng.random(self.s_g) - self.rng.random(self.s_g)) as f64 * DEG)
+                as f32;
+            self.s_a = a as f64;
+            px = (px as f64 + kfract as f64 * (a as f64).cos()) as f32;
             if px > 359.0 {
                 px -= 360.0;
             }
             if px < 0.0 {
                 px += 360.0;
             }
-            py += self.s_kfract * self.s_a.sin();
-            if py > max_latitude - 1.0 {
-                py -= max_latitude;
+            py = (py as f64 + kfract as f64 * (a as f64).sin()) as f32;
+            if py > maxlat - 1.0 {
+                py -= maxlat;
             }
             if py < 0.0 {
-                py += max_latitude;
+                py += maxlat;
             }
             // C: `vptr = px + 360 * (unsigned)py`. `py` is truncated to
             // `(unsigned)` (16-bit integer) BEFORE the *360. `px` is a float
             // added to the int result (truncation to vptr's int type).
             let px_i = px as i32;
-            let py_i = f64_to_u16_trunc(py) as i64;
+            let py_i = f64_to_u16_trunc(py as f64) as i64;
             let vptr = px_i as i64 + 360 * py_i;
             let di = vptr as usize;
             if di < self.p_background.len() {
@@ -456,13 +465,7 @@ impl SystemGen {
 
     // --- negate (NOCTIS-0.CPP:4667) ---
     fn negate(&mut self) {
-        for i in self.p_background.iter_mut() {
-            *i = 0x3Eu8.wrapping_sub(*i);
-        }
-    }
-
-    fn negate_bg(&mut self, buf: &mut [u8]) {
-        for i in buf.iter_mut() {
+        for i in self.p_background[..64800].iter_mut() {
             *i = 0x3Eu8.wrapping_sub(*i);
         }
     }

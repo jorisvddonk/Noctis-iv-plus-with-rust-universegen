@@ -578,3 +578,75 @@ fn f64_to_u32_trunc(x: f64) -> u32 {
 This handles both positive and negative correctly:
 - Positive `713100430.0`: truncate → `713100430_i64` → `713100430_u32` ✓
 - Negative `-578621324.65`: truncate → `-578621324_i64` → `3716345972_u32` ✓
+
+## 19. Moon surface OOB read is nondeterministic — hash only sampled rows (2026-07-19)
+
+**Every moon (types 1, 4, 8, …) appeared to diverge while the identical
+planet type passed.** The apparent bug was real but *cosmetically
+irrelevant*, and the correct fix is to **hash only the rows the game
+actually renders**, not the full 64800-byte buffer.
+
+### The out-of-bounds read
+
+In `NOCTIS-D.H` the two surface buffers are `farmalloc`d at different sizes
+(`p_background` = `pl_bytes` = 65552; `s_background` = `st_bytes` = 64800),
+and are allocated **adjacently** (`s_background` first, then `p_background`
+— see NOCTIS.CPP:2142-2143 and the harness `alloc_buffers`). Planets render
+into `p_background`, moons into `s_background` (the game repoints
+`p_background = s_background` for a moon, NOCTIS-0.CPP:5326).
+
+`lssmooth` (NOCTIS-0.CPP:4416) walks `di = 0..64479` reading a WORD at
+`es:[di+360]` — up to byte 64840, i.e. 40 bytes past the 64800-byte map.
+Only iterations `di = 64440..64479` read OOB, and they write to
+`di = 64440..64479` = **row 179 (south pole), cols 0-39**. Repeated smooth
+passes bleed this up to ~row 170. For a moon this OOB read pulls bytes from
+the adjacent `p_background` allocation (by design — from a moon you can see
+its parent planet, so the two maps are kept separate; NOCTIS-0.CPP:4462).
+That content depends on player trajectory / render order, so it is **not
+deterministic**.
+
+### Why it does not matter: the globe never samples those rows
+
+The sphere renderer `globe()` (NOCTIS-0.CPP:3044) does **not** sample the
+map linearly. It walks it via the precomputed `GLOBES.MAP` offset stream.
+Parsing that stream shows the maximum surface byte offset read is ~43562 =
+**row 121**, and pixels are only ever sampled from **rows 0-119** (both
+polar caps included — they are *not* at the physical top/bottom of the
+buffer). Rows 122-179 are pure scratch space that is never displayed.
+
+The OOB nondeterminism lands at rows 170-179 — ~50 rows below anything the
+game can render. So it only ever perturbed the *full-buffer hash*, never a
+visible pixel.
+
+### The fix: hash rows 0-127 only
+
+Both the C harness and the Rust port now hash only the first **46080 bytes
+(rows 0-127)** of the surface map:
+
+```rust
+const SAMPLED_BYTES: usize = 360 * 128; // 46080
+```
+
+Row 127 sits comfortably above the worst-case rotation reach (row 121) and
+well below the OOB smear (row 170+), so the hashed region is fully
+deterministic. Consequences:
+
+- Single-body (`planet -p`), sequential (`planet-all`), and in-game
+  rendering all produce **identical** hashes for rows 0-127 — the execution
+  mode / heap state no longer matters. Verified: FENIA body 16 moon =
+  `78837023` from both single-body and planet-all.
+- No need to model the far-heap tail at all. `s_background`/`p_background`
+  are still sized to a full 64 KB segment (`BG_SEGMENT = 65536`) purely so
+  the `.len()` bounds checks in `surface.rs` reproduce C's 16-bit `di`
+  addressing (`[0, 0xFFFF]`); the tail is left zero and never hashed.
+
+After switching to sampled-row hashing and recomputing every canonical hash
+from BCPP 3.1 / DOSBox-X (`planet-all` per star, one boot each, via
+`tests/scripts/recompute-canonical.sh` + `tests/db/load_canonical.py`), the
+DB match rate rose from 39.8% to **71.2%**, and moons now match at the same
+rate as their planet types (types 1, 2, 8, 9 = 100% for both planets and
+moons).
+
+**Lesson:** when the reference buffer is larger than what the algorithm
+consumes, only fingerprint the consumed region. Hashing scratch/pad bytes
+turns a deterministic port into a false failure.

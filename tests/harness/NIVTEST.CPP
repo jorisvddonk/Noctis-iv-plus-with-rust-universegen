@@ -409,8 +409,13 @@ static void report_planet(int n)
 		return;
 	}
 
-	/* p_background/s_background is a 360*180 = 64800 byte surface map. */
-	hashline("surface_map", surf, 64800UL);
+	/* The surface map buffer is 360*180 = 64800 bytes, but the globe renderer
+	   (globe(), NOCTIS-0.CPP:3044, via GLOBES.MAP) never samples beyond row 121.
+	   We hash only rows 0..127 (46080 bytes): this covers the full visible band
+	   with rotation margin and excludes the scratch tail (rows 128..179) where
+	   the moon far-heap OOB read (lssmooth past s_background) lands. That tail is
+	   never displayed and is nondeterministic, so it must not enter the hash. */
+	hashline("surface_map", surf, 46080UL);
 	/* atmosphere overlay lives in objectschart (32400 bytes used). */
 	hashline("atmo_overlay", (unsigned char huge *)objectschart, 32400UL);
 	/* the two 64-entry palette blocks surface() rewrote (192.. or 128..). */

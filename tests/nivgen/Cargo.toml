@@ -6,6 +6,8 @@ description = "Bug-for-bug Rust reimplementation of the Noctis IV Plus universe 
 license = "MIT"
 
 [dependencies]
+extended = "0.1.0"
+swfp = "0.1.0"
 
 [lib]
 name = "nivgen"

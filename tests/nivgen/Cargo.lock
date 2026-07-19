@@ -3,5 +3,21 @@
 version = 4
 
 [[package]]
+name = "extended"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af9673d8203fcb076b19dfd17e38b3d4ae9f44959416ea532ce72415a6020365"
+
+[[package]]
 name = "nivgen"
 version = "0.1.0"
+dependencies = [
+ "extended",
+ "swfp",
+]
+
+[[package]]
+name = "swfp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67647daec1fdd37d14fe7b9b614674b1d29e669b0321c77bc71a5aabee747476"

@@ -4,6 +4,17 @@ use nivgen::hash::{fnv1a, crc32, FNV_OFFSET};
 use std::fs::OpenOptions;
 use std::io::Write;
 
+/// Number of surface-map bytes the globe renderer can actually sample.
+///
+/// The sphere projection (globe(), NOCTIS-0.CPP:3044) walks the surface map via
+/// GLOBES.MAP and never reads beyond row 121 even at extreme rotation; rows
+/// 0..119 cover the full visible latitude band. We hash rows 0..127 (46080
+/// bytes) to include the worst-case rotation reach with margin while excluding
+/// the deterministically-irrelevant scratch tail (rows 128..179), where the
+/// moon far-heap OOB read (lssmooth reading past s_background) lands. Those tail
+/// rows are never displayed, so hashing them would compare pure scratch memory.
+const SAMPLED_BYTES: usize = 360 * 128; // 46080
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
@@ -16,9 +27,9 @@ fn main() {
         "system" => cmd_system(&args),
         "scan" => cmd_scan(&args),
         "planet" => cmd_planet(&args),
+        "planet-all" => cmd_planet_all(&args),
         "sector" => cmd_sector(&args),
         "surftex" => cmd_surftex(&args),
-        "planet" => cmd_planet(&args),
         _ => {
             eprintln!("unknown command: {}", cmd);
             std::process::exit(1);
@@ -104,20 +115,44 @@ fn cmd_system(args: &[String]) {
     let x = argd(args, "-x", 0.0);
     let y = argd(args, "-y", 0.0);
     let z = argd(args, "-z", 0.0);
+    let json = args.iter().any(|a| a == "--json");
     let mut g = SystemGen::new();
     g.generate(x, y, z);
-    emit!(f, "=== SYSTEM ===\n");
-    emit!(f, "STAR x={:.0} y={:.0} z={:.0}\n", g.ap_target_x, g.ap_target_y, g.ap_target_z);
-    emit!(f, "  identity={:.6}\n", g.nearstar_identity);
-    emit!(f, "  class={} ray={:.6} spin={} rgb={},{},{}\n",
-        g.nearstar_class, g.nearstar_ray, g.nearstar_spin, g.nearstar_r, g.nearstar_g, g.nearstar_b);
-    emit!(f, "  nop={} nob={} labeled={}\n", g.nearstar_nop, g.nearstar_nob, g.nearstar_labeled);
-    for n in 0..g.nearstar_nob as usize {
-        emit!(f, "  BODY {:2} type={} owner={} moonid={} ray={:.6} orb_ray={:.6}\n",
-            n, g.p_type[n], g.p_owner[n], g.p_moonid[n], g.p_ray[n], g.p_orb_ray[n]);
-        emit!(f, "          tilt={:.8} orb_tilt={:.8} orb_orient={:.8} orb_ecc={:.8} orb_seed={:.6} ring={:.6}\n",
-            g.p_tilt[n], g.p_orb_tilt[n], g.p_orb_orient[n], g.p_orb_ecc[n], g.p_orb_seed[n], g.p_ring[n]);
+    if json {
+        emit_json_system(&mut f, &g);
+    } else {
+        emit!(f, "=== SYSTEM ===\n");
+        emit!(f, "STAR x={:.0} y={:.0} z={:.0}\n", g.ap_target_x, g.ap_target_y, g.ap_target_z);
+        emit!(f, "  identity={:.6}\n", g.nearstar_identity);
+        emit!(f, "  class={} ray={:.6} spin={} rgb={},{},{}\n",
+            g.nearstar_class, g.nearstar_ray, g.nearstar_spin, g.nearstar_r, g.nearstar_g, g.nearstar_b);
+        emit!(f, "  nop={} nob={} labeled={}\n", g.nearstar_nop, g.nearstar_nob, g.nearstar_labeled);
+        for n in 0..g.nearstar_nob as usize {
+            emit!(f, "  BODY {:2} type={} owner={} moonid={} ray={:.6} orb_ray={:.6}\n",
+                n, g.p_type[n], g.p_owner[n], g.p_moonid[n], g.p_ray[n], g.p_orb_ray[n]);
+            emit!(f, "          tilt={:.8} orb_tilt={:.8} orb_orient={:.8} orb_ecc={:.8} orb_seed={:.6} ring={:.6}\n",
+                g.p_tilt[n], g.p_orb_tilt[n], g.p_orb_orient[n], g.p_orb_ecc[n], g.p_orb_seed[n], g.p_ring[n]);
+        }
     }
+}
+
+fn emit_json_system(f: &mut Option<std::fs::File>, g: &SystemGen) {
+    let mut out = String::new();
+    out.push_str("{\n");
+    out.push_str(&format!("  \"nob\": {},\n", g.nearstar_nob));
+    out.push_str(&format!("  \"nop\": {},\n", g.nearstar_nop));
+    out.push_str("  \"bodies\": [\n");
+    for n in 0..g.nearstar_nob as usize {
+        out.push_str("    {");
+        out.push_str(&format!("\"index\":{},\"type\":{},\"owner\":{},\"moonid\":{}", n, g.p_type[n], g.p_owner[n], g.p_moonid[n]));
+        out.push_str("}");
+        if n + 1 < g.nearstar_nob as usize { out.push_str(","); }
+        out.push_str("\n");
+    }
+    out.push_str("  ]\n");
+    out.push_str("}\n");
+    print!("{}", out);
+    if let Some(f) = f.as_mut() { let _ = f.write_all(out.as_bytes()); }
 }
 
 fn cmd_scan(args: &[String]) {
@@ -144,6 +179,36 @@ fn fnv1a_update_str(mut h: u32, s: &str) -> u32 {
         h = h.wrapping_mul(nivgen::hash::FNV_PRIME);
     }
     h
+}
+
+// Process ALL bodies sequentially (matching C's cmd_planet_all) for state-sharing validation.
+fn cmd_planet_all(args: &[String]) {
+    let mut f = out_file(args);
+    let x = argd(args, "-x", 0.0);
+    let y = argd(args, "-y", 0.0);
+    let z = argd(args, "-z", 0.0);
+    let secs = argd(args, "-secs", 0.0);
+
+    let mut g = SystemGen::new();
+    g.secs = secs;
+    g.generate(x, y, z);
+    emit!(f, "=== PLANET TEXTURES (all {} bodies) ===\n", g.nearstar_nob);
+    for n in 0..g.nearstar_nob as i32 {
+        g.gen_planet_surface(n);
+        report_planet_compact(&mut f, &g, n);
+    }
+}
+
+fn report_planet_compact(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
+    let p = p as usize;
+    let is_moon = g.p_owner[p] > -1;
+    let surf = if is_moon { &g.s_background[..SAMPLED_BYTES] } else { &g.p_background[..SAMPLED_BYTES] };
+    let surf_fnv = fnv1a(surf);
+    let atmo_fnv = fnv1a(&g.objectschart[0..32400]);
+    let base3 = (if is_moon { 128 } else { 192 }) * 3;
+    let pal_fnv = fnv1a(&g.tmppal[base3..base3 + 192]);
+    emit!(f, "PLANET {} type={} is_moon={} surf={:08X} atmo={:08X} pal={:08X}\n",
+        p, g.p_type[p], is_moon as i32, surf_fnv, atmo_fnv, pal_fnv);
 }
 
 // Placeholder commands; implemented in later stages.
@@ -179,7 +244,7 @@ fn hashline(f: &mut Option<std::fs::File>, label: &str, buf: &[u8]) {
 fn report_planet(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
     let p = p as usize;
     let is_moon = g.p_owner[p] > -1;
-    let surf = if is_moon { &g.s_background } else { &g.p_background };
+    let surf = if is_moon { &g.s_background[..SAMPLED_BYTES] } else { &g.p_background[..SAMPLED_BYTES] };
     let seedval = g.surface_seedval_for(p as i32);
     let desc = if g.p_type[p] as i32 <= 10 {
         nivgen::system::PLANET_DESCRIPTION[g.p_type[p] as usize]

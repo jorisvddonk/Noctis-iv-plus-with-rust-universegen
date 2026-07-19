@@ -118,6 +118,20 @@ impl F80 {
         f64::from_bits(bits)
     }
 
+    /// x87 `FTST` comparison with +0.0: returns true if the 80-bit value
+    /// is strictly greater than zero. Must match the x87 condition flags
+    /// exactly — rounding to f64 first flips the sign for values < 2^-1022.
+    pub fn is_positive(&self) -> bool {
+        if self.neg {
+            return false;
+        }
+        // zero (exp=0, mant=0) is not positive
+        if self.exp == 0 && self.mant == 0 {
+            return false;
+        }
+        true
+    }
+
     fn zero(neg: bool) -> F80 {
         F80 { neg, exp: 0, mant: 0 }
     }
