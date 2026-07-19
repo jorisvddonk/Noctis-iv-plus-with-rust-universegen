@@ -795,3 +795,59 @@ where the intermediate genuinely lives in an 80-bit register. If the C source
 assigns to a `float`/`double` variable between operations, that assignment
 rounds and F80 is wrong. Decide per expression by looking at the declared
 types of the destinations.
+
+## 24. `planet_xyz` must add the `moonorigin` offset for moons (2026-07-19)
+
+`planet_xyz` (NOCTIS-0.CPP:1425) computes a body's world position in the
+globals `plx/ply/plz`. For a **moon** it appends the owner's orbital offset:
+
+```c
+if (nearstar_p_owner[n] > -1) {
+    moonorigin (nearstar_p_owner[n]);   // -> mox/moy/moz
+    plx += mox; ply += moy; plz += moz;
+}
+```
+
+The port had dropped this branch, so a moon's `plx/plz` were the moon's
+offset-from-owner only, not its true position in the star system.
+
+**Why it stayed hidden until the last body.** The stale-position error only
+becomes observable through `cplx_planet_viewpoint` (NOCTIS-0.CPP:1517):
+
+```c
+if (nearstar_p_owner[logical_id] == -1)
+    return planet_viewpoint (nearstar_x, nearstar_z);   // planet
+owner = nearstar_p_owner[logical_id];
+if (nearstar_p_type[owner] == 10) {                     // owner is a STAR
+    planet_xyz (owner);  ownerplx=plx; ownerplz=plz;
+    planet_xyz (logical_id);                            // <-- sets plx/plz
+    return planet_viewpoint (ownerplx, ownerplz);
+} else
+    return planet_viewpoint (nearstar_x, nearstar_z);   // uses STALE plx/plz
+```
+
+`planet_viewpoint` reads the globals `plx/plz`. Only the **type-10 companion
+star** branch calls `planet_xyz(logical_id)` and then depends on the value it
+just wrote. For every other moon the branch returns using whatever `plx/plz`
+happened to be lying around (0.0 in the single-body harness), so the missing
+`moonorigin` term was invisible.
+
+The single failing body — a type-6 moon whose owner was a type-10 companion
+star — got a wrong `plwp`, which shifts the day/night **darkside terminator**
+band (`shr byte ptr es:[di], 2` over 130 columns per row). That misplaced a
+huge swath of rows 1-127 even though every generation stage (`band`, `wave`,
+`storm`, `lssmooth`, the overlay merge) was already byte-exact.
+
+**Debugging approach that found it:** dump the buffer after each stage in both
+C (`dbgd`) and Rust (`dbg_dump`) and diff the sampled region. Every stage
+matched up to and including the overlay merge (`T_AF`); the first divergence
+was after the terminator (`T_DK`). Dumping `plwp` showed 340 (C) vs 354
+(Rust); dumping `cplx_planet_viewpoint`'s inputs showed `owner=0, otype=10`
+and a `plx/plz` mismatch — pointing straight at `planet_xyz`.
+
+This fix took the port to **100% (371/371 surface maps)**.
+
+**Lesson:** port *every* branch of a geometry helper even if it looks
+irrelevant to the texture. Position math can leak into the surface through
+lighting/terminator code, and a term that is dead for most bodies can be live
+for a rare owner/type combination.

@@ -32,7 +32,7 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
    not the old Turbo C++ 3.0 container build.
 
 ## Current status (2026-07-19)
-**99.7% of surface maps match (370/371 bodies)** across all 13 star systems
+**100% of surface maps match (371/371 bodies)** across all 13 star systems
 with bodies, comparing the Rust port to canonical BCPP 3.1 / DOSBox-X hashes.
 
 Surface hashes cover **only rows 0-127 (46080 bytes)** of the 360×180 map —
@@ -41,10 +41,7 @@ tail (rows 128-179) is never displayed and is nondeterministic for moons
 (far-heap OOB read), so it is excluded from hashing. See §19.
 
 Match rate by planet type (planet / moon):
-- **100% both planet and moon**: types 0, 1, 2, 3, 4, 5, 7, 8, 9
-- **100% planet, one residual moon**: type 6
-
-The only remaining failure is one type-6 moon (TRIVIAPOLEN).
+- **100% both planet and moon**: all types (0-9)
 
 ### Fixed
 - **Crater**: crays per-angle (not per-gr), second block per-angle, borrow
@@ -82,10 +79,24 @@ The only remaining failure is one type-6 moon (TRIVIAPOLEN).
   chain rounds to f32 per step. The port had emulated it with 80-bit `F80`,
   which drifted 1 ULP and broke a type-5 moon. Pure f32 per step took type-5
   moons to 100% (24/24). See §23.
+- **`planet_xyz` moonorigin**: for a moon, C's `planet_xyz` adds the owner's
+  orbital offset via `moonorigin()` (NOCTIS-0.CPP:1459). The port omitted it,
+  leaving the moon at the wrong world position. This only surfaces when the
+  moon's owner is a **type-10 companion star**, because only then does
+  `cplx_planet_viewpoint` call `planet_xyz(logical_id)` and feed the stale
+  `plx/plz` into the darkside terminator (`plwp`). One type-6 moon
+  (TRIVIAPOLEN) had its terminator band misplaced. Fixing it took the port
+  to **100% (371/371)**. See §24.
 
 ### Remaining
-- Type-6 moon (TRIVIAPOLEN): one residual
-- See `docs/test-fixtures.md` for test coordinates per type
+- None. All 371 surface maps match. See `docs/test-fixtures.md` for
+  per-type test coordinates.
+
+### Known non-surface gaps
+- A few bodies still differ in the `palette64` hash (e.g. UNNAMED_CLASS1
+  body 45). This is pre-existing and unrelated to the surface map; the
+  palette RNG path is not yet byte-exact. `compare.py` counts surf+atmo+pal,
+  so it will show <100% for those stars even though the **surface** matches.
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)
 Canonical hashes MUST come from the real toolchain under DOSBox-X. Never

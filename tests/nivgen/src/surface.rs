@@ -565,10 +565,11 @@ impl SystemGen {
     // --- planet_viewpoint / cplx_planet_viewpoint / planet_xyz ---
     fn planet_xyz(&mut self, n: i32) {
         let n = n as usize;
+        let qt_m_pi = 4.0 * PI / 3.0;
         let ors = self.p_orb_ray[n] * self.p_orb_ray[n];
         let p_riv = if self.p_owner[n] > -1 {
             let xx = self.p_ray[self.p_owner[n] as usize];
-            let p_m = std::f64::consts::PI * xx * xx * xx * 0.44e-4;
+            let p_m = qt_m_pi * xx * xx * xx * 0.44e-4;
             (p_m / ors).sqrt()
         } else {
             (self.s_m / ors).sqrt()
@@ -585,6 +586,34 @@ impl SystemGen {
         self.ply = ply + self.nearstar_y;
         self.plz = newplz + self.nearstar_z;
         self.plx += self.nearstar_x;
+
+        // moonorigin: for a moon, planet_xyz adds the owner's orbital offset
+        // (NOCTIS-0.CPP:1459). Omitting it left the moon at the wrong world
+        // position, so planet_viewpoint/plwp -> darkside terminator band was
+        // misplaced. Only matters when the owner is a type-10 companion star
+        // (cplx_planet_viewpoint uses plx/plz set here).
+        if self.p_owner[n] > -1 {
+            let (mox, moy, moz) = self.moonorigin(self.p_owner[n]);
+            self.plx += mox;
+            self.ply += moy;
+            self.plz += moz;
+        }
+    }
+
+    fn moonorigin(&self, n: i32) -> (f64, f64, f64) {
+        let n = n as usize;
+        let ors = self.p_orb_ray[n] * self.p_orb_ray[n];
+        let p_riv = (self.s_m / ors).sqrt();
+        let beta = (self.secs * p_riv * PI) / 180.0;
+        let alfa = self.p_orb_tilt[n] * DEG;
+        let xx = -self.p_orb_ray[n] * beta.sin() * alfa.cos();
+        let mut moz = self.p_orb_ray[n] * beta.cos() * alfa.cos();
+        let moy = self.p_orb_ray[n] * alfa.sin();
+        moz *= self.p_orb_ecc[n];
+        let obeta = self.p_orb_orient[n];
+        let mox = xx * obeta.cos() + moz * obeta.sin();
+        let moz = moz * obeta.cos() - xx * obeta.sin();
+        (mox, moy, moz)
     }
 
     fn planet_viewpoint(&self, obs_x: f64, obs_z: f64) -> i32 {
