@@ -333,7 +333,9 @@ impl SystemGen {
 
     // --- fracture (NOCTIS-0.CPP:4594) ---
     fn fracture(&mut self, max_latitude: f64) {
-        self.s_a = (self.rng.random(360) as f32 * DEG as f32) as f64;
+        // C: `a = random(360) * deg` where `a` is `double` and `deg` is
+        // `const double deg = M_PI/180.0`. Compute in f64, not f32.
+        self.s_a = self.rng.random(360) as f64 * DEG;
         self.s_gr += 1;
         let mut px = self.s_cx as f64;
         let mut py = self.s_cy as f64;
