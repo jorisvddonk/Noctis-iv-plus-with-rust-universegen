@@ -32,7 +32,7 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
    not the old Turbo C++ 3.0 container build.
 
 ## Current status (2026-07-19)
-**80.1% of surface maps match (297/371 bodies)** across all 13 star systems
+**85.4% of surface maps match (317/371 bodies)** across all 13 star systems
 with bodies, comparing the Rust port to canonical BCPP 3.1 / DOSBox-X hashes.
 
 Surface hashes cover **only rows 0-127 (46080 bytes)** of the 360×180 map —
@@ -41,13 +41,18 @@ tail (rows 128-179) is never displayed and is nondeterministic for moons
 (far-heap OOB read), so it is excluded from hashing. See §19.
 
 Match rate by planet type (planet / moon):
-- **100%**: type 0, 1, 2, 4, 7, 8 (both), type 9 (planet-only), type 3 planet
-- **~89%**: type 3 moon
-- **0%**: type 5, type 6 (both) — still diverge
+- **100%**: type 0, 1, 2, 4, 6, 7, 8 (planet), type 9 (planet-only),
+  type 3 planet; moons of 0, 1, 2, 4, 7, 8 also 100%
+- **~75-89%**: type 3 moon, type 6 moon (residual far-heap tail)
+- **0%**: type 5 (both) — still diverges (contrast/F80 path)
 
 ### Fixed
 - **Crater**: crays per-angle (not per-gr), second block per-angle, borrow
   check (JNC=CARRY, not sign), 16-bit `unsigned px, py` truncation
+- **Wave** (type 6): the inline-asm `add ax, 4` before the `es:[di]` write
+  provably has NO effect on the written offset — verified byte-for-byte
+  against the C surfmap, `di` is `py*360 + px`, not `+ 4`. Dropping the
+  spurious +4 took type-6 planets to 100%.
 - **Fracture**: the globals `a`, `px`, `py` are Borland `float` (32-bit) —
   the angle and position accumulators re-round to f32 every iteration
   (cos/sin promote back to double); `kfract` is also `float`. Accumulating
@@ -66,8 +71,8 @@ Match rate by planet type (planet / moon):
   rate (see §19).
 
 ### Remaining
-- Types 5, 6 (planets + moons): surf_map fully diverges (F80/contrast path)
-- Type-3 moons: one residual (felisian-path)
+- Type 5 (planets + moons): surf_map fully diverges (F80/contrast path)
+- Type-3 moon, type-6 moon: one residual each (far-heap OOB tail)
 - See `docs/test-fixtures.md` for test coordinates per type
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)

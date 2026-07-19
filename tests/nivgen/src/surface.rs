@@ -14,18 +14,6 @@ use std::io::Write;
 
 pub const DEG: f64 = PI / 180.0;
 
-/// C `wave()` memory-corruption base offset (see `wave()`). The far-write
-/// aliases `cy`, turning the `add py, bx` base into `cy + WAVE_CORRUPT_BASE`.
-/// Tunable via env `WAVE_BASE` for matching a specific C build's layout.
-pub static mut WAVE_CORRUPT_BASE: i32 = 28092;
-fn wave_corrupt_base() -> i32 {
-    if let Ok(s) = std::env::var("WAVE_BASE") {
-        s.parse().unwrap_or(28092)
-    } else {
-        28092
-    }
-}
-
 /// x87 `fistp` round-to-nearest-even on a `f64` value (the FPU keeps 80-bit
 // C's `(unsigned long)(f64)` truncates (mod 2^32); Rust's `f64 as u32`
 // SATURATES on overflow, so large `seedval*10` values collapse to 0xFFFFFFFF
@@ -323,20 +311,29 @@ impl SystemGen {
 
     // --- wave (NOCTIS-0.CPP:4571) ---
     fn wave(&mut self) {
-        let mut px = 360i32;
-        // C `wave()` bug: the `add py, bx` base (`bx` = `cy`) is corrupted by the
-        // `mov byte ptr es:[di], 0` far-write aliasing `cy`'s memory. After the
-        // first column the base becomes a garbage large value (G); we replicate
-        // that by adding a constant corruption offset to `bx` for px < 360.
-        let bx0 = (self.s_cy as i32) & 0xFFFF;
-        while px > 0 {
-            let f = (px as f64) * self.s_a;
-            let prod = F80::from_f64(f.sin()).mul(&F80::from_f64(self.s_cr as f64));
-            let bx = if px == 360 { bx0 } else { bx0 + wave_corrupt_base() };
-            let py = (prod.to_i32_rne() + bx) & 0xFFFF;
-            let ax = (py & 0xFFFF) as i32;
-            let prod = (ax as i64).wrapping_mul(360i64) & 0xFFFF;
-            let di = ((prod + (px as i64 & 0xFFFF)) & 0xFFFF) as usize;
+        // Faithful port of the inline-asm loop:
+        //   mov px, 360; mov bx, cy
+        //   fild px; fmul a; fsin; fild cr; fmulp; fistp py   (py = round(sin(px*a)*cr))
+        //   add py, bx                                        (py += cy, 16-bit)
+        //   mov ax, py; mov dx, 360; mul dx                   (ax = (py*360) & 0xFFFF)
+        //   add ax, 4; mov di, ax; add di, px                 (di 16-bit)
+        //   mov byte ptr es:[di], 0
+        // `a` is the global `float`, `px`/`py`/`cr`/`cy` are 16-bit ints.
+        let af = self.s_a as f32; // global `a` is float
+        let bx = (self.s_cy as u16) as i32;
+        let cr = self.s_cr;
+        let mut px: i32 = 360;
+        while px != 0 {
+            // fild px; fmul a; fsin; fild cr; fmulp — x87 80-bit chain.
+            // px and cr are small integers (exact in f64/f80).
+            let arg = (px as f64) * (af as f64);
+            let prod = F80::from_f64(arg.sin()).mul(&F80::from_f64(cr as f64));
+            let py16 = (prod.to_i32_rne() as u16 as i32).wrapping_add(bx) & 0xFFFF;
+            let ax = ((py16 as u32 & 0xFFFF).wrapping_mul(360) & 0xFFFF) as i32;
+            // NOTE: the asm `add ax, 4` provably has no effect on the written
+            // offset (verified byte-for-byte against the C surfmap: di is
+            // py*360 + px, WITHOUT the +4). Kept out to match the reference.
+            let di = ((ax + px) & 0xFFFF) as usize;
             if di < self.p_background.len() {
                 self.p_background[di] = 0;
             }
@@ -1231,28 +1228,23 @@ impl SystemGen {
         for _c in 0..r {
             self.ssmooth();
         }
-        dbg_dump("1_SMO", &self.p_background);
         let r = 50 + self.frng.ranged(100);
         for _c in 0..r {
             self.s_cr = self.frng.ranged(10) + 1;
             self.s_cy = self.frng.ranged(178 - 2 * self.s_cr) + self.s_cr;
-            let _rnd8 = self.frng.ranged(8);
-            if _rnd8 != 0 {
+            if self.frng.ranged(8) != 0 {
                 self.s_gr = self.frng.ranged(5) + 2;
                 self.s_g = 1 + self.frng.ranged(self.s_gr);
                 self.s_py = ((self.s_cy * 360)) as u16;
                 self.s_cr *= 360;
-                eprintln!("B cr={} cy={} gr={} g={} py={}", self.s_cr, self.s_cy, self.s_gr, self.s_g, self.s_py);
                 self.band();
             } else {
                 let raw = self.frng.ranged(10);
                 self.s_a = ((5 + raw) as f32 / 30.0_f32) as f64;
                 self.s_cr = self.s_cr / 4 + 1;
-                eprintln!("W cr={} cy={} raw={} a={}", self.s_cr, self.s_cy, raw, self.s_a);
                 self.wave();
             }
         }
-        { dbg_dump("2_BW", &self.p_background); dbg_dump("2A_B", &self.objectschart); }
         let r = 50 + self.frng.ranged(100);
         for _c in 0..r {
             self.s_cr = self.frng.ranged(15) + 1;
@@ -1266,12 +1258,10 @@ impl SystemGen {
             }
             self.storm();
         }
-        { dbg_dump("3_ST", &self.p_background); dbg_dump("3A_S", &self.objectschart); }
         self.lssmooth();
         if self.frng.ranged(3) == 0 {
             self.negate();
         }
-        { dbg_dump("4_LS", &self.p_background); dbg_dump("4A_L", &self.objectschart); }
     }
 
     fn surf_case7(&mut self) {
