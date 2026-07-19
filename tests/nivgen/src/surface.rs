@@ -159,24 +159,33 @@ impl SystemGen {
 
     // --- psmooth_grays (NOCTIS-0.CPP:480): 2x2 average on target ---
     fn psmooth_grays(&mut self) {
-        let w = 360usize;
-        let h = 180usize;
-        let src = self.p_background.clone();
-        for y in 0..h {
-            for x in 0..w {
-                let mut sum: u32 = 0;
-                let mut cnt: u32 = 0;
-                for dy in 0..2usize {
-                    for dx in 0..2usize {
-                        let nx = x + dx;
-                        let ny = y + dy;
-                        if nx < w && ny < h {
-                            sum += src[ny * w + nx] as u32;
-                            cnt += 1;
-                        }
-                    }
-                }
-                self.p_background[y * w + x] = (sum / cnt) as u8;
+        // C psmooth_grays (NOCTIS-0.CPP:480): in-place 4-row packed 32-bit
+        // average, same dword packing as ssmooth. Averages 4 rows at once per
+        // dword position, then sums the 4 resulting columns into one byte.
+        let q = self.quadwords;
+        let cx = (q * 4 - 320 * 4) as usize;
+        let mut di = 320usize;
+        unsafe {
+            let buf = self.p_background.as_mut_ptr();
+            for _ in 0..cx {
+                let w = |off: usize| -> u32 {
+                    let b = buf.add(off);
+                    *b as u32 | ((*b.add(1) as u32) << 8) | ((*b.add(2) as u32) << 16) | ((*b.add(3) as u32) << 24)
+                };
+                let mut edx: u32 = w(di - 320)
+                    .wrapping_add(w(di))
+                    .wrapping_add(w(di + 320))
+                    .wrapping_add(w(di + 640));
+                edx &= 0xFCFCFCFC;
+                edx >>= 2;
+                let mut al: u8 = (edx & 0xFF) as u8;
+                al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
+                edx >>= 16;
+                al = al.wrapping_add((edx & 0xFF) as u8);
+                al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
+                al >>= 2;
+                *buf.add(di) = al;
+                di += 1;
             }
         }
     }
@@ -773,11 +782,7 @@ impl SystemGen {
             }
         }
 
-        // dump objectschart[160] for debugging
-        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
-            use std::io::Write;
-            let _ = std::fs::write("/tmp/rchk/OVER160.BIN", &[self.objectschart.get(160).copied().unwrap_or(0)]);
-        }
+        dbg_dump("T_MG", &self.p_background);
         // merge terrain + atmosphere overlay
         let mut px = 0usize;
         let mut py = 0usize;
@@ -807,7 +812,6 @@ impl SystemGen {
             }
         }
 
-        dbg_dump("T_PS", &self.p_background);
         dbg_dump("T_PS", &self.p_background);
         // terminator
         let mut ts = plwp + 35;
@@ -858,10 +862,6 @@ impl SystemGen {
             for _c in 0..6 {
                 self.ssmooth();
             }
-        }
-        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
-            use std::io::Write;
-            let _ = std::fs::write("/tmp/rchk/OVER160_END.BIN", &[self.objectschart.get(160).copied().unwrap_or(0)]);
         }
         { dbg_dump("6_FI", &self.p_background); dbg_dump("6A_F", &self.objectschart); }
 
