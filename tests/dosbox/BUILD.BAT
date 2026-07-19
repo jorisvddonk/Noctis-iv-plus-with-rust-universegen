@@ -9,43 +9,46 @@ rem NOCTIS.CPP (the interactive game main) is deliberately excluded; the few
 rem symbols it would provide are stubbed in NIVSTUBS.
 rem
 rem Drives (set up by the caller's dosbox conf):
-rem   C: = Turbo/Borland C++ toolchain  (C:\BIN  C:\INCLUDE  C:\LIB)
+rem   C: = Borland C++ 3.1 toolchain (C:\BIN  C:\INCLUDE  C:\LIB)
 rem   D: = working dir (this build dir; source + harness copied here)
 rem
-rem Flags mirror the game's NOCTIS.CFG as closely as Turbo C++ 3.0 allows:
-rem   -ml  large memory model      (game uses -ml)
-rem   -2   80286 instructions      (game uses -3; TC3.0 max is -2. The 32-bit
-rem        parts of the generator are hand-assembled with 0x66 prefixes and
-rem        are unaffected by the codegen target.)
-rem   -f287 hardware FPU codegen   (game uses -f287; IEEE results identical)
-rem   -O -Z optimizations          (game uses -O -Oe -Ob -Z)
+rem Flags mirror the game's NOCTIS.CFG:
+rem   -ml  large memory model
+rem   -2   80286 instructions
+rem   -f287 hardware FPU codegen
+rem   -O -Z optimizations
 rem ======================================================================
 
 set CFLAGS=-ml -2 -f287 -O -Z -IC:\INCLUDE
 
+rem auto-detect compiler: BCC.EXE (Borland C++ 3.1) or TCC.EXE (Turbo C++ 3.0)
+if exist C:\BIN\BCC.EXE set CC=C:\BIN\BCC.EXE
+if exist C:\BIN\TCC.EXE set CC=C:\BIN\TCC.EXE
+if "%CC%"=="" goto fail
+
 echo [build] compiling generation module NOCTIS-0.CPP ...
-c:\BIN\tcc.exe -c %CFLAGS% NOCTIS-0.CPP > D:\BUILD.LOG
+%CC% -c %CFLAGS% NOCTIS-0.CPP > D:\BUILD.LOG
 if not exist NOCTIS-0.OBJ goto fail
 
 echo [build] compiling generation module NOCTIS-1.CPP ...
-c:\BIN\tcc.exe -c %CFLAGS% NOCTIS-1.CPP >> D:\BUILD.LOG
+%CC% -c %CFLAGS% NOCTIS-1.CPP >> D:\BUILD.LOG
 if not exist NOCTIS-1.OBJ goto fail
 
 echo [build] compiling harness NIVTEST.CPP ...
-c:\BIN\tcc.exe -c %CFLAGS% NIVTEST.CPP >> D:\BUILD.LOG
+%CC% -c %CFLAGS% NIVTEST.CPP >> D:\BUILD.LOG
 if not exist NIVTEST.OBJ goto fail
 
 echo [build] compiling NIVHASH.C (as C++) ...
-c:\BIN\tcc.exe -c -P %CFLAGS% NIVHASH.C >> D:\BUILD.LOG
+%CC% -c -P %CFLAGS% NIVHASH.C >> D:\BUILD.LOG
 if not exist NIVHASH.OBJ goto fail
 
 echo [build] compiling NIVSTUBS.C (as C++) ...
-c:\BIN\tcc.exe -c -P %CFLAGS% NIVSTUBS.C >> D:\BUILD.LOG
+%CC% -c -P %CFLAGS% NIVSTUBS.C >> D:\BUILD.LOG
 if not exist NIVSTUBS.OBJ goto fail
 
 echo [build] linking NIVTEST.EXE ...
 if exist NIVTEST.EXE del NIVTEST.EXE
-c:\BIN\tlink.exe @LINK.RSP >> D:\BUILD.LOG
+c:\BIN\TLINK.EXE @LINK.RSP >> D:\BUILD.LOG
 if not exist NIVTEST.EXE goto fail
 
 echo [build] OK > D:\BUILD.OK

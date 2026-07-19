@@ -48,9 +48,26 @@ if [ -z "$MODE" ]; then
 	exit 2
 fi
 
-if [ ! -d "$TOOLCHAIN/TC/BIN" ] || [ ! -f "$TOOLCHAIN/TC/BIN/tcc.exe" ]; then
-	echo "[run] toolchain missing at $TOOLCHAIN; fetching ..."
+# Auto-detect toolchain layout:
+#   BCPP31 (Borland C++ 3.1): BIN/ is at toolchain root
+#   TC     (Turbo C++ 3.0):   BIN/ is inside TC/ subdir
+if [ -f "$TOOLCHAIN/BIN/BCC.EXE" ]; then
+	TC_MOUNT="$TOOLCHAIN"
+elif [ -f "$TOOLCHAIN/TC/BIN/TCC.EXE" ]; then
+	TC_MOUNT="$TOOLCHAIN/TC"
+elif [ -f "$TOOLCHAIN/TC/BIN/BCC.EXE" ]; then
+	TC_MOUNT="$TOOLCHAIN/TC"
+else
+	echo "[run] toolchain not found at $TOOLCHAIN; fetching ..."
 	"$SCRIPT_DIR/fetch-toolchain.sh" "$TOOLCHAIN"
+	if [ -f "$TOOLCHAIN/BIN/BCC.EXE" ]; then
+		TC_MOUNT="$TOOLCHAIN"
+	elif [ -f "$TOOLCHAIN/TC/BIN/TCC.EXE" ]; then
+		TC_MOUNT="$TOOLCHAIN/TC"
+	else
+		echo "[run] toolchain still not found after fetch" >&2
+		exit 1
+	fi
 fi
 
 WORK="$(mktemp -d)"
@@ -85,7 +102,7 @@ PEOF
 
 	echo "[run] launching DOSBox inside Apple container ..."
 	container run --rm \
-		-v "$TOOLCHAIN/TC":/w/TC:ro \
+		-v "$TC_MOUNT":/w/TC:ro \
 		-v "$WORK":/w/work \
 		docker.io/library/debian:bookworm-slim bash -lc '
 			export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy
@@ -110,7 +127,7 @@ cycles=max
 xms=true
 ems=true
 [autoexec]
-mount c "$TOOLCHAIN/TC"
+mount c ${TC_MOUNT}
 mount d "$WORK"
 path C:\\BIN
 d:
