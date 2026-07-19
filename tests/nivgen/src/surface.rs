@@ -355,10 +355,10 @@ impl SystemGen {
             }
             // C: `vptr = px + 360 * (unsigned)py`. `py` is truncated to
             // `(unsigned)` (16-bit integer) BEFORE the *360. `px` is a float
-            // added to the int result.
+            // added to the int result (truncation to vptr's int type).
             let px_i = px as i32;
-            let py_i = py as i32;
-            let vptr = px_i as i64 + 360 * py_i as i64;
+            let py_i = f64_to_u16_trunc(py) as i64;
+            let vptr = px_i as i64 + 360 * py_i;
             let di = vptr as usize;
             if di < self.p_background.len() {
                 self.p_background[di] >>= (self.s_b & 0xFF) as u8;
@@ -1061,6 +1061,7 @@ impl SystemGen {
         if self.frng.ranged(2) != 0 {
             self.ssmooth();
         }
+        dbg_dump("C4_SM", &self.p_background);
         // lmrip loop: cmp byte[di],32 ; jne proxy ; mov word[di],0x3E01 ; mov byte[di+360],0x01
         for i in 0..64000usize {
             if self.p_background[i] == 32 {
@@ -1074,6 +1075,7 @@ impl SystemGen {
                 }
             }
         }
+        dbg_dump("C4_LM", &self.p_background);
         let r = self.frng.ranged(30);
         let mut r = r;
         if r > 20 {
@@ -1094,7 +1096,7 @@ impl SystemGen {
         if self.frng.ranged(2) != 0 {
             self.lssmooth();
         }
-        dbg_dump("C5_FIN", &self.p_background);
+        dbg_dump("C4_FIN", &self.p_background);
     }
 
     fn surf_case5(&mut self) {
