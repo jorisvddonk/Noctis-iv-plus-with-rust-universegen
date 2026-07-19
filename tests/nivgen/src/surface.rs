@@ -773,6 +773,11 @@ impl SystemGen {
             }
         }
 
+        // dump objectschart[160] for debugging
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            use std::io::Write;
+            let _ = std::fs::write("/tmp/rchk/OVER160.BIN", &[self.objectschart.get(160).copied().unwrap_or(0)]);
+        }
         // merge terrain + atmosphere overlay
         let mut px = 0usize;
         let mut py = 0usize;
@@ -853,6 +858,10 @@ impl SystemGen {
             for _c in 0..6 {
                 self.ssmooth();
             }
+        }
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            use std::io::Write;
+            let _ = std::fs::write("/tmp/rchk/OVER160_END.BIN", &[self.objectschart.get(160).copied().unwrap_or(0)]);
         }
         { dbg_dump("6_FI", &self.p_background); dbg_dump("6A_F", &self.objectschart); }
 
