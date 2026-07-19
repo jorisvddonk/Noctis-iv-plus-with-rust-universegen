@@ -501,3 +501,46 @@ The darkside terminator loop uses `di` as a **16-bit register** in C.
 beyond array bounds that C would wrap to low offsets.
 
 Fix: use `u16` with `wrapping_add` for the `di` accumulator.
+
+## 17. `imul ax` replaces AX with the low word of the product (2026-07-19)
+
+This is the single most important x86 quirk to internalise. When the asm does:
+
+```asm
+add  ax, cx        ; ax = ax + cx
+imul ax            ; dx:ax = (int16_t)ax * (int16_t)ax
+add  ax, dx        ; ax = ax + dx
+```
+
+the `imul ax` instruction **replaces AX with the low 16 bits of the signed
+32-bit product**. Then `add ax, dx` adds the high word (DX) to that new AX.
+
+The naive Rust translation:
+```rust
+ax = ax.wrapping_add(cx);      // ax = ax + cx
+let prod = (ax as i16 as i32) * (ax as i16 as i32);
+let dx = (prod >> 16) & 0xFFFF;
+ax = ax.wrapping_add(dx);      // ❌ adds dx to (ax+cx), NOT to prod_low!
+```
+
+is **wrong** — it misses the step where the low word of `prod` replaces
+`ax`. The correct translation:
+
+```rust
+ax = ax.wrapping_add(cx);
+let prod = (ax as i16 as i32) * (ax as i16 as i32);
+let dx = (prod >> 16) & 0xFFFF;
+let ax_low = (prod & 0xFFFF) as u16;
+ax = ax_low.wrapping_add(dx);   // ✅ ax = prod_low + prod_high
+```
+
+This bug caused an entirely wrong felisian surface (`surf_case3`, body 3
+type 3 — Felysia) despite the seed and threshold matching C. Every
+`imul ax` → `add ax, dx` pattern in the C source must follow this
+three-step structure: add→imul(replace AX)→add dx.
+
+Also found in the same `surf_case3` loop:
+- `add ax, cx` uses the **loop counter** (decrementing 64000→1), not a
+  constant 64000.
+- The clamp writes `mov word ptr [di], 0x003E` which zeroes the **next**
+  byte (di+1) — a C bug that must be reproduced.
