@@ -1058,22 +1058,42 @@ impl SystemGen {
         for _c in 0..r {
             self.ssmooth();
         }
-        // sda loop: compare threshold g
+        // sda loop: compare threshold g — cx counts down from 64000 to 1.
+        // Reproduce the original x86 asm exactly:
+        //   add ax, cx     ; ax += loop counter
+        //   imul ax        ; dx:ax = signed 16-bit square; AX = low word
+        //   add ax, dx     ; ax = low word + high word
+        //   mov bl, al ; and bl, 0x3E ; add [di], bl
+        //   cmp [di], 0x3E ; jb skip ; mov word [di], 0x003E
+        //   inc di ; dec cx ; jnz sda
         let g = self.s_g;
         let mut ax: u16 = seed;
-        for i in 0..64000usize {
-            if self.p_background[i] >= (g as u8) {
-                // terra branch: quadratic texture
-                ax = ax.wrapping_add(64000u16);
+        let mut cx: i32 = 64000;
+        let mut di: usize = 0;
+        while cx > 0 {
+            if self.p_background[di] >= (g as u8) {
+                // terra branch
+                ax = ax.wrapping_add(cx as u16);
                 let prod: i32 = (ax as i16 as i32) * (ax as i16 as i32);
                 let dx: u16 = ((prod >> 16) & 0xFFFF) as u16;
-                ax = ax.wrapping_add(dx);
-                let bl: u8 = (ax as u8) & 0x3E;
-                let nv = self.p_background[i].wrapping_add(bl);
-                self.p_background[i] = if nv < 0x3E { nv } else { 0x3E };
+                let ax_low: u16 = (prod & 0xFFFF) as u16;
+                ax = ax_low.wrapping_add(dx);
+                let bl: u8 = ((ax as u8) & 0x3E);
+                let nv = self.p_background[di].wrapping_add(bl);
+                if nv < 0x3E {
+                    self.p_background[di] = nv;
+                } else {
+                    // C bug: word write 0x003E zeros the next byte
+                    self.p_background[di] = 0x3E;
+                    if di + 1 < self.p_background.len() {
+                        self.p_background[di + 1] = 0;
+                    }
+                }
             } else {
-                self.p_background[i] = 16;
+                self.p_background[di] = 16;
             }
+            di += 1;
+            cx -= 1;
         }
         let r = 20 + self.frng.ranged(40);
         for _c in 0..r {
