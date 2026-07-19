@@ -417,23 +417,28 @@ impl SystemGen {
 
     // --- contrast (NOCTIS-0.CPP:4633) ---
     fn contrast(&mut self, kt: f64, kq: f64, thrshld: f64) {
-        // Borland x87 computes this chain in 80-bit precision. Mirror it with
-        // F80 so rounding matches (plain f64 drifts from x87 extended precision).
-        let ktf = F80::from_f64(kt);
-        let kqf = F80::from_f64(kq);
-        let thr = F80::from_f64(thrshld);
+        // C: `a`, `kt`, `kq`, `thrshld` are Borland `float` (32-bit). Each
+        // statement (`a -= thrshld`, `a *= kt`, `a += thrshld`) reads/writes
+        // the f32 global `a`, so the chain is pure f32 arithmetic per step.
+        let kt = kt as f32;
+        let kq = kq as f32;
+        let thr = thrshld as f32;
         for c in 0..64800 {
-            let a0 = F80::from_f64(self.p_background[c] as f64);
-            let mut a = a0.add(&thr, true);
-            if a.to_f64() > 0.0 {
-                a = a.mul(&ktf);
+            let mut a = self.p_background[c] as f32;
+            a -= thr;
+            if a > 0.0 {
+                a *= kt;
             } else {
-                a = a.mul(&kqf);
+                a *= kq;
             }
-            a = a.add(&thr, false);
-            let av = a.to_f64();
-            let av = if av < 0.0 { 0.0 } else if av > 63.0 { 63.0 } else { av };
-            self.p_background[c] = av as u8;
+            a += thr;
+            if a < 0.0 {
+                a = 0.0;
+            }
+            if a > 63.0 {
+                a = 63.0;
+            }
+            self.p_background[c] = a as u8;
         }
     }
 

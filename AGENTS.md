@@ -32,7 +32,7 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
    not the old Turbo C++ 3.0 container build.
 
 ## Current status (2026-07-19)
-**99.5% of surface maps match (369/371 bodies)** across all 13 star systems
+**99.7% of surface maps match (370/371 bodies)** across all 13 star systems
 with bodies, comparing the Rust port to canonical BCPP 3.1 / DOSBox-X hashes.
 
 Surface hashes cover **only rows 0-127 (46080 bytes)** of the 360×180 map —
@@ -41,11 +41,10 @@ tail (rows 128-179) is never displayed and is nondeterministic for moons
 (far-heap OOB read), so it is excluded from hashing. See §19.
 
 Match rate by planet type (planet / moon):
-- **100% both planet and moon**: types 0, 1, 2, 3, 4, 7, 8, 9
-- **100% planet, one residual moon**: types 5, 6
+- **100% both planet and moon**: types 0, 1, 2, 3, 4, 5, 7, 8, 9
+- **100% planet, one residual moon**: type 6
 
-The only 2 remaining failures are one type-5 moon (YOLINX I) and one type-6
-moon (TRIVIAPOLEN).
+The only remaining failure is one type-6 moon (TRIVIAPOLEN).
 
 ### Fixed
 - **Crater**: crays per-angle (not per-gr), second block per-angle, borrow
@@ -79,9 +78,13 @@ moon (TRIVIAPOLEN).
   f32; the port pre-rounded the step (`(6.0*DEG) as f32`), drifting `a` by
   ~1 ULP and flipping a `cirrus` write at an integer boundary. Fixing the
   initializer and the step took type-3 moons to 100% (9/9). See §22.
+- **Type 5** (`contrast`): all operands/dest are Borland `float`, so the
+  chain rounds to f32 per step. The port had emulated it with 80-bit `F80`,
+  which drifted 1 ULP and broke a type-5 moon. Pure f32 per step took type-5
+  moons to 100% (24/24). See §23.
 
 ### Remaining
-- Type-5 moon (YOLINX I), type-6 moon (TRIVIAPOLEN): one residual each
+- Type-6 moon (TRIVIAPOLEN): one residual
 - See `docs/test-fixtures.md` for test coordinates per type
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)

@@ -745,3 +745,53 @@ and the overall match rate to **99.5%**.
 **Lesson:** for a `float` accumulator advanced by a `double`, always
 `(f_acc as f64 + step_f64) as f32`. Pre-casting the step to f32 changes the
 rounding and desyncs floating-point-dependent addressing at boundaries.
+
+## 23. `float`-typed chains round to f32 per step — do NOT emulate x87 80-bit (2026-07-19)
+
+The opposite mistake to §22. When *every* operand and the destination of an
+expression is a Borland `float`, the x87 evaluates in 80-bit registers but
+**stores the result back to a `float` after each statement**, so the visible
+precision is f32 at every step. Emulating the intermediate with 80-bit
+extended precision (`F80`) is wrong here and drifts by 1 ULP.
+
+`contrast()` operates on the global `float a` with `float` params:
+
+```c
+void contrast (float kt, float kq, float thrshld) {
+  for (c=0; c<64800; c++) {
+    a  = p_background[c];   /* int -> float          */
+    a -= thrshld;           /* float -= float -> float */
+    if (a>0) a *= kt; else a *= kq;
+    a += thrshld;
+    if (a<0) a = 0; if (a>63) a = 63;
+    p_background[c] = a;     /* float -> byte (trunc)  */
+  }
+}
+```
+
+The port had (incorrectly) mirrored this with `F80` add/mul, which broke a
+type-5 moon by one byte (C=44 vs R=43). Pure f32 arithmetic per step is
+correct:
+
+```rust
+let (kt, kq, thr) = (kt as f32, kq as f32, thrshld as f32);
+for c in 0..64800 {
+    let mut a = self.p_background[c] as f32;
+    a -= thr;
+    if a > 0.0 { a *= kt; } else { a *= kq; }
+    a += thr;
+    a = a.clamp(0.0, 63.0);
+    self.p_background[c] = a as u8;
+}
+```
+
+This took type-5 **moons to 100% (24/24)** and the overall match rate to
+**99.7%**.
+
+**When is F80 the right model, then?** Only when a chain of *sub-expressions*
+is computed and consumed **without** an intervening store to a narrower type
+— e.g. `shade`'s gradient accumulation and `crater`'s `sin*cr` products,
+where the intermediate genuinely lives in an 80-bit register. If the C source
+assigns to a `float`/`double` variable between operations, that assignment
+rounds and F80 is wrong. Decide per expression by looking at the declared
+types of the destinations.
