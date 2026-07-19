@@ -615,33 +615,36 @@ impl SystemGen {
         if count <= 0 {
             return;
         }
-        let k = 1.00 / count as f64;
-        let delta_r = (finish_r - start_r) * k;
-        let delta_g = (finish_g - start_g) * k;
-        let delta_b = (finish_b - start_b) * k;
+        // x87 80-bit accumulation: use F80 to match the FPU's extended precision
+        // over the full gradient. f64 alone drifts by enough to flip occasional
+        // truncations inside the 64-color ramp.
+        let k = F80::from_f64(1.0).div(&F80::from_f64(count as f64));
+        let dr = F80::from_f64(finish_r - start_r).mul(&k);
+        let dg = F80::from_f64(finish_g - start_g).mul(&k);
+        let db = F80::from_f64(finish_b - start_b).mul(&k);
         let mut fc = (first_color * 3) as usize;
-        let mut sr = start_r;
-        let mut sg = start_g;
-        let mut sb = start_b;
+        let mut sr = F80::from_f64(start_r);
+        let mut sg = F80::from_f64(start_g);
+        let mut sb = F80::from_f64(start_b);
         let mut c = count;
-        while c > 0 {
-            let put = |v: f64| -> u8 {
-                if v >= 0.0 && v < 64.0 {
-                    v as u8
-                } else if v > 0.0 {
-                    63u8
-                } else {
-                    0u8
-                }
-            };
-            if fc + 2 < self.tmppal.len() {
-                self.tmppal[fc + 0] = put(sr);
-                self.tmppal[fc + 1] = put(sg);
-                self.tmppal[fc + 2] = put(sb);
+        let put = |v: f64| -> u8 {
+            if v >= 0.0 && v < 64.0 {
+                v as u8
+            } else if v > 0.0 {
+                63u8
+            } else {
+                0u8
             }
-            sr += delta_r;
-            sg += delta_g;
-            sb += delta_b;
+        };
+        while c > 0 {
+            if fc + 2 < self.tmppal.len() {
+                self.tmppal[fc + 0] = put(sr.to_f64());
+                self.tmppal[fc + 1] = put(sg.to_f64());
+                self.tmppal[fc + 2] = put(sb.to_f64());
+            }
+            sr = sr.add(&dr, false);
+            sg = sg.add(&dg, false);
+            sb = sb.add(&db, false);
             fc += 3;
             c -= 1;
         }
@@ -909,6 +912,12 @@ impl SystemGen {
         }
 
         self.tavola_colori(colorbase, brt, brt, brt);
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            let base = (3 * colorbase) as usize;
+            let sz = 192.min(self.tmppal.len().saturating_sub(base));
+            use std::io::Write;
+            let _ = std::fs::write("/tmp/rchk/PAL.BIN", &self.tmppal[base..base+sz]);
+        }
 
         self.quadwords = qw;
     }
