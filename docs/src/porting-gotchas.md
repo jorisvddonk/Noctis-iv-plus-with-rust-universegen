@@ -544,3 +544,37 @@ Also found in the same `surf_case3` loop:
   constant 64000.
 - The clamp writes `mov word ptr [di], 0x003E` which zeroes the **next**
   byte (di+1) — a C bug that must be reproduced.
+
+## 18. `f64_to_u32_trunc`: truncate as i64, not `rem_euclid` (2026-07-19)
+
+C's `(long)(double)` for negative values truncates toward zero first
+(removes the fractional part), THEN stores the integer in a 32-bit
+`long`. The naive `rem_euclid(2^32)` wraps the **fractional** part:
+
+```rust
+// ❌ WRONG: rem_euclid wraps the fractional part
+fn f64_to_u32_trunc(x: f64) -> u32 {
+    (x.rem_euclid(4294967296.0)) as u32
+}
+```
+
+For `x = -578621324.65`:
+- `rem_euclid`: `2^32 - 578621325 = 3716345971` (off by 1 — wraps fraction)
+- C `(long)`: `-578621324` as u32 = `3716345972` (truncates first)
+
+This only matters for bodies with **negative `seedval`** (which is common —
+many star coordinates produce negative seedvals). The error cascades:
+wrong frng seed → different `fast_random(0xFFFF)` → different Borland
+`srand` seed → different palette random values → palette diverges.
+
+The fix: truncate as `i64` first, then cast to `u32`:
+
+```rust
+fn f64_to_u32_trunc(x: f64) -> u32 {
+    (x.trunc() as i64) as u32
+}
+```
+
+This handles both positive and negative correctly:
+- Positive `713100430.0`: truncate → `713100430_i64` → `713100430_u32` ✓
+- Negative `-578621324.65`: truncate → `-578621324_i64` → `3716345972_u32` ✓
