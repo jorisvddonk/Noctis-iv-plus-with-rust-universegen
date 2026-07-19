@@ -20,7 +20,7 @@ pub fn fnv1a_update(mut h: u32, data: &[u8]) -> u32 {
     h
 }
 
-fn reflect(mut v: u32, bits: u32) -> u32 {
+fn reflect(v: u32, bits: u32) -> u32 {
     let mut r = 0u32;
     for i in 0..bits {
         if v & (1 << i) != 0 {

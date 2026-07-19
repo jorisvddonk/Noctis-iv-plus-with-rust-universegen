@@ -73,7 +73,7 @@ impl F80 {
         // (exp - BIAS); the integer bit being at bit 63 is purely storage.
         let unbiased = self.exp - BIAS;
         // Normalise mantissa so the top bit is the integer bit.
-        let mut mant = self.mant;
+        let mant = self.mant;
         // Round to 52-bit fraction (53-bit including implicit bit),
         // nearest-even, then encode.
         // Shift mantissa so its MSB is bit 52 of the resulting f64 mantissa.
@@ -158,7 +158,7 @@ impl F80 {
             return *self;
         }
         // Align smaller exponent to larger.
-        let (mut a, mut b, mut ea, eb);
+        let (a, b, ea, eb);
         if self.exp >= ob.exp {
             a = self.mant; ea = self.exp;
             let diff = self.exp - ob.exp;
@@ -170,7 +170,7 @@ impl F80 {
             a = if diff >= 64 { 0 } else { self.mant >> diff };
             ea = self.exp;
         }
-        let (res_neg, res_mant, mut res_exp);
+        let (res_neg, res_mant, res_exp);
         if self.neg == ob.neg {
             let s = a as u128 + b as u128;
             // s may have a carry into bit 64
