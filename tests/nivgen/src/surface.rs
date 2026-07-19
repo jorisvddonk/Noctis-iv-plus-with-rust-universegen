@@ -531,7 +531,9 @@ impl SystemGen {
             if b == 0 {
                 cr -= 1;
             }
-            a += (6.0 * DEG) as f32;
+            // C: `a += 6 * deg` where `a` is float and `deg` is double, so the
+            // addition happens in double precision and the result rounds to f32.
+            a = (a as f64 + 6.0 * DEG) as f32;
         }
         self.s_a = a as f64;
     }
@@ -1116,7 +1118,9 @@ impl SystemGen {
             }
             self.s_cx = (((self.secs as i64) / (self.frng.ranged(360) + 180) as i64) % 360) as i32;
             self.s_g = self.frng.ranged(5) + 7;
-            self.s_a = (self.frng.ranged(360) as f32 * DEG as f32) as f64;
+            // C: `a = ranged_fast_random(360) * deg` where `a` is float and
+            // `deg` is double, so the product is double and rounds to f32.
+            self.s_a = (self.frng.ranged(360) as f64 * DEG) as f32 as f64;
             self.atm_cyclon();
         }
     }

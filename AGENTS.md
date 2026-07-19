@@ -32,7 +32,7 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
    not the old Turbo C++ 3.0 container build.
 
 ## Current status (2026-07-19)
-**99.2% of surface maps match (368/371 bodies)** across all 13 star systems
+**99.5% of surface maps match (369/371 bodies)** across all 13 star systems
 with bodies, comparing the Rust port to canonical BCPP 3.1 / DOSBox-X hashes.
 
 Surface hashes cover **only rows 0-127 (46080 bytes)** of the 360×180 map —
@@ -41,13 +41,11 @@ tail (rows 128-179) is never displayed and is nondeterministic for moons
 (far-heap OOB read), so it is excluded from hashing. See §19.
 
 Match rate by planet type (planet / moon):
-- **100% both planet and moon**: types 0, 1, 2, 4, 7, 8, 9
-- **100% planet, one residual moon**: types 3, 5, 6 (far-heap tail, §19)
+- **100% both planet and moon**: types 0, 1, 2, 3, 4, 7, 8, 9
+- **100% planet, one residual moon**: types 5, 6
 
-The only 3 remaining failures are one moon each in types 3, 5, 6 — all the
-known nondeterministic far-heap OOB tail (which we already exclude from the
-hashed region for most moons; these three still land a stray byte in rows
-0-127).
+The only 2 remaining failures are one type-5 moon (YOLINX I) and one type-6
+moon (TRIVIAPOLEN).
 
 ### Fixed
 - **Crater**: crays per-angle (not per-gr), second block per-angle, borrow
@@ -76,10 +74,14 @@ hashed region for most moons; these three still land a stray byte in rows
   **right-to-left**, so multiple RNG calls within one call statement consume
   values in reverse argument order. Fixing `contrast(...)` and
   `randoface(...)` took type-5 planets to 100% (28/28). See §20.
+- **Type 3** (`atm_cyclon`): the `float a` angle accumulator is stepped by
+  the `double deg`. Borland computes `a += 6*deg` in double then rounds to
+  f32; the port pre-rounded the step (`(6.0*DEG) as f32`), drifting `a` by
+  ~1 ULP and flipping a `cirrus` write at an integer boundary. Fixing the
+  initializer and the step took type-3 moons to 100% (9/9). See §22.
 
 ### Remaining
-- Type-3 moon, type-5 moon, type-6 moon: one residual each (far-heap OOB
-  tail leaking a stray byte into rows 0-127)
+- Type-5 moon (YOLINX I), type-6 moon (TRIVIAPOLEN): one residual each
 - See `docs/test-fixtures.md` for test coordinates per type
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)

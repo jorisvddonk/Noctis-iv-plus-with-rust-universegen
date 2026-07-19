@@ -703,3 +703,45 @@ In `wave()` (type 6) the inline asm does `add ax, 4` before writing to
 reaches the store. Verified byte-for-byte against the C surfmap: the written
 offset is `py*360 + px`, **not** `+4`. Dropping the spurious +4 took type-6
 planets to 100%.
+
+## 22. `float += double` accumulates in double, then rounds to float (2026-07-19)
+
+Borland promotes a `float` operand to `double` for arithmetic, computes in
+double precision, and rounds the result back to `float` on assignment. When
+porting a `float` accumulator that is stepped by a `double` constant, you
+must add in f64 and round to f32 *once per step* — not pre-round the step.
+
+Type 3 (`atm_cyclon`) has a `float a` angle accumulator stepped by the
+`double deg`:
+
+```c
+a = ranged_fast_random(360) * deg;   /* int * double -> double -> (float)a */
+...
+a += 6 * deg;                        /* (double)a + double -> (float)a     */
+```
+
+The Rust port had pre-rounded the increment to f32:
+
+```rust
+a += (6.0 * DEG) as f32;                  // WRONG: rounds the step first
+```
+
+which drifted `a` by ~1 ULP after enough iterations. On this body the drift
+landed `cx + cr*cos(a)` on the wrong side of an integer boundary
+(`-4.9999…` vs `-5.0000…`), so `(unsigned)` truncation gave 65531 instead of
+65532, shifting a single `cirrus` write in `objectschart` by one byte. After
+the atmosphere/terrain merge this flipped 4 surface bytes (row 27) and broke
+the hash. Correct:
+
+```rust
+self.s_a = (self.frng.ranged(360) as f64 * DEG) as f32 as f64; // init
+...
+a = (a as f64 + 6.0 * DEG) as f32;                              // step
+```
+
+Fixing both the initializer and the step took type-3 **moons to 100% (9/9)**
+and the overall match rate to **99.5%**.
+
+**Lesson:** for a `float` accumulator advanced by a `double`, always
+`(f_acc as f64 + step_f64) as f32`. Pre-casting the step to f32 changes the
+rounding and desyncs floating-point-dependent addressing at boundaries.
