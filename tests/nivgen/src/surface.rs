@@ -31,7 +31,11 @@ fn wave_corrupt_base() -> i32 {
 // SATURATES on overflow, so large `seedval*10` values collapse to 0xFFFFFFFF
 // and every body gets the same rndpat seed. Mirror the C truncation here.
 fn f64_to_u32_trunc(x: f64) -> u32 {
-    (x.rem_euclid(4294967296.0)) as u32
+    // C `(long)(double)` truncates toward zero, then stores as a 32-bit
+    // `long`. The `rem_euclid` approach wraps the fractional part in the
+    // modulus (off by 1 for negative values). Use i64→u32 to handle both
+    // positive and negative correctly.
+    (x.trunc() as i64) as u32
 }
 
 /// Truncate a double toward zero and wrap into a 16-bit `unsigned` (Borland
@@ -929,6 +933,12 @@ impl SystemGen {
             let _ = std::fs::write("/tmp/rchk/PAL.BIN", &self.tmppal[base..base+sz]);
         }
 
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            use std::io::Write;
+            let base = (3 * colorbase) as usize;
+            let sz = 192.min(self.tmppal.len().saturating_sub(base));
+            let _ = std::fs::write(format!("/tmp/rchk/pal_{}.raw", capture_body()), &self.tmppal[base..base+sz]);
+        }
         self.quadwords = qw;
     }
 
