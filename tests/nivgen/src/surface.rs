@@ -1094,6 +1094,7 @@ impl SystemGen {
         if self.frng.ranged(2) != 0 {
             self.lssmooth();
         }
+        dbg_dump("C5_FIN", &self.p_background);
     }
 
     fn surf_case5(&mut self) {
@@ -1101,13 +1102,24 @@ impl SystemGen {
         for _c in 0..r {
             self.ssmooth();
         }
+        dbg_dump("C5_SM", &self.p_background);
         let c1 = self.frng.ranged(200) as f64 / 900.0 + 0.6;
         let c2 = self.frng.ranged(350) as f64 / 100.0 + 4.0;
         let c3 = (25 + self.frng.ranged(3)) as f64;
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            use std::io::Write;
+            let _ = std::fs::OpenOptions::new().create(true).write(true).open("/tmp/rchk/C5ARGS.BIN")
+                .and_then(|mut f| {
+                    let ik1=(c1*1000.0) as i32; let ik2=(c2*1000.0) as i32; let t3=c3 as i32;
+                    f.write_all(&[ik1 as u8,(ik1>>8) as u8,(ik1>>16) as u8,(ik1>>24) as u8, ik2 as u8,(ik2>>8) as u8,(ik2>>16) as u8,(ik2>>24) as u8, t3 as u8,(t3>>8) as u8,(t3>>16) as u8,(t3>>24) as u8])
+                });
+        }
         self.contrast(c1, c2, c3);
+        dbg_dump("C5_CT", &self.p_background);
         let rf1 = 5 + self.frng.ranged(3);
         let rf2 = -20 * (self.frng.ranged(3) + 1);
         self.randoface(rf1, rf2);
+        dbg_dump("C5_RF", &self.p_background);
         let r = 5 + self.frng.ranged(5);
         for _c in 0..r {
             self.s_cr = 5 + self.frng.ranged(10);
@@ -1116,6 +1128,7 @@ impl SystemGen {
             self.s_gr = self.frng.ranged(self.s_cr / 2) + 2;
             self.volcano();
         }
+        dbg_dump("C5_VB", &self.p_background);
         let r = 5 + self.frng.ranged(5);
         for _c in 0..r {
             self.s_cr = self.frng.ranged(30) + 1;
@@ -1124,6 +1137,7 @@ impl SystemGen {
             self.s_gr = self.frng.ranged(2) + 1;
             self.permanent_storm();
         }
+        dbg_dump("C5_PS", &self.p_background);
         for _c in 0..10000 {
             self.s_gr = self.frng.ranged(10) + 10;
             self.s_px = (self.frng.ranged(360)) as u16;
@@ -1133,11 +1147,13 @@ impl SystemGen {
             self.s_py = (125 - self.frng.ranged(10)) as u16 * 360;
             self.spot();
         }
+        dbg_dump("C5_SP", &self.p_background);
         if self.frng.ranged(2) != 0 {
             self.ssmooth();
         } else {
             self.lssmooth();
         }
+        dbg_dump("C5_FIN", &self.p_background);
     }
 
     fn surf_case6(&mut self) {
