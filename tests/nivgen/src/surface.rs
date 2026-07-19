@@ -901,6 +901,12 @@ impl SystemGen {
         self.shade(colorbase + 32, 16, r2, g2, b2, r3, g3, b3);
         self.shade(colorbase + 48, 16, r3, g3, b3, 64.0, 64.0, 64.0);
 
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            let base = (3 * colorbase) as usize;
+            let sz = 192.min(self.tmppal.len().saturating_sub(base));
+            use std::io::Write;
+            let _ = std::fs::write("/tmp/rchk/PAL_PRE.BIN", &self.tmppal[base..base+sz]);
+        }
         let mut brt = self.p_owner[logical_id as usize];
         if brt == -1 {
             brt = logical_id;
@@ -911,6 +917,10 @@ impl SystemGen {
             brt = 64 - (4 * (brt - 4));
         }
 
+        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
+            use std::io::Write;
+            let _ = std::fs::write("/tmp/rchk/BRT.BIN", &[brt as u8, (brt>>8) as u8, (brt>>16) as u8, (brt>>24) as u8]);
+        }
         self.tavola_colori(colorbase, brt, brt, brt);
         if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
             let base = (3 * colorbase) as usize;
