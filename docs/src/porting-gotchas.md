@@ -382,9 +382,122 @@ Fix: compute `contrast`'s inner loop using the `F80` module (software
 x87 `long double` emulation — `add`/`sub`/`mul` in 80-bit with
 round-to-nearest-even).
 
-### Status (2026-07-18)
+### Status (2026-07-19)
 
-* Bodies 0 (type 8), 3 (type 1), 4 (type 1), 10 (type 1): **byte-for-bit identical**.
-* Bodies 1, 2, 5, 8, 9, 13: still diverge (types 2, 4, 5, 7 — non-crater terrain:
-  `wave`, `fracture`, `randoface`, `contrast`-dependent, etc.). Per-stage
-  localization in progress.
+* Bodies 0 (type 8), 2 (type 4), 3 (type 1), 4 (type 1), 10 (type 1), 13 (type 2):
+  **byte-for-bit identical** (6/10).
+* Body 1 (type 5): surface ~2700 diffs (F80 contrast rounding ≤2 LSB), atmo+palette OK.
+* Bodies 5, 8 (type 5): surface + palette diverge (color computation issue, TBD).
+* Body 9 (type 7): surface ~2 diffs (fracture x87 sin drift), atmo+palette OK.
+
+---
+
+## 11. BCPP 3.1 toolchain (2026-07-19)
+
+The actual compiler used by Noctis IV is **Borland C++ 3.1** (not Turbo C++ 3.0).
+The toolchain is available at `https://archive.org/download/bcpp31/BCPP31.ZIP`.
+
+* BCPP 3.1 uses `BCC.EXE` instead of `TCC.EXE`, but library names (`C0L.OBJ`,
+  `FP87.LIB`, `MATHL.LIB`, `CL.LIB`) are identical.
+* `BUILD.BAT` auto-detects `BCC.EXE` or `TCC.EXE`.
+* `run-niv-tests.sh` auto-detects toolchain layout (BCPP31/ or TC/ subdirectory).
+* BCPP 3.1 produces **identical output** to TC 3.0 for all tested planet types
+  (1, 2, 4, 5, 7, 8). The `wave()` garbage base differs between builds as
+  documented in §9c/§9f.
+* Use `run-niv-tests.sh --local --toolchain niv-toolchain/BCPP31` for native
+  DOSBox-X builds on macOS.
+
+## 12. `psmooth_grays` — packed 4-row dword average (2026-07-19)
+
+C's `psmooth_grays` (NOCTIS-0.CPP:480) uses the **same packed 32-bit dword
+technique as `ssmooth`**, not a simple 2×2 block average:
+
+```asm
+mov dx, [di-320]    ; row -1  (4 pixels packed in dword)
+add dx, [di]        ; row  0
+add dx, [di+320]    ; row +1
+add dx, [di+640]    ; row +2
+and edx, 0xFCFCFCFC ; mask low 2 bits
+shr dx, 2           ; average of 4 rows
+mov al, dl          ; sum 4 column bytes
+add al, dh
+shr dx, 16
+add al, dl
+add al, dh
+shr al, 2           ; average of 4 columns
+mov [di], al
+```
+
+The Rust port originally did a plain 2×2 block average over 360×180 pixels.
+This produced completely different output (body 13 diverged).
+
+Fix: model after `ssmooth` — use raw pointer reads for 4-row dword sums,
+mask with `0xFCFCFCFC`, shift right by 2, then sum the 4 resulting column
+bytes and average into one output byte per position.
+
+## 13. F80 `add` bugs (2026-07-19)
+
+Two bugs found in the software x87 `long double` addition:
+
+### 13a. Exponent alignment when `self.exp < other.exp`
+
+When the first operand has a smaller exponent, its mantissa is right-shifted
+to align. The base exponent for the result must be the **larger** exponent
+(`other.exp`), not the smaller one (`self.exp`). The subtraction path
+recovered via `ea.max(eb)`, but the same-sign addition path used `ea`
+directly.
+
+Fix: `ea = ob.exp` (line 171 in `f80.rs`).
+
+### 13b. Integer-bit normalisation check: `s>>63 == 1` misses carry
+
+When two equal-magnitude mantissas add, the sum may have **2 integer bits**
+(`s>>63 == 2`). The check `s>>63 == 1` missed this case and fell into the
+shift-left normalization branch, which shifted the integer bit past bit 128
+and lost it.
+
+Fix: `(s>>63) != 0` (any integer bit present), then handle 1-bit and 2-bit
+cases.
+
+Both bugs made `add` return garbage for many inputs (25+25=2, etc.),
+which manifested as `contrast()` producing ~26000 byte diffs vs C.
+After fix the diffs drop to ~2700 (pure F80-vs-x87 rounding residuals).
+
+## 14. `fracture` precision bugs (2026-07-19)
+
+### 14a. Initial angle computed in f32, not f64
+
+C fracture initializes `a = random(360) * deg` where `a` is `double` and
+`deg` is `const double = M_PI/180.0`. The Rust port computed `random(360)
+as f32 * DEG as f32` then upcast to f64, losing ~7 mantissa bits. This
+drifted the cos/sin accumulation across iterations and produced 29 byte
+diffs in body 2 (type 4).
+
+Fix: `self.s_a = self.rng.random(360) as f64 * DEG;` (compute in f64).
+
+### 14b. `(unsigned)py` 16-bit cast
+
+C fracture casts `py` to `(unsigned)` (16-bit) before multiplying by 360.
+Rust used `py as i32` (32-bit). For negative py values the wrapping differs:
+C wraps mod 65536 while Rust wraps mod 4294967296. Body 2 didn't hit
+negative py, but the fix is needed for other bodies.
+
+Fix: use `f64_to_u16_trunc(py)`.
+
+## 15. `shade` F80 gradient accumulation (2026-07-19)
+
+The `shade()` palette gradient function accumulates `delta_r`/`delta_g`/`delta_b`
+over 64 iterations. x87 accumulates in 80-bit extended precision; f64 alone
+drifts by enough to flip occasional u8 truncations in the 64-color ramp.
+
+Fix: compute deltas and accumulate `sr`/`sg`/`sb` using `F80`, converting
+to `f64` only for the final `as u8` truncation (which is a C `(unsigned char)`
+cast = truncation toward zero, matched by Rust's `as u8`).
+
+## 16. Terminator (darkside) 16-bit `di` wrap (2026-07-19)
+
+The darkside terminator loop uses `di` as a **16-bit register** in C.
+`inc di` wraps at 0x10000. Rust used `usize` (64-bit), which skips writes
+beyond array bounds that C would wrap to low offsets.
+
+Fix: use `u16` with `wrapping_add` for the `di` accumulator.
