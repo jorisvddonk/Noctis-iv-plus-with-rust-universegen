@@ -801,6 +801,7 @@ impl SystemGen {
             }
         }
 
+        dbg_dump("T_PS", &self.p_background);
         // terminator
         let mut ts = plwp + 35;
         if ts >= 360 {
@@ -813,16 +814,18 @@ impl SystemGen {
         self.p_term_start[logical_id as usize] = ts;
         self.p_term_end[logical_id as usize] = te;
 
-        // darkside/darkline asm
-        let mut di = (plwp + 35) as usize;
+        // darkside/darkline asm — di is a 16-bit register in C, so it WRAPS
+        // at 0x10000. Must mirror the exact 16-bit behaviour.
+        let mut di: u16 = ((plwp + 35) & 0xFFFF) as u16;
         for _row in 0..179 {
             for _col in 0..130 {
-                if di < self.p_background.len() {
-                    self.p_background[di] >>= 2;
+                let idx = di as usize;
+                if idx < self.p_background.len() {
+                    self.p_background[idx] >>= 2;
                 }
-                di += 1;
+                di = di.wrapping_add(1);
             }
-            di += 230;
+            di = di.wrapping_add(230);
         }
 
         if ptype == 2 {
