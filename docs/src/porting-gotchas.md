@@ -295,7 +295,96 @@ the reference. To probe a specific behaviour of the real RTL, drop a tiny
 `probe.c` next to `tests/dosbox/`, link it with the working
 `BUILD.BAT`/`LINK.RSP` (must include `FP87.LIB MATHL.LIB CL.LIB` or you
 get `F_FTOL@`/`FIDRQQ` undefined-symbol link errors), and have it
-`printf(...)` to **stdout redirected to a file** via the dosbox
+ `printf(...)` to **stdout redirected to a file** via the dosbox
 `autoexec` (`probe.exe > D:\OUT.TXT`); the bind-mounted work dir then
 surfaces `OUT.TXT` on the macOS side. Declarations must precede
 statements (C89), and `void main` is fine.
+
+## 10. `crater()` bugs (2026-07-18) — four divergences in a single function
+
+The crater function (`NOCTIS-0.CPP:4514`, ~46 lines of mixed C and inline asm)
+had four independent porting errors, all of which initially produced bit-exact
+output for the *first* crater but desynced for later craters (or for craters
+with small `cx` that trigger negative `px`). Finding them required stage-by-stage
+dumps (`C1_SM`, `C1_C0`, `C1_CR`, `C1_LS`) and per-write CRAT tracing.
+
+### 10a. Crays `random(crays)` runs ONCE PER ANGLE, not per `gr`
+
+In C, the crays block (`crays && !random(crays)`) is **outside** the
+`for (gr=0; gr<cr; gr++)` loop — it runs once per angle after the gr
+loop completes. The Rust port had placed it **inside** the per-`gr` loop,
+calling `random(crays)` `cr` times per angle instead of once. That consumed
+`cr-1` extra RNG calls per angle (90 × `cr-1` per crater), desyncing the
+Borland RNG for all subsequent random calls.
+
+Symptom: `CRRC` trace (first 400 `random(4)` values) diverged from C at
+index 90 (crater 1, first angle), while crater 0's `cr`/`cx`/`cy` params
+all matched.
+
+### 10b. Second asm block (`0x013E` write) runs ONCE PER ANGLE, not per `gr`
+
+The second asm block (`mov ax,0x013E; mov es:[di],ax`) writes `0x3E` at
+`di` and `0x01` at `di+1` using the LAST `vptr` from the gr loop. In C it
+is after the `for gr` loop, inside the `for a` loop. The Rust port had it
+inside the per-`gr` loop, so it wrote `0x3E`/`0x01` at EVERY `di` (per
+gr) instead of only once per angle. This polluted the surface map with
+extra `0x3E` bytes.
+
+Symptom: `C1_C0.BIN` first diff at byte 21693 (py=60, px=93), where
+Rust had consecutive `62,62,1,62` (=`0x3E,0x3E,0x01,0x3E`) but C had
+`0,16,22,32`.
+
+### 10c. Borrow check: `JNC` tests CARRY, not SIGN
+
+C's first asm block does `sub al,ah ; jnc entro ; xor al,al`. The `JNC`
+instruction is "jump if no CARRY", i.e. it tests the unsigned borrow
+flag — equivalent to the C expression `al >= ah` (unsigned). The Rust
+port incorrectly used `al as i8 >= 0`, which tests the **sign** flag.
+For values like `al=200, ah=50`: `200 - 50 = 150`, no borrow, so C keeps
+`150`. But `150 as i8 = -106 < 0`, so Rust set it to `0`.
+
+Symptom: crater pixels with `al ≥ 128 - ah` and `al ≥ ah` fell through
+to `0` in Rust but kept their attenuated value in C. These appeared in the
+`C1_C0` diff as Rust `0x3E` where C had intermediate values.
+
+Fix: compare the **original** byte against `ah` *before* the subtraction:
+`if al0 >= ah { al0 - ah } else { 0 }`.
+
+### 10d. `unsigned px, py` are 16-bit — negative values must wrap mod 2^16
+
+The global `unsigned px, py` (line 4446 in NOCTIS-0.CPP) are **16-bit**
+`unsigned` (Turbo C++ 3.0). Assignments like `px = cx + cos(a)*gr` compute
+a `double`, truncate it toward zero (C assignment), then store it in a
+16-bit `unsigned`, i.e. wrap modulo 65536. For craters with small `cx`,
+the cosine term can make `px` negative, e.g. `px = 12 + (-0.6)*53 ≈ -20`.
+C gives `(unsigned)(-20) = 65516` (16-bit), while a naive 32-bit
+truncation gives `0xFFFFFFEC = 4294967275`. The difference in `vptr =
+px + 360*py` (mod 65536) results in an off-by-one `di`, causing the `r2`
+crays sub-block writes to land at adjacent-but-wrong pixels.
+
+Symptom: craters 0–22 matched byte-for-bit; crater 23 (cx=12, the first
+crater small enough to produce a negative px) diverged at byte 25539.
+
+Fix: added `f64_to_u16_trunc` that truncates toward zero and masks to 16
+bits (`((x.trunc() as i32) & 0xFFFF) as u32`). Use it for **all** px/py
+computations where the C variable is `unsigned` (16-bit): `crater`,
+`permanent_storm`, `spot`, `volcano`, `atm_cyclon`, `storm`. Keep
+`f64_to_u32_trunc` for the `srand`/`fast_srand` seeds which need 32-bit
+truncation.
+
+### 10e. `contrast()` uses x87 80-bit float — must use `F80`
+
+The `contrast()` function (NOCTIS-0.CPP:4633) computes `(pixel - thr) * k + thr`
+in 80-bit x87 extended precision. A plain f64 chain diverges from x87
+rounding by ~1-2 LSB on some pixels, producing a surface_map mismatch.
+
+Fix: compute `contrast`'s inner loop using the `F80` module (software
+x87 `long double` emulation — `add`/`sub`/`mul` in 80-bit with
+round-to-nearest-even).
+
+### Status (2026-07-18)
+
+* Bodies 0 (type 8), 3 (type 1), 4 (type 1), 10 (type 1): **byte-for-bit identical**.
+* Bodies 1, 2, 5, 8, 9, 13: still diverge (types 2, 4, 5, 7 — non-crater terrain:
+  `wave`, `fracture`, `randoface`, `contrast`-dependent, etc.). Per-stage
+  localization in progress.

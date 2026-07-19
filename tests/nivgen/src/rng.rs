@@ -32,6 +32,11 @@ impl BorlandRng {
         self.seed = seed & 0xFFFF;
     }
 
+    #[allow(dead_code)]
+    pub fn seed(&self) -> u32 {
+        self.seed
+    }
+
     /// Borland `rand()` (15-bit result in [0, 0x7FFF]).
     pub fn rand(&mut self) -> i32 {
         // 32-bit multiply; keep low 31 bits.

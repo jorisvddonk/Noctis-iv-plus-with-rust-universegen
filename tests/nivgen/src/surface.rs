@@ -27,30 +27,20 @@ fn wave_corrupt_base() -> i32 {
 }
 
 /// x87 `fistp` round-to-nearest-even on a `f64` value (the FPU keeps 80-bit
-/// intermediates; promoting to `F80` before rounding reproduces the 8087's
-/// default rounding mode, which the generator's many `(int)`/`(unsigned)`
-/// assignments from `double` rely on — they are NOT truncations).
-fn f_to_i32_rne(x: f64) -> i32 {
-    F80::from_f64(x).to_i32_rne()
-}
-fn f_to_u16_rne(x: f64) -> u16 {
-    // Plain C `(unsigned)(double)` cast: truncate toward zero, then mod 2^16.
-    // (The band/cloud/spot s_px/s_py assignments come from `(unsigned)` casts,
-    // not x87 `fistp` stores. `wave()`'s `fistp py` is handled inline via F80.)
-    (x.trunc() as i64 & 0xFFFF) as u16
-}
-/// Plain C `(unsigned)(double)` cast = truncation toward zero, then mod 2^16.
-/// Used for s_px/s_py assignments that come from a C `(unsigned)` cast, NOT an
-/// x87 `fistp` store (those use `f_to_u16_rne`).
-fn f_to_u16_trunc(x: f64) -> u16 {
-    (x.trunc() as i64 & 0xFFFF) as u16
-}
-
 // C's `(unsigned long)(f64)` truncates (mod 2^32); Rust's `f64 as u32`
 // SATURATES on overflow, so large `seedval*10` values collapse to 0xFFFFFFFF
 // and every body gets the same rndpat seed. Mirror the C truncation here.
 fn f64_to_u32_trunc(x: f64) -> u32 {
     (x.rem_euclid(4294967296.0)) as u32
+}
+
+/// Truncate a double toward zero and wrap into a 16-bit `unsigned` (Borland
+/// `unsigned px, py` are 16-bit). Used wherever the C source stores the
+/// `double` result of `cx + cos(a)*gr` etc. into a 16-bit `unsigned` variable,
+/// i.e. taken mod 2^16 (this matters for negative results).
+fn f64_to_u16_trunc(x: f64) -> u32 {
+    let t = x.trunc();
+    ((t as i32) & 0xFFFF) as u32
 }
 
 #[allow(dead_code)]
@@ -214,15 +204,16 @@ impl SystemGen {
     fn permanent_storm(&mut self) {
         let mut g = 1;
         while g < self.s_cr {
-            let mut a = 0.0f64;
-            while a < 2.0 * PI {
-                let px = self.s_cx as f64 + g as f64 * a.cos();
-                let mut py = self.s_cy as f64 + g as f64 * a.sin();
-                py *= 360.0;
-                self.s_px = f_to_u16_trunc(px);
-                self.s_py = f_to_u16_trunc(py);
+            let mut a: f32 = 0.0;
+            while (a as f64) < 2.0 * PI {
+                let af = a as f64;
+                let px = f64_to_u16_trunc(self.s_cx as f64 + g as f64 * af.cos());
+                let py = f64_to_u16_trunc(self.s_cy as f64 + g as f64 * af.sin());
+                let py = py.wrapping_mul(360);
+                self.s_px = (px & 0xFFFF) as u16;
+                self.s_py = (py & 0xFFFF) as u16;
                 self.spot();
-                a += 4.0 * DEG;
+                a += (4.0 * DEG) as f32;
             }
             g += 1;
         }
@@ -230,60 +221,69 @@ impl SystemGen {
 
     // --- crater (NOCTIS-0.CPP:4510) ---
     fn crater(&mut self) {
-        let mut a = 0.0f64;
-        while a < 2.0 * PI {
+        let mut a: f32 = 0.0;
+        while (a as f64) < 2.0 * PI {
+            let af = a as f64;
             let mut gr = 0;
+            let mut last_di = 0usize;
             while gr < self.s_cr {
-                let px = self.s_cx as f64 + a.cos() * gr as f64;
-                let py = self.s_cy as f64 + a.sin() * gr as f64;
-                let vptr = (f_to_u16_rne(px) as i64 + 360 * f_to_u16_rne(py) as i64);
-                let di = vptr as usize;
+                let px_i = f64_to_u16_trunc(self.s_cx as f64 + af.cos() * gr as f64) as i64;
+                let py_i = f64_to_u16_trunc(self.s_cy as f64 + af.sin() * gr as f64) as i64;
+                let vptr = px_i + 360 * py_i;
+                let di = (vptr as u32 & 0xFFFF) as usize;
+                last_di = di;
                 if di < self.p_background.len() {
-                    let al = self.p_background[di];
                     let ah = (gr & 0xFF) as u8;
                     let cl = (self.s_lawe as u32 & 0xFF) as u8;
                     let ah = ah >> cl;
-                    let mut al = al.wrapping_sub(ah);
-                    if al as i8 as i32 >= 0 {
-                        // jnc -> no borrow
-                    } else {
-                        al = 0;
-                    }
+                    // C: `sub al, ah ; jnc entro ; xor al, al`.
+                    // `jnc` tests the CARRY (borrow) flag (unsigned al < ah),
+                    // NOT the sign flag. Compare the original byte, not the result.
+                    let al0 = self.p_background[di];
+                    let al = if al0 >= ah { al0 - ah } else { 0 };
                     self.p_background[di] = al;
-                }
-                // second asm block: mov ax,0x013E ; mov es:[di], ax
-                if di < self.p_background.len() {
-                    self.p_background[di] = 0x3E;
-                    if di + 1 < self.p_background.len() {
-                        self.p_background[di + 1] = 0x01;
-                    }
-                }
-                // crays && !random(crays)
-                if self.s_cray != 0 && self.rng.random(self.s_cray) == 0 {
-                    let b = (2 + self.rng.random(2)) * self.s_cr;
-                    if (self.s_cy - b) > 0 && (self.s_cy + b) < 179 {
-                        let mut gr2 = self.s_cr + 1;
-                        while gr2 < b {
-                            let px = self.s_cx as f64 + a.cos() * gr2 as f64;
-                            let py = self.s_cy as f64 + a.sin() * gr2 as f64;
-                            let vptr = (f_to_u16_rne(px) as i64 + 360 * f_to_u16_rne(py) as i64);
-                            let di = vptr as usize;
-                            if di < self.p_background.len() {
-                                let al = self.p_background[di];
-                                let mut al = al.wrapping_add((self.s_cr & 0xFF) as u8);
-                                if al < 0x3E {
-                                } else {
-                                    al = 0x3E;
-                                }
-                                self.p_background[di] = al;
-                            }
-                            gr2 += 1;
-                        }
-                    }
                 }
                 gr += 1;
             }
-            a += 4.0 * DEG;
+            // second asm block: runs ONCE per angle (after the gr loop), using
+            // the LAST vptr / di (from gr = cr-1). Writes 0x3E at di, 0x01 at di+1.
+            if last_di < self.p_background.len() {
+                self.p_background[last_di] = 0x3E;
+                if last_di + 1 < self.p_background.len() {
+                    self.p_background[last_di + 1] = 0x01;
+                }
+            }
+            // crays && !random(crays) -- runs ONCE per angle.  Borland
+            // short-circuits: when crays==0 the `random(crays)` call is NEVER
+            // made, so the RNG state must not advance.
+            let mut triggered = false;
+            if self.s_cray != 0 {
+                let rc = self.rng.random(self.s_cray);
+                triggered = rc == 0;
+            }
+            if triggered {
+                let r2 = self.rng.random(2);
+                let b = (2 + r2) * self.s_cr;
+                if (self.s_cy - b) > 0 && (self.s_cy + b) < 179 {
+                    let mut gr2 = self.s_cr + 1;
+                    while gr2 < b {
+                        let px_i = f64_to_u16_trunc(self.s_cx as f64 + af.cos() * gr2 as f64) as i64;
+                        let py_i = f64_to_u16_trunc(self.s_cy as f64 + af.sin() * gr2 as f64) as i64;
+                        let vptr = px_i + 360 * py_i;
+                        let di = (vptr as u32 & 0xFFFF) as usize;
+                        if di < self.p_background.len() {
+                            let al = self.p_background[di];
+                            let mut al = al.wrapping_add((self.s_cr & 0xFF) as u8);
+                            if al >= 0x3E {
+                                al = 0x3E;
+                            }
+                            self.p_background[di] = al;
+                        }
+                        gr2 += 1;
+                    }
+                }
+            }
+            a += (4.0 * DEG) as f32;
         }
     }
 
@@ -353,7 +353,12 @@ impl SystemGen {
             if py < 0.0 {
                 py += max_latitude;
             }
-            let vptr = (px + 360.0 * py) as i64;
+            // C: `vptr = px + 360 * (unsigned)py`. `py` is truncated to
+            // `(unsigned)` (16-bit integer) BEFORE the *360. `px` is a float
+            // added to the int result.
+            let px_i = px as i32;
+            let py_i = py as i32;
+            let vptr = px_i as i64 + 360 * py_i as i64;
             let di = vptr as usize;
             if di < self.p_background.len() {
                 self.p_background[di] >>= (self.s_b & 0xFF) as u8;
@@ -367,16 +372,17 @@ impl SystemGen {
 
     // --- volcano (NOCTIS-0.CPP:4617) ---
     fn volcano(&mut self) {
-        let mut a = 0.0f64;
-        while a < 2.0 * PI {
+        let mut a: f32 = 0.0;
+        while (a as f64) < 2.0 * PI {
+            let af = a as f64;
             let b = self.s_gr;
             let mut g = self.s_cr / 2;
             while g < self.s_cr {
-                let px = self.s_cx as f64 + a.cos() * g as f64;
-                let mut py = self.s_cy as f64 + a.sin() * g as f64;
-                py *= 360.0;
-                self.s_px = (px) as u16;
-                self.s_py = (py) as u16;
+                let px = f64_to_u16_trunc(self.s_cx as f64 + af.cos() * g as f64);
+                let py = f64_to_u16_trunc(self.s_cy as f64 + af.sin() * g as f64);
+                let py = py.wrapping_mul(360);
+                self.s_px = (px & 0xFFFF) as u16;
+                self.s_py = (py & 0xFFFF) as u16;
                 self.spot();
                 if self.s_gr > 0 {
                     self.s_gr -= 1;
@@ -384,28 +390,29 @@ impl SystemGen {
                 g += 1;
             }
             self.s_gr = b;
-            a += 4.0 * DEG;
+            a += (4.0 * DEG) as f32;
         }
     }
 
     // --- contrast (NOCTIS-0.CPP:4633) ---
     fn contrast(&mut self, kt: f64, kq: f64, thrshld: f64) {
+        // Borland x87 computes this chain in 80-bit precision. Mirror it with
+        // F80 so rounding matches (plain f64 drifts from x87 extended precision).
+        let ktf = F80::from_f64(kt);
+        let kqf = F80::from_f64(kq);
+        let thr = F80::from_f64(thrshld);
         for c in 0..64800 {
-            let mut a = self.p_background[c] as f64;
-            a -= thrshld;
-            if a > 0.0 {
-                a *= kt;
+            let a0 = F80::from_f64(self.p_background[c] as f64);
+            let mut a = a0.add(&thr, true);
+            if a.to_f64() > 0.0 {
+                a = a.mul(&ktf);
             } else {
-                a *= kq;
+                a = a.mul(&kqf);
             }
-            a += thrshld;
-            if a < 0.0 {
-                a = 0.0;
-            }
-            if a > 63.0 {
-                a = 63.0;
-            }
-            self.p_background[c] = a as u8;
+            a = a.add(&thr, false);
+            let av = a.to_f64();
+            let av = if av < 0.0 { 0.0 } else if av > 63.0 { 63.0 } else { av };
+            self.p_background[c] = av as u8;
         }
     }
 
@@ -478,45 +485,56 @@ impl SystemGen {
     fn atm_cyclon(&mut self) {
         let mut b = 0i32;
         let mut cr = self.s_cr;
+        let mut a: f32 = self.s_a as f32;
         while cr > 0 {
-            let px = self.s_cx as f64 + cr as f64 * self.s_a.cos();
-            let mut py = self.s_cy as f64 + cr as f64 * self.s_a.sin();
-            py *= 360.0;
-            self.s_px = f_to_u16_rne(px);
-            self.s_py = f_to_u16_rne(py);
+            // C: px,py are `unsigned`; the double results are TRUNCATED to
+            // unsigned at each assignment, and `py *= 360` is an integer
+            // multiply (truncated py first).
+            let mut px = f64_to_u16_trunc(self.s_cx as f64 + cr as f64 * (a as f64).cos());
+            let mut py = f64_to_u16_trunc(self.s_cy as f64 + cr as f64 * (a as f64).sin());
+            py = py.wrapping_mul(360);
+            self.s_px = (px & 0xFFFF) as u16;
+            self.s_py = (py & 0xFFFF) as u16;
             self.cirrus();
-            self.s_px = f_to_u16_rne(px + self.rng.random(4) as f64);
+            px = px.wrapping_add(self.rng.random(4) as u32);
+            self.s_px = (px & 0xFFFF) as u16;
             self.cirrus();
-            self.s_py = f_to_u16_rne(py + 359.0);
+            py = py.wrapping_add(359);
+            self.s_py = (py & 0xFFFF) as u16;
             self.cirrus();
-            self.s_px = f_to_u16_rne(px - self.rng.random(4) as f64);
+            px = px.wrapping_sub(self.rng.random(4) as u32);
+            self.s_px = (px & 0xFFFF) as u16;
             self.cirrus();
-            self.s_py = f_to_u16_rne(py + 361.0);
+            py = py.wrapping_add(361);
+            self.s_py = (py & 0xFFFF) as u16;
             self.cirrus();
-            self.s_px = f_to_u16_rne(px + self.rng.random(4) as f64);
+            px = px.wrapping_add(self.rng.random(4) as u32);
+            self.s_px = (px & 0xFFFF) as u16;
             self.cirrus();
             b += 1;
             b %= self.s_g;
             if b == 0 {
                 cr -= 1;
             }
-            self.s_a += 6.0 * DEG;
+            a += (6.0 * DEG) as f32;
         }
+        self.s_a = a as f64;
     }
 
     // --- storm (NOCTIS-0.CPP:4747) ---
     fn storm(&mut self) {
         let mut g = 1;
         while g < self.s_cr {
-            let mut a = 0.0f64;
-            while a < 2.0 * PI {
-                let px = self.s_cx as f64 + g as f64 * a.cos();
-                let mut py = self.s_cy as f64 + g as f64 * a.sin();
-                py *= 360.0;
-                self.s_px = f_to_u16_rne(px);
-                self.s_py = f_to_u16_rne(py);
+            let mut a: f32 = 0.0;
+            while (a as f64) < 2.0 * PI {
+                let af = a as f64;
+                let px = f64_to_u16_trunc(self.s_cx as f64 + g as f64 * af.cos());
+                let py = f64_to_u16_trunc(self.s_cy as f64 + g as f64 * af.sin());
+                let py = py.wrapping_mul(360);
+                self.s_px = (px & 0xFFFF) as u16;
+                self.s_py = (py & 0xFFFF) as u16;
                 self.cirrus();
-                a += 4.0 * DEG;
+                a += (4.0 * DEG) as f32;
             }
             g += 1;
         }
@@ -537,7 +555,7 @@ impl SystemGen {
         let alfa = self.p_orb_tilt[n] * DEG;
         let xx = -self.p_orb_ray[n] * beta.sin() * alfa.cos();
         let mut plz = self.p_orb_ray[n] * beta.cos() * alfa.cos();
-        let mut ply = self.p_orb_ray[n] * alfa.sin();
+        let ply = self.p_orb_ray[n] * alfa.sin();
         plz *= self.p_orb_ecc[n];
         let obeta = self.p_orb_orient[n];
         self.plx = xx * obeta.cos() + plz * obeta.sin();
@@ -587,9 +605,9 @@ impl SystemGen {
             return;
         }
         let k = 1.00 / count as f64;
-        let mut delta_r = (finish_r - start_r) * k;
-        let mut delta_g = (finish_g - start_g) * k;
-        let mut delta_b = (finish_b - start_b) * k;
+        let delta_r = (finish_r - start_r) * k;
+        let delta_g = (finish_g - start_g) * k;
+        let delta_b = (finish_b - start_b) * k;
         let mut fc = (first_color * 3) as usize;
         let mut sr = start_r;
         let mut sg = start_g;
