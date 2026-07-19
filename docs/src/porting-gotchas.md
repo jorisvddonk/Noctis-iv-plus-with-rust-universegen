@@ -650,3 +650,56 @@ moons).
 **Lesson:** when the reference buffer is larger than what the algorithm
 consumes, only fingerprint the consumed region. Hashing scratch/pad bytes
 turns a deterministic port into a false failure.
+
+## 20. Borland evaluates function arguments RIGHT-TO-LEFT (2026-07-19)
+
+Borland C++ 3.1 pushes call arguments onto the stack **right-to-left**, and
+it evaluates side-effecting subexpressions in that same order. When several
+arguments each call the RNG, the *last* argument consumes the *first* random
+value. Porting the calls left-to-right desyncs the entire RNG stream from
+that point on.
+
+Type 5 (`"small, solid, thin atmosphere."`) had two such calls, and both
+were the sole reason the type diverged:
+
+```c
+/* contrast(kt, kq, thrshld): the three ranged_fast_random calls fire
+   in the order thrshld -> kq -> kt */
+contrast ((float)ranged_fast_random(200)/900 + 0.6,
+          (float)ranged_fast_random(350)/100 + 4.0,
+          25 + ranged_fast_random(3));
+
+/* randoface(range, upon): the `upon` (2nd) ranged() fires before `range` */
+randoface (5 + ranged_fast_random(3), -20 * (ranged_fast_random(3) + 1));
+```
+
+Correct Rust: pull the RNG values in **reverse argument order**, then pass
+them positionally.
+
+```rust
+let c3 = (25 + self.frng.ranged(3)) as f32 as f64;          // thrshld first
+let c2 = ((self.frng.ranged(350) as f32 / 100.0) as f64 + 4.0) as f32 as f64;
+let c1 = ((self.frng.ranged(200) as f32 / 900.0) as f64 + 0.6) as f32 as f64;
+self.contrast(c1, c2, c3);
+
+let rf2 = -20 * (self.frng.ranged(3) + 1);                  // upon first
+let rf1 = 5 + self.frng.ranged(3);
+self.randoface(rf1, rf2);
+```
+
+Fixing both took type-5 **planets to 100% (28/28)** and moons to 23/24
+(the last is the usual far-heap tail, §19), and the overall match rate from
+85.4% to **99.2%**.
+
+**Lesson:** whenever a single C statement calls the RNG in more than one
+argument, assume right-to-left evaluation and consume the values in reverse.
+`contrast`'s params are also Borland `float`, so each argument expression
+rounds to f32 (`as f32 as f64`).
+
+## 21. `wave()` inline-asm `add ax, 4` is a no-op on the write offset (2026-07-19)
+
+In `wave()` (type 6) the inline asm does `add ax, 4` before writing to
+`es:[di]`, but `di` is recomputed from `py*360 + px` and the `+4` never
+reaches the store. Verified byte-for-byte against the C surfmap: the written
+offset is `py*360 + px`, **not** `+4`. Dropping the spurious +4 took type-6
+planets to 100%.

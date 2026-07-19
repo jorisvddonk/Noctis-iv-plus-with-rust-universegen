@@ -32,7 +32,7 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
    not the old Turbo C++ 3.0 container build.
 
 ## Current status (2026-07-19)
-**85.4% of surface maps match (317/371 bodies)** across all 13 star systems
+**99.2% of surface maps match (368/371 bodies)** across all 13 star systems
 with bodies, comparing the Rust port to canonical BCPP 3.1 / DOSBox-X hashes.
 
 Surface hashes cover **only rows 0-127 (46080 bytes)** of the 360×180 map —
@@ -41,10 +41,13 @@ tail (rows 128-179) is never displayed and is nondeterministic for moons
 (far-heap OOB read), so it is excluded from hashing. See §19.
 
 Match rate by planet type (planet / moon):
-- **100%**: type 0, 1, 2, 4, 6, 7, 8 (planet), type 9 (planet-only),
-  type 3 planet; moons of 0, 1, 2, 4, 7, 8 also 100%
-- **~75-89%**: type 3 moon, type 6 moon (residual far-heap tail)
-- **0%**: type 5 (both) — still diverges (contrast/F80 path)
+- **100% both planet and moon**: types 0, 1, 2, 4, 7, 8, 9
+- **100% planet, one residual moon**: types 3, 5, 6 (far-heap tail, §19)
+
+The only 3 remaining failures are one moon each in types 3, 5, 6 — all the
+known nondeterministic far-heap OOB tail (which we already exclude from the
+hashed region for most moons; these three still land a stray byte in rows
+0-127).
 
 ### Fixed
 - **Crater**: crays per-angle (not per-gr), second block per-angle, borrow
@@ -69,10 +72,14 @@ Match rate by planet type (planet / moon):
   rows 0-127 (`SAMPLED_BYTES=46080`), which is fully deterministic across
   single-body / planet-all / in-game. Moons now match at their planet-type
   rate (see §19).
+- **Type 5** (`contrast`/`randoface`): Borland evaluates function arguments
+  **right-to-left**, so multiple RNG calls within one call statement consume
+  values in reverse argument order. Fixing `contrast(...)` and
+  `randoface(...)` took type-5 planets to 100% (28/28). See §20.
 
 ### Remaining
-- Type 5 (planets + moons): surf_map fully diverges (F80/contrast path)
-- Type-3 moon, type-6 moon: one residual each (far-heap OOB tail)
+- Type-3 moon, type-5 moon, type-6 moon: one residual each (far-heap OOB
+  tail leaking a stray byte into rows 0-127)
 - See `docs/test-fixtures.md` for test coordinates per type
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)
