@@ -792,6 +792,7 @@ impl SystemGen {
             py += 2;
             px += 1;
         }
+        dbg_dump("T_AF", &self.p_background);
         { dbg_dump("5_ME", &self.p_background); dbg_dump("5A_M", &self.objectschart); }
 
         if ptype == 2 {
@@ -801,6 +802,7 @@ impl SystemGen {
             }
         }
 
+        dbg_dump("T_PS", &self.p_background);
         dbg_dump("T_PS", &self.p_background);
         // terminator
         let mut ts = plwp + 35;
