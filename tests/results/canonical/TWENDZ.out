@@ -1,0 +1,26 @@
+=== PLANET TEXTURES (all 5 bodies) ===
+PLANET body=0 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=182149.819806
+  rtperiod=452 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=DD399AD8 crc=F329AAEE
+atmo_overlay     len=32400  fnv=25B759AF crc=9D3E6E18
+palette64        len=192    fnv=B055E662 crc=0478E66B
+PLANET body=1 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=1682056.938801
+  rtperiod=415 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=9CB2C00F crc=946D6E10
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=0821BD6F crc=E0270535
+PLANET body=2 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=1632158.223769
+  rtperiod=518 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=A60A0CE4 crc=7BCB1442
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=B296F2CB crc=1E18D226
+PLANET body=3 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=12892731.087741
+  rtperiod=580 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=80717886 crc=A4498B82
+atmo_overlay     len=32400  fnv=2C3AD102 crc=969DB259
+palette64        len=192    fnv=354ABE24 crc=1B2A6A03
+PLANET body=4 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=106811278.656158
+  rtperiod=643 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=77276F97 crc=7047B132
+atmo_overlay     len=32400  fnv=778E3FA3 crc=BBFC112A
+palette64        len=192    fnv=781714CD crc=EDC47744

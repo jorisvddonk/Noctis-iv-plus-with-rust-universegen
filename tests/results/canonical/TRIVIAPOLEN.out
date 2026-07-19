@@ -1,0 +1,17 @@
+=== PLANET TEXTURES (all 4 bodies) ===
+PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=14253364.450152
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-5847837.831775
+  rtperiod=332 rotation=0 term_start=304 term_end=74
+surface_map      len=46080  fnv=2460CEF6 crc=611EEAED
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=1AA5AB37 crc=270B5213
+PLANET body=2 type=10 (companion star - not a planet) owner=-1 seedval=-7807587205.008617
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=3 type=6 (large, not consistent, covered with dense clouds.) owner=0 seedval=130073981.203070
+  rtperiod=437 rotation=0 term_start=15 term_end=145
+surface_map      len=46080  fnv=EDD69C2B crc=49C6B2A7
+atmo_overlay     len=32400  fnv=649BA7B2 crc=09F93E69
+palette64        len=192    fnv=2FA035E5 crc=46CC1D95

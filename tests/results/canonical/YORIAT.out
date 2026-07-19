@@ -1,0 +1,21 @@
+=== PLANET TEXTURES (all 4 bodies) ===
+PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=337672.140831
+  rtperiod=291 rotation=0 term_start=107 term_end=237
+surface_map      len=46080  fnv=60C9D49E crc=95D2C56D
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=E677BAF6 crc=E75CC632
+PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-299511.402769
+  rtperiod=368 rotation=0 term_start=107 term_end=237
+surface_map      len=46080  fnv=53CBF52C crc=A8A51B3A
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=C37F8271 crc=F75B6EEA
+PLANET body=2 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=1101129.001551
+  rtperiod=507 rotation=0 term_start=107 term_end=237
+surface_map      len=46080  fnv=5DF7537A crc=7163E8DB
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=DDD1CF59 crc=1EC4CE77
+PLANET body=3 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=2 seedval=43333558.536437
+  rtperiod=310 rotation=0 term_start=107 term_end=237
+surface_map      len=46080  fnv=0AD4BAAA crc=844EFBE4
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=23E2BCB8 crc=96CF0C18
