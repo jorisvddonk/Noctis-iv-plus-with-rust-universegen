@@ -27,7 +27,6 @@
 
 use crate::system::SystemGen;
 use std::f64::consts::PI;
-
 // Scenario types (NOCTIS-1.CPP:48 + harness NIVTEST.CPP:102).
 const SC_OCEAN: i32 = 1;
 const SC_PLAINS: i32 = 2;
@@ -724,7 +723,6 @@ impl SystemGen {
             }
         }
 
-        let mut liquid_water = 0i32;
         let oc_bytes = 40000usize;
         let mut ptr = 0usize;
         while ptr < oc_bytes {
@@ -785,6 +783,7 @@ impl SystemGen {
 
             1 => {
                 // rocciosi (stile luna)
+
                 n = self.rng.random(5);
                 if n <= 2 {
                     let a = 4 + self.rng.random(4);
@@ -956,7 +955,6 @@ impl SystemGen {
                             } else {
                                 self.rockdensity = 0;
                             }
-                            liquid_water = 1;
                         }
                     }
 
@@ -1269,6 +1267,11 @@ impl SystemGen {
                         n -= 1;
                     }
                 }
+                // shared "similar" tail (NOCTIS-1.CPP:2393): quartz may appear
+                // "anche sui pianeti abitabili, ma solo a volte..."
+                if self.rng.random(5) == 0 {
+                    self.quartz = 1;
+                }
             }
 
             _ => {}
@@ -1313,7 +1316,7 @@ impl SystemGen {
             ptr += 1;
         }
 
-        if liquid_water != 0 {
+        if self.waswet != 0 {
             ptr = 0;
             while ptr < oc_bytes {
                 if self.p_surfacemap[ptr] == 0 {
@@ -1479,7 +1482,8 @@ impl SystemGen {
         }
         // C: `if (!waswet || (waswet && !random(5)))`
         let w = self.waswet;
-        if w == 0 || (w != 0 && self.rng.random(5) != 0) {
+        let _r5 = self.rng.random(5);
+        if w == 0 || (w != 0 && _r5 == 0) {
             ptr = 0;
             while ptr < oc_bytes {
                 self.p_surfacemap[ptr] = (self.p_surfacemap[ptr] as i32 + self.frng.fast_random(3) as i32) as u8;
