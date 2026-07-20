@@ -175,6 +175,7 @@ def gen_star(conn, star, force=False):
 
 HM_RE = re.compile(r"^heightmap\s+len=\d+\s+fnv=(\w+)", re.M)
 OC_RE = re.compile(r"^objectchart\s+len=\d+\s+fnv=(\w+)", re.M)
+GAP_RE = re.compile(r"^gap\s+len=16\s+([0-9A-F]{32})", re.M)
 
 
 def load_star(conn, star):
@@ -202,6 +203,11 @@ def load_star(conn, star):
             if hm: up[hm_col] = hm.group(1)
             if oc: up[oc_col] = oc.group(1)
         if up:
+            # also capture gap from def landing (same for both landings)
+            def_out = os.path.join(SECT_DIR, fname(star, body, "def", lon_d, lat_d))
+            if os.path.exists(def_out):
+                m = GAP_RE.search(open(def_out).read())
+                if m: up["sect_gap"] = m.group(1)
             sets = ", ".join(f"{k}=?" for k in up)
             conn.execute(
                 f"UPDATE planets SET {sets} WHERE star_id=? AND body_index=?",
@@ -213,12 +219,13 @@ def load_star(conn, star):
 NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "debug", "nivgen")
 
 
-def rust_sector_hashes(x, y, z, body, lon, lat):
+def rust_sector_hashes(x, y, z, body, lon, lat, gap=None):
     """Run `nivgen sector` for one landing and return (hm_fnv, oc_fnv)."""
-    r = subprocess.run(
-        [NIVGEN, "sector", "-x", str(x), "-y", str(y), "-z", str(z),
-         "-p", str(body), "-lon", str(lon), "-lat", str(lat)],
-        capture_output=True, text=True)
+    cmd = [NIVGEN, "sector", "-x", str(x), "-y", str(y), "-z", str(z),
+           "-p", str(body), "-lon", str(lon), "-lat", str(lat)]
+    if gap:
+        cmd += ["-gap", gap]
+    r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         return None, None
     hm = HM_RE.search(r.stdout)
@@ -235,9 +242,9 @@ def rust_star(conn, star):
         print(f"star '{star}' not found"); sys.exit(1)
     _, x, y, z = sid
     bodies = conn.execute(
-        "SELECT body_index, seedval FROM planets WHERE star_id=? "
+        "SELECT body_index, seedval, sect_gap FROM planets WHERE star_id=? "
         "ORDER BY body_index", (sid[0],)).fetchall()
-    for body, seedval in bodies:
+    for body, seedval, gap in bodies:
         lon_d, lat_d = 0, 60
         lon_r, lat_r = coords_from_seedval(seedval)
         up = {}
@@ -245,7 +252,7 @@ def rust_star(conn, star):
             ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc"),
             ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc"),
         ):
-            hm, oc = rust_sector_hashes(x, y, z, body, lon, lat)
+            hm, oc = rust_sector_hashes(x, y, z, body, lon, lat, gap)
             if hm:
                 up[hm_col] = hm
             if oc:

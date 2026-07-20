@@ -557,6 +557,16 @@ static void report_sector_heightmap(int n)
 
 	dump_far("height.bin", p_surfacemap, 40000UL);
 	dump_far("objects.bin", (unsigned char huge *)objectschart, 40000UL);
+	/* emit the 16 gap bytes after p_surfacemap (farmalloc header) so the
+	   Rust port can replay them instead of hardcoding a guessed value. */
+	{
+		unsigned char g[16];
+		int i;
+		for (i = 0; i < 16; i++) g[i] = p_surfacemap[40000UL + i];
+		out("gap               len=16   ");
+		for (i = 0; i < 16; i++) out("%02X", g[i]);
+		out("\n");
+	}
 }
 
 static void report_surface_texture(int n)

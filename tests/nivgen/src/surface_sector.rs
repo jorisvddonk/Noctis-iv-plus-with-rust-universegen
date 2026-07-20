@@ -103,19 +103,19 @@ impl SystemGen {
     // fixed Borland farmalloc header for this build (measured from the C
     // reference under DOSBox-X) and are deterministic. PORT-NOTE: mirrors the
     // SAMPLED_BYTES approach in surface.rs — the OOB tail is heap scratch, but
-    // here it feeds back into the hashed objectchart, so we reproduce the exact
-    // gap bytes rather than exclude the region.
-    const OC_GAP: [u8; 16] = [0,0,0,0,0,0,0,0,0,0,0,0,197,9,181,84];
-
+    // farmalloc gap bytes between p_surfacemap and objectschart.
+    // Set per-body from C fixture dump; hardcoded default for legacy.
+    // See bulk_sectors.py gen/load/rust pipeline.
+    //
     fn surf_h(&self, i: usize) -> u8 {
         if i < 40000 {
             self.p_surfacemap[i]
         } else {
             let k = i - 40000;
-            if k < Self::OC_GAP.len() {
-                Self::OC_GAP[k]
+            if k < self.oc_gap.len() {
+                self.oc_gap[k]
             } else {
-                let j = k - Self::OC_GAP.len();
+                let j = k - self.oc_gap.len();
                 if j < self.objectschart.len() { self.objectschart[j] } else { 0 }
             }
         }
@@ -669,6 +669,20 @@ impl SystemGen {
         } else {
             self.sctype = SC_PLAINS; // unused by non-felisian paths
         }
+    }
+
+    pub fn build_surface_with_gap(&mut self, gap_hex: &str) {
+        if gap_hex.len() == 32 {
+            let mut gap = [0u8; 16];
+            for i in 0..16 {
+                gap[i] = u8::from_str_radix(&gap_hex[2*i..2*i+2], 16).unwrap_or(self.oc_gap[i]);
+            }
+            eprintln!("[GAP] setting oc_gap from hex: {:02x?}", gap);
+            self.oc_gap = gap;
+        } else {
+            eprintln!("[GAP] keeping default oc_gap: {:02x?} (hex={:?})", self.oc_gap, gap_hex);
+        }
+        self.build_surface();
     }
 
     pub fn build_surface(&mut self) {

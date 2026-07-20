@@ -230,6 +230,10 @@ pub struct SystemGen {
     pub pixel_spreads: u8,
     pub multicolormask: u8,
 
+    /// Farmalloc gap bytes between p_surfacemap and objectschart in C.
+    /// Read by the inclination loop; captured from C fixture output.
+    pub oc_gap: [u8; 16],
+
     pub(crate) rng: BorlandRng,
     pub(crate) frng: crate::rng::FastRng,
 }
@@ -355,6 +359,7 @@ impl SystemGen {
             pixilating_effect: 0,
             pixel_spreads: 0,
             multicolormask: 0,
+            oc_gap: [0,0,0,0,0,0,0,0,0,0,0,0,197,9,181,84],
             rng: BorlandRng::new(),
             frng: crate::rng::FastRng::new(),
         }

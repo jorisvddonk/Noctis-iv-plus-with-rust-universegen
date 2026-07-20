@@ -242,6 +242,9 @@ fn cmd_sector(args: &[String]) {
     let lat = argl(args, "-lat", 60) as i32;
     let albedo = argl(args, "-albedo", 32) as i32;
     let sc = argl(args, "-sc", -1) as i32;
+    let gap_hex = if let Some(pos) = args.iter().position(|a| a == "-gap") {
+        args.get(pos + 1).cloned().unwrap_or_default()
+    } else { String::new() };
 
     let mut g = SystemGen::new();
     g.generate(x, y, z);
@@ -252,7 +255,7 @@ fn cmd_sector(args: &[String]) {
     g.gen_planet_surface(p);
     g.setup_landing(p, lon, lat, albedo, sc);
     emit!(f, "=== SURFACE SECTOR (heightmap) ===\n");
-    g.build_surface();
+    g.build_surface_with_gap(&gap_hex);
 
     let pt = p as usize;
     let ptype = g.p_type[pt] as i32;
