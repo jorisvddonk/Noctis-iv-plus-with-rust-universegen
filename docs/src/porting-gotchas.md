@@ -958,3 +958,49 @@ This caused AWELER body 5 (type 3, wet) objectchart divergence — the
 heightmap already differed due to §27, and even after fixing heightmap the
 objectchart bytes at flat-pixel locations were wrong. Fixed by changing the
 guard to `self.waswet != 0`.
+
+## 29. Object class placement: binary-pattern diff in type 2/4/5 moons (2026-07-20)
+
+Five moons across CHOALUUS (bodies 27, 61, 75) and VOIDAL LAMP (bodies 24, 28)
+show an objectchart divergence on seedval pseudo landings. Binary diff vs C
+for body 24 (type 2 moon) reveals only **6 differing bytes** across all
+40000:
+
+| bytes | C value | Rust value | bitfield breakdown |
+|-------|---------|-----------|-------------------|
+| 150   | `0x1f`  | `0x03`    | C: nr=3 c0=3 c1=VEGET c2=0 → Rust: nr=3 c0=0 c1=0 c2=0 |
+| 151   | `0x39`  | `0x01`    | C: nr=1 c0=TREES c1=3 c2=0 → Rust: nr=1 c0=0 c1=0 c2=0 |
+| 39966 | `0x03`  | `0x00`    | nr=3 → nr=0 |
+| 39970 | `0x00`  | `0x03`    | nr=0 → nr=3 |
+| 39972 | `0x03`  | `0x00`    | nr=3 → nr=0 |
+| 39973 | `0x00`  | `0x03`    | nr=0 → nr=3 |
+
+**Disproven theories:**
+- **OC_GAP** (the 16-byte farmalloc header between `p_surfacemap` and
+  `objectschart`). Feeding the correct gap bytes had zero effect on output.
+- **RNG desync** — `build_surface` reseeds both RNGs from
+  `global_surface_seed` at its start (NOCTIS-1.CPP:1974-1975).
+- **Inclination loop logic** — the C and Rust inclination loops match exactly
+  in random() consumption and threshold checks.
+
+**Open puzzle:** The only code in NOCTIS-1.CPP that writes VEGET/TREES to
+`object0_class`/`object1_class`/`object2_class` is the `addtrees:` block
+(lines 2240-2251), which is inside `case 3:` (abitabili) and its nested
+`switch(sctype)`. For type 2 (venusiani) the C switch enters `case 2:` which
+has a `break` at line 2140, before `case 3:` and `addtrees:`. Yet the C
+objectschart at bytes 150-151 shows object classes that are not ROCKS.
+The C byte values don't match a simple `addtrees` application (c2 should be
+VEGET but reads as ROCKS), and c0=3 is an invalid object class value.
+
+Possible explanations (none confirmed):
+- Borland C++ bitfield packing quirk with the `quadrant` struct
+- A stray `_fmemset` or pointer aliasing (`ruinschart` shares the same
+  memory as `objectschart`)
+- The `nr_of_objects` overflow into adjacent bitfield bits when random()
+  returns a value > 3 (though `random(2)`, `random(3)`, `random(4)` outputs
+  all fit in 2 bits)
+
+The downstream effect: `nr_of_objects` at the end of the buffer (bytes
+39966-39973) differs because the inclination loop reads back the objectchart
+for `ptr+200` indices and produces different `incl` values for edge
+quadrants, which flips `nr_of_objects` nibbles.

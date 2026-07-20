@@ -186,16 +186,32 @@ Match rate by planet type (planet / moon):
   surf+atmo+pal, so affected stars show <100% even though the surface matches.
 - A single `is_moon=NULL` type-7 body (data artifact, not a port bug) also
   shows a palette mismatch.
-- **Moon surface SECTOR divergence (3/80 CHOALUUS moons; bodies 27, 61, 75
-  — heightmap and/or objectchart, seedval pseudo landing only).** NOT the
-  §19 far-heap gap: `build_surface` (NOCTIS-1.CPP:1974-1975) reseeds both
-  `fast_srand` and `srand` from `global_surface_seed` at its start, so the
-  RNG state from `gen_planet_surface` (where the tail lives) cannot affect
-  the sector. All 3 bodies match on the default landing (lon=0, lat=60);
-  the divergences are triggered by specific seedval-derived landing
-  coordinates through latitude-sensitive branches in `setup_landing` or
-  `build_surface`. These are real coordinate-sensitive porting bugs, not
-  non-portable tail divergence. Under investigation.
+- **Moon surface SECTOR divergence (5 bodies across 2 stars; bodies CHOALUUS
+  27/61/75 and VOIDAL LAMP 24/28 — heightmap and/or objectchart, seedval
+  pseudo landing only).** NOT the §19 far-heap gap: `build_surface`
+  (NOCTIS-1.CPP:1974-1975) reseeds both `fast_srand` and `srand` from
+  `global_surface_seed` at its start, so the RNG state from
+  `gen_planet_surface` (where the tail lives) cannot affect the sector.
+  All 5 bodies match on the default landing (lon=0, lat=60); divergences are
+  triggered by specific seedval-derived landing coordinates through
+  latitude-sensitive branches in `setup_landing` or `build_surface`.
+
+  Binary diff of C vs Rust objectschart (body 24, type 2 moon) shows only
+  6 differing bytes across all 40000:
+  - bytes 150-151: C has c0=3(invalid)/c1=1(VEGET), Rust has c0=0(ROCKS)/
+    c1=0(ROCKS). The OC_GAP theory was disproven (gap changes have no
+    effect on output). The `addtrees` code path (lines 2240-2251) is the
+    only code that writes VEGET/TREES, but C's case 2 has a `break` before
+    the case-3 `switch(sctype)` that leads to `addtrees`. The C byte values
+    don't match `addtrees` output (c2 should be VEGET but is ROCKS).
+    Root cause of the object class discrepancy is still unclear from static
+    code analysis — possible Borland C++ bitfield packing quirk or an
+    undocumented code path. See `docs/src/porting-gotchas.md` §29.
+  - bytes 39966-39973: `nr_of_objects` nibbles differ near the buffer end
+    (downstream of the class placement issue).
+
+  The same pattern extends to CHOALUUS 27/61 (hm matches, oc differs) and
+  CHOALUUS 75 (both hm+oc differ). Under investigation.
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)
 Canonical hashes MUST come from the real toolchain under DOSBox-X. Never
