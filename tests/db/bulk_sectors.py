@@ -15,14 +15,21 @@ Usage:
   bulk_sectors.py run   <STAR_NAME>      # gen + load
 """
 import argparse
+import glob
 import os
 import re
+import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+SRC = os.path.join(REPO, "source")
+HAR = os.path.join(REPO, "tests", "harness")
+DOSBOX = os.path.join(REPO, "tests", "dosbox")
+TOOLCHAIN = os.environ.get("TOOLCHAIN", os.path.join(REPO, "niv-toolchain", "BCPP31"))
 DB_PATH = os.path.join(HERE, "noctis.db")
 SECT_DIR = os.path.join(REPO, "tests", "results", "sectors")
 RECOMPUTE = os.path.join(REPO, "tests", "scripts", "recompute-sector.sh")
@@ -51,25 +58,119 @@ def gen_star(conn, star, force=False):
                        (star,)).fetchone()
     if not sid:
         print(f"star '{star}' not found"); sys.exit(1)
-    _, x, y, z = sid
+    sid, x, y, z = sid
     bodies = conn.execute(
         "SELECT body_index, seedval FROM planets WHERE star_id=? ORDER BY body_index",
-        (sid[0],)).fetchall()
+        (sid,)).fetchall()
+
+    # Collect pending combos
+    cmds = []  # (body, lon, lat, outpath, outname, dosname)
     for body, seedval in bodies:
-        lon_d, lat_d = 0, 60
         lon_r, lat_r = coords_from_seedval(seedval)
-        for (kind, lon, lat) in (("def", lon_d, lat_d), ("rand", lon_r, lat_r)):
-            out = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
+        for (kind, lon, lat) in (("def", 0, 60), ("rand", lon_r, lat_r)):
+            name = fname(star, body, kind, lon, lat)
+            out = os.path.join(SECT_DIR, name)
             if os.path.exists(out) and not force:
                 print(f"  body {body:3d} {kind}: exists, skip")
                 continue
             print(f"  body {body:3d} {kind}: lon={lon} lat={lat} ...", flush=True)
-            r = subprocess.run(
-                ["bash", RECOMPUTE, "-x", str(x), "-y", str(y), "-z", str(z),
-                 "-p", str(body), "-lon", str(lon), "-lat", str(lat), "-o", out],
-                capture_output=True, text=True)
-            if r.returncode != 0 or not os.path.exists(out):
-                print(f"    [!] FAILED:\n{r.stderr[-500:]}", flush=True)
+            # DOS 8.3-safe name: s{BODY}{D/R}.out
+            suf = "D" if kind == "def" else "R"
+            dosname = f"s{body}{suf}.out"
+            cmds.append((body, lon, lat, out, name, dosname))
+
+    if not cmds:
+        print(f"{star}: nothing to generate")
+        return
+
+    # Determine toolchain mount point
+    if os.path.isfile(os.path.join(TOOLCHAIN, "BIN", "BCC.EXE")):
+        tc_mount = TOOLCHAIN
+    elif os.path.isfile(os.path.join(TOOLCHAIN, "TC", "BIN", "BCC.EXE")):
+        tc_mount = os.path.join(TOOLCHAIN, "TC")
+    else:
+        print(f"[sector] toolchain not found at {TOOLCHAIN}"); sys.exit(1)
+
+    dosbox_x = os.environ.get("DOSBOX_X") or shutil.which("dosbox-x")
+    if not dosbox_x:
+        print("[sector] dosbox-x not found"); sys.exit(1)
+
+    work = tempfile.mkdtemp(prefix="sector_")
+    try:
+        # Copy sources
+        for f in ["NOCTIS-0.CPP", "NOCTIS-1.CPP"]:
+            shutil.copy2(os.path.join(SRC, f), work)
+        for pat in ("*.h", "*.H"):
+            for f in glob.glob(os.path.join(SRC, pat)):
+                shutil.copy2(f, work)
+        for f in ["NIVTEST.CPP", "NIVHASH.C", "NIVHASH.H", "NIVSTUBS.C"]:
+            shutil.copy2(os.path.join(HAR, f), work)
+        for f in ["BUILD.BAT", "LINK.RSP"]:
+            shutil.copy2(os.path.join(DOSBOX, f), work)
+
+        # Write RUN.BAT — one sector command per output file
+        run_lines = ["@echo off"]
+        for body, lon, lat, outpath, name, dosname in cmds:
+            run_lines.append(
+                f"NIVTEST.EXE sector -x {x} -y {y} -z {z} -p {body}"
+                f" -lon {lon} -lat {lat} -o D:\\{dosname}"
+            )
+        run_lines.append("exit")
+        with open(os.path.join(work, "RUN.BAT"), "w") as f:
+            f.write("\r\n".join(run_lines) + "\r\n")
+
+        # Write niv.conf
+        conf = (
+            "[cpu]\r\n"
+            "cputype=486\r\n"
+            "cycles=max\r\n"
+            "[dos]\r\n"
+            "xms=true\r\n"
+            "ems=true\r\n"
+            "[autoexec]\r\n"
+            f"mount c {tc_mount}\r\n"
+            f"mount d {work}\r\n"
+            "path C:\\BIN\r\n"
+            "d:\r\n"
+            "call BUILD.BAT\r\n"
+            "if exist BUILD.FAIL goto end\r\n"
+            "call RUN.BAT\r\n"
+            ":end\r\n"
+            "exit\r\n"
+        )
+        with open(os.path.join(work, "niv.conf"), "w") as f:
+            f.write(conf)
+
+        # Boot DOSBox-X once: compiles + runs all sector commands
+        env = os.environ.copy()
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["SDL_AUDIODRIVER"] = "dummy"
+        r = subprocess.run(
+            [dosbox_x, "-conf", os.path.join(work, "niv.conf"), "-exit"],
+            capture_output=True, text=True, env=env)
+
+        # Check build status
+        fail_flag = os.path.join(work, "BUILD.FAIL")
+        if os.path.exists(fail_flag):
+            log = os.path.join(work, "BUILD.LOG")
+            if os.path.exists(log):
+                with open(log) as lf:
+                    print(f"  [!] BUILD FAILED:\n{lf.read()[-1000:]}", flush=True)
+            print(f"  [!] stderr: {r.stderr[-500:]}", flush=True)
+            return
+
+        # Copy output files
+        ok = 0
+        for body, lon, lat, outpath, name, dosname in cmds:
+            src = os.path.join(work, dosname)
+            if os.path.exists(src):
+                shutil.copy2(src, outpath)
+                ok += 1
+            else:
+                print(f"  body {body:3d}: missing output {name}", flush=True)
+        print(f"{star}: {ok}/{len(cmds)} landings generated (DOSBox-X booted once)", flush=True)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 HM_RE = re.compile(r"^heightmap\s+len=\d+\s+fnv=(\w+)", re.M)
