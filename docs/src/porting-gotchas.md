@@ -877,9 +877,25 @@ by `build_surface()` (NOCTIS-1.CPP:1948) and the terrain helpers
   This is the same nondeterministic-far-heap class as §19 — but here the OOB
   read feeds back into the *hashed* objectchart, so the exact gap bytes must
   be reproduced rather than excluded.
-* **Status (baseline star CHOALUUS, 80 bodies, 160 sector sets):** heightmap
-  + objectchart match 100% for planet types **0, 1, 5, 6, 7, 9**. Types
-  **2 (venusian), 3 (habitable), 4 (rocky/creased), 8 (quartz/milky)** still
-  diverge in the heightmap — the float-heavy terrain paths (`round_hill`
-  cos/sin, `std_crater` sin/pow, `smoothterrain` averaging, `asterism`)
-  need the §22/§23 f32-per-step treatment. Types 2/3/4/8 are the open work.
+* **`round_hill` uses an `unsigned r` → the loop bounds are unsigned.** The
+  loop is `for (x = cx-r; x < cx+r; x++)` with `r` declared `unsigned`
+  (NOCTIS-1.CPP:1494). When `cx < r` (true for essentially every hill, since
+  `r` ∈ [1,250] and `cx` ∈ [0,200]) `cx - r` is computed in **unsigned**
+  arithmetic, underflows to a huge value, so `x < cx + r` is immediately
+  false and the loop body **never executes**. Reproduce with
+  `x0 = (cx as u32).wrapping_sub(r)`, `x1 = (cx as u32) + r`,
+  `while x < x1 { ... x = x.wrapping_add(1) }`. This was the primary cause of
+  the type-2/3/4/8 heightmap divergence (the Rust port had used signed
+  `cx - r`, so its hills over-accumulated). After the fix, type-2 (venusian)
+  planets are byte-exact; most type-3/4/8 planet divergence is resolved, with
+  a few body-specific cases remaining (see AGENTS.md Remaining).
+* **Status (CHOALUUS 80 + AWELER 28 bodies):** heightmap + objectchart match
+  100% for planets of types **0, 1, 2, 5, 6, 7, 9**. Remaining diffs:
+  - All **moons** that diverge are the §19 `s_background` far-heap OOB gap
+    (non-portable; expected).
+  - 3 **AWELER planets** still diverge (bodies 0 & 9 = type 8, body 5 = type
+    3). Body 5 diverges from heightmap byte 0 (whole map) → a base-terrain
+    function in the abitabili path; bodies 0/9 diverge only from byte ~9260
+    (row 46, localized feature). Both are separate from the round_hill fix and
+    still open. CHOALUUS type-3/8 planets all match, so the bug is
+    branch-specific, not universal to the type.

@@ -125,23 +125,30 @@ impl SystemGen {
     // ===================== helper functions =====================
 
     /// round_hill (NOCTIS-1.CPP:1494). `h`, `hmax` are float; `r` is unsigned.
+    /// NB: in Borland C++, `r` is `unsigned`, so `cx - r` (and `cz - r`) is
+    /// evaluated in **unsigned** arithmetic. When `cx < r` (or `cz < r`) the
+    /// start bound underflows to a huge unsigned, so `x < cx + r` is false
+    /// immediately and the loop body never executes. We must reproduce that
+    /// unsigned comparison exactly, otherwise hills over-accumulate.
     fn round_hill(&mut self, cx: i32, cz: i32, r: u32, h: f32, hmax: f32, allowcanyons: i32) {
         let v: f32 = f((r as f64) / M_PI_2);
-        let x0 = cx - r as i32;
-        let x1 = cx + r as i32;
-        let z0 = cz - r as i32;
-        let z1 = cz + r as i32;
+        let x0 = (cx as u32).wrapping_sub(r);
+        let x1 = (cx as u32) + r;
+        let z0 = (cz as u32).wrapping_sub(r);
+        let z1 = (cz as u32) + r;
         let mut x = x0;
         while x < x1 {
             let mut z = z0;
             while z < z1 {
-                if x > -1 && z > -1 && x < 200 && z < 200 {
-                    let dx: f32 = f((x - cx) as f64);
-                    let dz: f32 = f((z - cz) as f64);
+                let xi = x as i32;
+                let zi = z as i32;
+                if xi > -1 && zi > -1 && xi < 200 && zi < 200 {
+                    let dx: f32 = f((xi - cx) as f64);
+                    let dz: f32 = f((zi - cz) as f64);
                     let d: f32 = f((((dx as f64) * (dx as f64) + (dz as f64) * (dz as f64)).sqrt()));
                     let mut y: f32 = f((d as f64 / v as f64).cos() * h as f64);
                     if y >= 0.0 {
-                        y = f(y as f64 + self.p_surfacemap[(200 * (z as i64) + x as i64) as usize] as f64);
+                        y = f(y as f64 + self.p_surfacemap[(200 * (zi as i64) + xi as i64) as usize] as f64);
                         if allowcanyons != 0 {
                             if y > 127.0 {
                                 y = f(254.0 - y as f64);
@@ -151,12 +158,12 @@ impl SystemGen {
                                 y = hmax;
                             }
                         }
-                        self.p_surfacemap[(200 * (z as i64) + x as i64) as usize] = y as u8;
+                        self.p_surfacemap[(200 * (zi as i64) + xi as i64) as usize] = y as u8;
                     }
                 }
-                z += 1;
+                z = z.wrapping_add(1);
             }
-            x += 1;
+            x = x.wrapping_add(1);
         }
     }
 

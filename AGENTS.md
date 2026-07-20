@@ -106,21 +106,43 @@ Match rate by planet type (planet / moon):
 - None for surface maps. All 14975 surface maps across the 15- (and extended
   40-) star corpus match the canonical BCPP 3.1 / DOSBox-X fixtures. See
   `docs/test-fixtures.md` for per-type test coordinates.
+- **3 AWELER planets still diverge in sector heightmap/objectchart** (bodies
+  0 & 9 = type 8, body 5 = type 3). These are NOT the §19 moon far-heap gap
+  (they are planets). Body 5 (type 3) diverges from byte 0 of the heightmap
+  (entire map) → a base-terrain function in the abitabili path is broken
+  (likely `randoface`/`atm_cyclon`/`contrast` applied to the heightmap).
+  Bodies 0 & 9 (type 8) diverge only from byte ~9260 (row 46) — a localized
+  feature function (hills/craters/`fast_random` jitter) differs. Both are
+  separate from the round_hill fix and still under investigation. CHOALUUS's
+  type-3/8 planets all match, so the bug is body-specific (triggered by
+  certain random branches), not universal to the type.
 
 ### Surface SECTOR verification (heightmap + objectchart)
 - Stored in `planets.sect_{def,rand}_{hm,oc}` (canonical, BCPP 3.1 /
   DOSBox-X) and `planets.rust_sect_{def,rand}_{hm,oc}` (Rust port). Driven by
   `tests/db/bulk_sectors.py` (`rust` computes, `cmp` compares — mirrors
-  `compare.py`). Baseline star **CHOALUUS** (80 bodies) verified:
-  - **All 11 planets match byte-exact** (heightmap + objectchart, both the
-    default landing at lon=0/lat=60 and the seedval-derived pseudo landing).
-  - **23/69 moons diverge** — same root cause as the type-7 moon palette gap
-    (§19): the moon `s_background` far-heap OOB tail feeds `random()` into
-    `build_surface()`'s `randoface`/`fracture`/`ssmooth`, so the RNG stream
-    differs between C (far-heap garbage) and Rust (clean buffer). Non-portable;
-    documented as a known gap below.
-  - Only CHOALUUS is loaded so far; extend `bulk_sectors.py load`/`rust`/`cmp`
-    to the full corpus to confirm planet-100% / moon-partial holds everywhere.
+  `compare.py`). Verified on **CHOALUUS** (80 bodies) + **AWELER** (28 bodies):
+  - **CHOALUUS: 73/80 match** — all 11 planets byte-exact (heightmap +
+    objectchart, both default landing at lon=0/lat=60 and seedval pseudo
+    landing); the 7 remaining diffs are all **moons** (§19 far-heap gap).
+  - **AWELER: 25/28 match** — all moons plus most planets match; 3 planets
+    (bodies 0, 5, 9 — types 8, 3, 8) still diverge (see Remaining below).
+  - `recompute-sector.sh` + `bulk_sectors.py` reproduce canonical byte-for-byte
+    and compare; extend `load`/`rust`/`cmp` to the full corpus to confirm holds
+    everywhere.
+
+### Fixed (sector)
+- **`round_hill` unsigned-`r` loop underflow (2026-07-20).** `round_hill`
+  (NOCTIS-1.CPP:1494) declares `r` as `unsigned`. The loop bounds
+  `for (x = cx-r; x < cx+r; x++)` are therefore evaluated in **unsigned**
+  arithmetic: when `cx < r` (true for essentially every hill, since
+  `r` ∈ [1,250] and `cx` ∈ [0,200]) `cx - r` underflows to a huge unsigned,
+  so `x < cx + r` is immediately false and the loop body **never executes**.
+  The Rust port used signed `cx - r` (-76), so its loop ran and
+  over-accumulated hills → byte0 ≈ 96 vs C's post-`rockyground` 1. Fixed by
+  computing `x0 = (cx as u32).wrapping_sub(r)`, `x1 = (cx as u32) + r` and
+  comparing `x < x1` as unsigned. This took the type-2 planet (AWELER body 3)
+  to byte-exact and closed most of the type-2/3/4/8 planet gap. See §25.
 - `recompute-sector.sh` now exists (mirror of `recompute-canonical.sh`,
   invokes the harness `sector` command per body/landing) and is verified to
   reproduce the committed canonical byte-for-byte. Use it to (re)generate
