@@ -648,6 +648,11 @@ impl SystemGen {
     }
 
     // --- shade (NOCTIS-0.CPP:1152) ---
+    // Borland: `k`, `delta_*`, `start_*` are all `float` (32-bit). The x87 FPU
+    // keeps extended precision internally but every store rounds to f32, so
+    // `start_r += delta_r` rounds back to f32 each iteration. We must replicate
+    // that per-step f32 rounding; accumulating in f64/F80 drifts the 64-colour
+    // ramp and breaks type-7 palettes. See porting-gotchas §23/§26.
     fn shade(&mut self, first_color: i32, number_of_colors: i32,
              start_r: f64, start_g: f64, start_b: f64,
              finish_r: f64, finish_g: f64, finish_b: f64) {
@@ -655,38 +660,37 @@ impl SystemGen {
         if count <= 0 {
             return;
         }
-        // x87 80-bit accumulation: use F80 to match the FPU's extended precision
-        // over the full gradient. f64 alone drifts by enough to flip occasional
-        // truncations inside the 64-color ramp.
-        let k = F80::from_f64(1.0).div(&F80::from_f64(count as f64));
-        let dr = F80::from_f64(finish_r - start_r).mul(&k);
-        let dg = F80::from_f64(finish_g - start_g).mul(&k);
-        let db = F80::from_f64(finish_b - start_b).mul(&k);
+        let k: f32 = (1.0f32) / (count as f32);
+        let mut sr: f32 = (start_r as f32);
+        let mut sg: f32 = (start_g as f32);
+        let mut sb: f32 = (start_b as f32);
+        let dr: f32 = ((finish_r as f32) - sr) * k;
+        let dg: f32 = ((finish_g as f32) - sg) * k;
+        let db: f32 = ((finish_b as f32) - sb) * k;
         let mut fc = (first_color * 3) as usize;
-        let mut sr = F80::from_f64(start_r);
-        let mut sg = F80::from_f64(start_g);
-        let mut sb = F80::from_f64(start_b);
         let mut c = count;
-        let put = |v: f64| -> u8 {
-            if v >= 0.0 && v < 64.0 {
-                v as u8
-            } else if v > 0.0 {
-                63u8
-            } else {
-                0u8
-            }
-        };
         while c > 0 {
             if fc + 2 < self.tmppal.len() {
-                self.tmppal[fc + 0] = put(sr.to_f64());
-                self.tmppal[fc + 1] = put(sg.to_f64());
-                self.tmppal[fc + 2] = put(sb.to_f64());
+                self.tmppal[fc + 0] = Self::put_color(sr);
+                self.tmppal[fc + 1] = Self::put_color(sg);
+                self.tmppal[fc + 2] = Self::put_color(sb);
             }
-            sr = sr.add(&dr, false);
-            sg = sg.add(&dg, false);
-            sb = sb.add(&db, false);
+            sr = sr + dr;
+            sg = sg + dg;
+            sb = sb + db;
             fc += 3;
             c -= 1;
+        }
+    }
+
+    // Clamp a colour component (0..63) exactly like the C `shade` write.
+    fn put_color(v: f32) -> u8 {
+        if v >= 0.0 && v < 64.0 {
+            v as u8
+        } else if v > 0.0 {
+            63u8
+        } else {
+            0u8
         }
     }
 

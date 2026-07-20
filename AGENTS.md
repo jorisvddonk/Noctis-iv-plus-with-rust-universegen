@@ -70,7 +70,11 @@ Match rate by planet type (planet / moon):
   replacement, `mov word ptr` zeroing
 - **Terminator**: 16-bit `di` wrap in darkside
 - **F80 add**: exponent alignment, carry check (`s>>63==1` → `!= 0`)
-- **Shade**: F80 gradient accumulation
+- **Shade**: Borland `k`/`delta_*`/`start_*` are `float` (32-bit), so each
+  gradient step rounds back to f32. Accumulating in f64/F80 drifts the
+  64-colour ramp and broke type-7 **planet** palettes. Pure per-step f32
+  rounding took type-7 planets to 100% (see §23/§26). Note: type-7 **moons**
+  still diverge — see the known gap below (it is an rng-tail issue, not shade).
 - **Moon surfaces**: the moon far-heap OOB read (lssmooth past `s_background`)
   lands in scratch rows the game never renders. Fix = hash only the sampled
   rows 0-127 (`SAMPLED_BYTES=46080`), which is fully deterministic across
@@ -99,14 +103,61 @@ Match rate by planet type (planet / moon):
   to **100% (371/371)**. See §24.
 
 ### Remaining
-- None. All 371 surface maps match. See `docs/test-fixtures.md` for
-  per-type test coordinates.
+- None for surface maps. All 14975 surface maps across the 15- (and extended
+  40-) star corpus match the canonical BCPP 3.1 / DOSBox-X fixtures. See
+  `docs/test-fixtures.md` for per-type test coordinates.
+
+### Surface SECTOR verification (heightmap + objectchart)
+- Stored in `planets.sect_{def,rand}_{hm,oc}` (canonical, BCPP 3.1 /
+  DOSBox-X) and `planets.rust_sect_{def,rand}_{hm,oc}` (Rust port). Driven by
+  `tests/db/bulk_sectors.py` (`rust` computes, `cmp` compares — mirrors
+  `compare.py`). Baseline star **CHOALUUS** (80 bodies) verified:
+  - **All 11 planets match byte-exact** (heightmap + objectchart, both the
+    default landing at lon=0/lat=60 and the seedval-derived pseudo landing).
+  - **23/69 moons diverge** — same root cause as the type-7 moon palette gap
+    (§19): the moon `s_background` far-heap OOB tail feeds `random()` into
+    `build_surface()`'s `randoface`/`fracture`/`ssmooth`, so the RNG stream
+    differs between C (far-heap garbage) and Rust (clean buffer). Non-portable;
+    documented as a known gap below.
+  - Only CHOALUUS is loaded so far; extend `bulk_sectors.py load`/`rust`/`cmp`
+    to the full corpus to confirm planet-100% / moon-partial holds everywhere.
+- `recompute-sector.sh` now exists (mirror of `recompute-canonical.sh`,
+  invokes the harness `sector` command per body/landing) and is verified to
+  reproduce the committed canonical byte-for-byte. Use it to (re)generate
+  canonical sector fixtures.
+- **Landable-range bug fixed (2026-07-20):** the pseudo (`rand`) landing
+  coords came from `lat = (s // 1000) % 121`, which can emit lat **0** or
+  **120** — both OUTSIDE the in-game landable latitude bounds of **[1, 119]**
+  enforced by `NOCTIS.CPP:951-955` (`landing_pt_lat > 119 → 119`,
+  `< 1 → 1`). Longitude `% 360` → [0, 359] is fine (game wraps it). The old
+  formula hit lat 0 (236 bodies) and lat 120 (119 bodies) corpus-wide; CHOALUUS
+  happened to avoid both. `coords_from_seedval` now returns
+  `lat = 1 + ((s // 1000) % 119)` (∈ [1, 119]), keeping fixtures on landable
+  ground. Canonical `rand` fixtures must be regenerated with the clamped
+  coords (the `def` landing at lat 60 is unaffected).
 
 ### Known non-surface gaps
-- A few bodies still differ in the `palette64` hash (e.g. UNNAMED_CLASS1
-  body 45). This is pre-existing and unrelated to the surface map; the
-  palette RNG path is not yet byte-exact. `compare.py` counts surf+atmo+pal,
-  so it will show <100% for those stars even though the **surface** matches.
+- **Type-7 moon `palette64` divergence (171 bodies, scattered across ~100
+  stars).** Confirmed root cause: the moon's `s_background` scratch tail
+  (rows 128–179, never displayed) is uninitialized far-heap in BCPP 3.1.
+  `randoface`/`fracture`/`ssmooth` iterate the full 64800-byte buffer and
+  consume `random()` conditionally on those tail bytes, so the RNG stream
+  entering `shade()` differs between C (far-heap garbage) and Rust (a clean
+  buffer). The resulting palette diverges even though the surface map (rows
+  0–127, which we hash) matches. This is the same §19 moon far-heap OOB issue
+  that forced us to exclude the surface tail from hashing — but the palette is
+  *downstream* of that RNG consumption, so it cannot be excluded the same way.
+  It is non-portable: C's tail is deterministic per DOSBox-X run (verified
+  stable across runs) but not reproducible from the planet seed alone. Type-7
+  **planets** (tail fully valid) match 100%. `compare.py` counts
+  surf+atmo+pal, so affected stars show <100% even though the surface matches.
+- A single `is_moon=NULL` type-7 body (data artifact, not a port bug) also
+  shows a palette mismatch.
+- **Moon surface SECTOR divergence (23/69 CHOALUUS moons; heightmap +
+  objectchart).** Same §19 moon `s_background` far-heap OOB tail feeds
+  `random()` into `build_surface()`'s `randoface`/`fracture`/`ssmooth`, so the
+  sector RNG stream differs between C and Rust. Planets (tail valid) match
+  100%. Non-portable; see the Surface SECTOR verification section above.
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)
 Canonical hashes MUST come from the real toolchain under DOSBox-X. Never

@@ -30,7 +30,7 @@ RECOMPUTE = os.path.join(REPO, "tests", "scripts", "recompute-canonical.sh")
 BASE = "https://jorisvddonk.github.io/feltyrion-explorer"
 
 INDEX_RE = re.compile(
-    r"^- \[.*?\]\(/feltyrion-explorer/stars/(.+?)\.txt\): S(\d+) — (\d+) bodies"
+    r"^(.*?)\s+ S(\d+) \s+(\d+) bodies"
 )
 
 
@@ -124,10 +124,10 @@ def ensure_moon_cols(conn):
     conn.commit()
 
 
-def run_one(conn, name):
+def run_one(conn, name, no_compare=False):
     fname = safe_filename(name)
     cls, x, y, z = fetch_star(name)
-    print(f"[{name}] S{cls:02d} @ ({x},{y},{z})")
+    print(f"[{name}] S{cls:02d} @ ({x},{y},{z})", flush=True)
 
     conn.execute(
         "INSERT OR IGNORE INTO stars (name, class, x, y, z) VALUES (?,?,?,?,?)",
@@ -136,30 +136,32 @@ def run_one(conn, name):
     conn.commit()
     row = conn.execute("SELECT id FROM stars WHERE x=? AND y=? AND z=?", (x, y, z)).fetchone()
     if not row:
-        print(f"  [!] insert failed (dup coords?) — skipping")
+        print(f"  [!] insert failed (dup coords?) — skipping", flush=True)
         return None
     sid = row[0]
 
     out_path = os.path.join(CANON_DIR, f"{fname}.out")
     if not os.path.exists(out_path):
-        print(f"  recompute-canonical ...")
+        print(f"  recompute-canonical ...", flush=True)
         r = subprocess.run(
             ["bash", RECOMPUTE, "-x", str(x), "-y", str(y), "-z", str(z), "-o", out_path],
             capture_output=True, text=True,
         )
         if r.returncode != 0 or not os.path.exists(out_path):
-            print(f"  [!] canonical FAILED:\n{r.stderr[-600:]}")
+            print(f"  [!] canonical FAILED:\n{r.stderr[-600:]}", flush=True)
             return None
     else:
-        print(f"  canonical exists, reusing")
+        print(f"  canonical exists, reusing", flush=True)
 
     subprocess.run([sys.executable, os.path.join(HERE, "load_canonical.py"), name, out_path],
                    check=True)
     populate_moons_from_out(conn, sid, out_path)
 
+    if no_compare:
+        return "loaded"
     r = subprocess.run([sys.executable, os.path.join(HERE, "compare.py"), name],
                        capture_output=True, text=True)
-    print(r.stdout.rstrip())
+    print(r.stdout.rstrip(), flush=True)
     tail = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
     return tail
 
@@ -169,9 +171,15 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     sp = sub.add_parser("select")
     sp.add_argument("--per-class", type=int, default=2)
+    sp.add_argument("--target", type=int, default=0,
+                    help="spread this many systems evenly across all classes")
     rp = sub.add_parser("run")
     rp.add_argument("--per-class", type=int, default=2)
+    rp.add_argument("--target", type=int, default=0,
+                    help="spread this many systems evenly across all classes")
     rp.add_argument("--only", nargs="*")
+    rp.add_argument("--no-compare", action="store_true",
+                    help="skip per-star compare during ingestion (do aggregate later)")
     args = ap.parse_args()
 
     conn = sqlite3.connect(DB_PATH)
@@ -181,9 +189,13 @@ def main():
     if getattr(args, "only", None):
         targets = [(n, None, None) for n in args.only]
     else:
+        per_class = args.per_class
+        if args.target:
+            ncls = len({c for _, c, nb in load_index() if nb >= 1})
+            per_class = max(1, args.target // ncls)
         print("loading index ...", file=sys.stderr)
         entries = load_index()
-        targets = select(entries, args.per_class, ex)
+        targets = select(entries, per_class, ex)
 
     if args.cmd == "select":
         for name, cls, nb in targets:
@@ -194,7 +206,7 @@ def main():
     results = []
     for name, *_ in targets:
         try:
-            res = run_one(conn, name)
+            res = run_one(conn, name, no_compare=args.no_compare)
             results.append((name, res))
         except Exception as e:
             print(f"  [!] {name}: {e}")

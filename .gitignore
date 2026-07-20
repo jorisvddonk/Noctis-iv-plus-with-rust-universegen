@@ -11,3 +11,6 @@
  *.zip
 
  tests/nivgen/target/
+
+__pycache__/
+*.pyc

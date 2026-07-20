@@ -64,6 +64,7 @@ internal coordinates (game flips Y).
 | 2 | KASZEL | 6 | 6(4) 8(2) | -x -107404880 -y -24973547 -z -1984549 |
 | 3 | SLINRE | 26 | 2(5) 1(5) 5(4) 8(3) 3(3) 6(2) 4(2) 9(1) 0(1) | -x -1997637008 -y 9992 -z 759944 |
 | 4 | SADA'UKEIRIT | 80 | 7(33) 1(12) 9(9) 5(7) 2(5) 8(4) 0(4) 6(3) 4(2) 3(1) | -x -1218798544 -y 1041409 -z -1081208337 |
+| 4 | KANEIKULA | 80 | 7(15) 1(12) 5(10) 2(8) 3(8) 0(9) 6(7) 8(5) 4(4) 9(2) | -x 4235344 -y 4335168 -z -1114734 |
 | 5 | BROWN GAS | 0 | — | -x -653187152 -y 321344 -z 72 |
 | 6 | L4 FINAL STOP | 0 | — | -x -1998519504 -y 24432 -z 641552 |
 | 7 | BLUEK | 1 | 9(1) | -x -1994744880 -y -121633 -z 1270993 |
@@ -71,3 +72,22 @@ internal coordinates (game flips Y).
 | 9 | YOLINX I | 72 | 1(17) 7(14) 5(12) 2(10) 9(4) 4(4) 8(3) 6(3) 0(3) 3(2) | -x -1998481648 -y 3234 -z 934018 |
 | 10 | DOTURAK | 1 | 2(1) | -x -822289168 -y 1295379 -z -679183759 |
 | 11 | WHIKEL I | 5 | 1(3) 5(2) | -x -1996240944 -y -72703 -z 944799 |
+
+## KANEIKULA — class 4 (80 bodies) — 2nd surface-test anchor
+
+Our second full-corpus anchor star. Unlike UNNAMED_CLASS1 (which lacks type 3)
+and SADA'UKEIRIT (which carries the type-7 moon palette divergence, see
+AGENTS.md §19/§26), KANEIKULA generates **all ten planet types** and matches
+the canonical BCPP 3.1 / DOSBox-X fixtures byte-for-byte across every body
+(`compare.py KANEIKULA` → 80/80 OK: surface + atmosphere + palette).
+
+```
+-x 4235344 -y 4335168 -z -1114734
+```
+
+Types: 7(15) 1(12) 0(9) 5(10) 2(8) 3(8) 6(7) 8(5) 4(4) 9(2)
+
+This star is the recommended regression anchor for surface-map work because it
+exercises every `surf_case*` path (including type 3 felisian and type 7 gas
+giant) with a large moon population, and is currently free of the type-7 moon
+palette gap.

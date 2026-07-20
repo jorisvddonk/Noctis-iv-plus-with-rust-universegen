@@ -902,49 +902,55 @@ impl SystemGen {
                     SC_OCEAN => {
                         self.waves_in = 1;
                         self.waves_out = 1;
-                        if self.albedo > 20 {
-                            self.waswet = 1;
-                            self.waves_in = 0;
-                            // goto revert
-                            self.oc_revert();
+                        // Mirrors the C switch's `goto revert` / `goto addtrees`,
+                        // which jump OUT of the OCEAN case and skip the sandy
+                        // texture block below.
+                        'ocean: {
+                            if self.albedo > 20 {
+                                self.waswet = 1;
+                                self.waves_in = 0;
+                                // goto revert (revert + addtrees + break)
+                                self.oc_revert();
+                                break 'ocean;
+                            }
+                            if self.albedo > 16 && self.rng.random(2) != 0 {
+                                let a = self.rng.random(2);
+                                self.rockyground(10, a, -5);
+                                self.waves_in = 0;
+                            }
+                            if self.rng.random(3) == 0 {
+                                cx = self.rng.random(100) + 50;
+                                cz = self.rng.random(100) + 50;
+                                let a_h = self.rng.random(10) + 1;
+                                let a_r = self.rng.random(100) + 25;
+                                let a_cz = cz + self.rng.random(15);
+                                let a_cx = cx + self.rng.random(15);
+                                self.round_hill(a_cx, a_cz, a_r as u32, f(a_h as f64), 0.0_f32, 1);
+                                let b_h = self.rng.random(100) + 1;
+                                let b_r = self.rng.random(100) + 25;
+                                self.round_hill(cx, cz, b_r as u32, f(b_h as f64), 0.0_f32, 1);
+                                self.waswet = 1;
+                                // goto addtrees (addtrees + break)
+                                self.oc_addtrees();
+                                break 'ocean;
+                            }
+                            // texture sabbiosa
+                            self.t_scale = 128;
+                            n = self.rng.random(30) + 2;
+                            ptr = 65535;
+                            while ptr != 0 {
+                                self.p_background[ptr] = self.rng.random(n) as u8;
+                                ptr -= 1;
+                            }
+                            self.rockscaling = f(50.0 + self.rng.random(75) as f64);
+                            self.rockpeaking = f(30.0 + self.rng.random(25) as f64);
+                            if self.rng.random(3) != 0 {
+                                self.rockdensity = 31;
+                            } else {
+                                self.rockdensity = 0;
+                            }
+                            liquid_water = 1;
                         }
-                        if self.albedo > 16 && self.rng.random(2) != 0 {
-                            // C: falls through here only if waswet branch skipped.
-                            let a = self.rng.random(2);
-                            self.rockyground(10, a, -5);
-                            self.waves_in = 0;
-                        }
-                        if self.rng.random(3) == 0 {
-                            cx = self.rng.random(100) + 50;
-                            cz = self.rng.random(100) + 50;
-                            let a_h = self.rng.random(10) + 1;
-                            let a_r = self.rng.random(100) + 25;
-                            let a_cz = cz + self.rng.random(15);
-                            let a_cx = cx + self.rng.random(15);
-                            self.round_hill(a_cx, a_cz, a_r as u32, f(a_h as f64), 0.0_f32, 1);
-                            let b_h = self.rng.random(100) + 1;
-                            let b_r = self.rng.random(100) + 25;
-                            self.round_hill(cx, cz, b_r as u32, f(b_h as f64), 0.0_f32, 1);
-                            self.waswet = 1;
-                            // goto addtrees
-                            self.oc_addtrees();
-                        }
-                        // texture sabbiosa
-                        self.t_scale = 128;
-                        n = self.rng.random(30) + 2;
-                        ptr = 65535;
-                        while ptr != 0 {
-                            self.p_background[ptr] = self.rng.random(n) as u8;
-                            ptr -= 1;
-                        }
-                        self.rockscaling = f(50.0 + self.rng.random(75) as f64);
-                        self.rockpeaking = f(30.0 + self.rng.random(25) as f64);
-                        if self.rng.random(3) != 0 {
-                            self.rockdensity = 31;
-                        } else {
-                            self.rockdensity = 0;
-                        }
-                        liquid_water = 1;
                     }
 
                     SC_PLAINS => {
