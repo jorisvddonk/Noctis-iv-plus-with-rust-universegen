@@ -108,7 +108,8 @@ Match rate by planet type (planet / moon):
   `docs/test-fixtures.md` for per-type test coordinates.
 - None for sector (heightmap + objectchart, planets). All 11 CHOALUUS plus
   all 11 AWELER planets match byte-exact across both default and seedval
-  pseudo landings. Moon sector divergence (see §19 below) is non-portable.
+  pseudo landings. 3 CHOALUUS moons diverge only on seedval pseudo landings
+  — these are coordinate-sensitive porting bugs (see below), NOT §19.
 
 ### Surface SECTOR verification (heightmap + objectchart)
 - Stored in `planets.sect_{def,rand}_{hm,oc}` (canonical, BCPP 3.1 /
@@ -117,7 +118,10 @@ Match rate by planet type (planet / moon):
   `compare.py`). Verified on **CHOALUUS** (80 bodies) + **AWELER** (28 bodies):
   - **CHOALUUS: 77/80 match** — all 11 planets byte-exact (heightmap +
     objectchart, both default landing at lon=0/lat=60 and seedval pseudo
-    landing); the 3 remaining diffs are all **moons** (§19 far-heap gap).
+    landing); the 3 remaining diffs are **moons** (bodies 27, 61, 75) that
+    diverge only on seedval pseudo landings — coordinate-sensitive porting
+    bugs, NOT the §19 far-heap gap (§19 does not affect sectors because
+    `build_surface` reseeds both RNGs at its start).
   - **AWELER: 28/28 match** — all 11 planets (types 0-9) and 17 moons
     byte-exact for both default and seedval pseudo landings.
   - `recompute-sector.sh` + `bulk_sectors.py` reproduce canonical byte-for-byte
@@ -182,11 +186,16 @@ Match rate by planet type (planet / moon):
   surf+atmo+pal, so affected stars show <100% even though the surface matches.
 - A single `is_moon=NULL` type-7 body (data artifact, not a port bug) also
   shows a palette mismatch.
-- **Moon surface SECTOR divergence (23/69 CHOALUUS moons; heightmap +
-  objectchart).** Same §19 moon `s_background` far-heap OOB tail feeds
-  `random()` into `build_surface()`'s `randoface`/`fracture`/`ssmooth`, so the
-  sector RNG stream differs between C and Rust. Planets (tail valid) match
-  100%. Non-portable; see the Surface SECTOR verification section above.
+- **Moon surface SECTOR divergence (3/80 CHOALUUS moons; bodies 27, 61, 75
+  — heightmap and/or objectchart, seedval pseudo landing only).** NOT the
+  §19 far-heap gap: `build_surface` (NOCTIS-1.CPP:1974-1975) reseeds both
+  `fast_srand` and `srand` from `global_surface_seed` at its start, so the
+  RNG state from `gen_planet_surface` (where the tail lives) cannot affect
+  the sector. All 3 bodies match on the default landing (lon=0, lat=60);
+  the divergences are triggered by specific seedval-derived landing
+  coordinates through latitude-sensitive branches in `setup_landing` or
+  `build_surface`. These are real coordinate-sensitive porting bugs, not
+  non-portable tail divergence. Under investigation.
 
 ## Canonical hashes (BCPP 3.1 / DOSBox-X only)
 Canonical hashes MUST come from the real toolchain under DOSBox-X. Never
