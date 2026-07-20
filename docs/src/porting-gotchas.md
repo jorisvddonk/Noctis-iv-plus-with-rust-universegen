@@ -851,3 +851,35 @@ This fix took the port to **100% (371/371 surface maps)**.
 irrelevant to the texture. Position math can leak into the surface through
 lighting/terminator code, and a term that is dead for most bodies can be live
 for a rare owner/type combination.
+
+## 25. `build_surface` surface-sector generator (2026-07-20)
+
+New subsystem: the landing-sector HEIGHTMAP (`p_surfacemap`, 40000 bytes) and
+OBJECTCHART (`objectschart`, 40000 bytes = 40000 `quadrant` bitfields), driven
+by `build_surface()` (NOCTIS-1.CPP:1948) and the terrain helpers
+`round_hill`/`smoothterrain`/`rockyground`/`std_crater`/`srf_darkline`/
+`felisian_srf_darkline`/`asterism`. Harness command: `sector`.
+
+* **`quadrant` is a 4× 2-bit bitfield** (NOCTIS-D.H:171): `nr_of_objects`
+  (bits 0-1), `object0_class` (2-3), `object1_class` (4-5), `object2_class`
+  (6-7) — one byte per quadrant. `objectschart[ptr]` is byte `ptr`.
+* **Canonical hash covers the WHOLE 40000-byte heightmap and objectchart.**
+  The inclination loop (2606-2615) reads `p_surfacemap[ptr+200]` for
+  `ptr` up to 39999 → indices up to 40199, which fall **past the end of
+  `p_surfacemap`** into the farmalloc gap and then `objectschart`.
+* **The farmalloc gap is 16 bytes.** Under BCPP 3.1 / DOSBox-X,
+  `p_surfacemap` (40000) is followed by a 16-byte farmalloc heap header, then
+  `objectschart` (40000). So `p_surfacemap[40000+k]` = header byte `k` for
+  `k<16`, else `objectschart[k-16]`. The 16 header bytes are
+  `[0,0,0,0,0,0,0,0,0,0,0,0,197,9,181,84]` for this build (measured from the
+  C reference via a 40200-byte dump). Reproduce them as `OC_GAP` in `surf_h`;
+  do NOT let Rust's `p_surfacemap` Vec simply return 0 / panic / wrap.
+  This is the same nondeterministic-far-heap class as §19 — but here the OOB
+  read feeds back into the *hashed* objectchart, so the exact gap bytes must
+  be reproduced rather than excluded.
+* **Status (baseline star CHOALUUS, 80 bodies, 160 sector sets):** heightmap
+  + objectchart match 100% for planet types **0, 1, 5, 6, 7, 9**. Types
+  **2 (venusian), 3 (habitable), 4 (rocky/creased), 8 (quartz/milky)** still
+  diverge in the heightmap — the float-heavy terrain paths (`round_hill`
+  cos/sin, `std_crater` sin/pow, `smoothterrain` averaging, `asterism`)
+  need the §22/§23 f32-per-step treatment. Types 2/3/4/8 are the open work.

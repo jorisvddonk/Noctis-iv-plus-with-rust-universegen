@@ -146,6 +146,64 @@ pub struct SystemGen {
     pub s_background: Vec<u8>, // 65536 (surface map = first 64800)
     pub objectschart: Vec<u8>, // 32400 (atmosphere overlay, hashed as bytes)
     pub tmppal: Vec<u8>,       // 768
+
+    // --- build_surface (surface SECTOR) buffers + landing context ---
+    // `txtr` (the 256x256 surface-texture buffer) is aliased onto
+    // `p_background` in the C harness (`txtr = p_background`), so the
+    // `surface_sector` module writes texture bytes into `p_background`.
+    pub p_surfacemap: Vec<u8>, // 40000 (200x200 heightmap)
+
+    // Landing context globals (NOCTIS-1.CPP build_surface / harness setup_landing).
+    pub ip_targetted: i32,
+    pub landing_pt_lon: i32,
+    pub landing_pt_lat: i32,
+    pub landing_point: i32,
+    pub latitude: f32,
+    pub nightzone: i32,
+    pub albedo: i32,
+    pub global_surface_seed: i64,
+    pub sctype: i32, // OCEAN=1 PLAINS=2 DESERT=3 ICY=4
+
+    // Terrain tuning globals (written by build_surface; not hashed).
+    pub t_scale: i64,
+    pub quartz: i32,
+    pub gtx: i32,
+    pub groundflares: i32,
+    pub waves_in: i32,
+    pub waves_out: i32,
+    pub treepeaking: f32,
+    pub treescaling: f32,
+    pub treespreads: f32,
+    pub branchwidth: f32,
+    pub rootheight: f32,
+    pub rootshade: i32,
+    pub treeflares: i32,
+    pub leafflares: i32,
+    pub rockscaling: f32,
+    pub rockpeaking: f32,
+    pub rockdensity: i32,
+    pub mushscaling: i64,
+    pub sky_brightness: i32,
+    pub snowy: i32,
+    pub frosty: i32,
+    pub waswet: i32,
+    pub liquid_water: i32,
+    pub sh_delta: i32,
+
+    // Sun / shading geometry (set by setup_landing; consumed by build_surface tail).
+    pub dsd: f64,
+    pub dsd1: f64,
+    pub dsd2: f64,
+    pub nray1: f64,
+    pub nray2: f64,
+    pub sun_x: f64,
+    pub sun_y: f64,
+    pub sun_z: f64,
+    pub base_pp_pressure: f64,
+    pub rainy: f64,
+
+    // m200 lookup table: m200[i] = (unsigned)(i * 200). Used by make_ruins.
+    pub m200: [u32; 200],
     pub lft_sin: [f64; 361],
     pub lft_cos: [f64; 361],
     pub quadwords: i32,
@@ -220,8 +278,59 @@ impl SystemGen {
             secs: 0.0,
             p_background: make_bg(),
             s_background: make_bg(),
-            objectschart: vec![0u8; 32400],
+            objectschart: vec![0u8; 40000], // oc_bytes = 40000 (object map); atmo overlay uses [0..32400]
             tmppal: vec![0u8; 768],
+            p_surfacemap: vec![0u8; 40000],
+            ip_targetted: -1,
+            landing_pt_lon: 0,
+            landing_pt_lat: 60,
+            landing_point: 0,
+            latitude: 0.0,
+            nightzone: 0,
+            albedo: 32,
+            global_surface_seed: 0,
+            sctype: 2,
+            t_scale: 32,
+            quartz: 0,
+            gtx: 1,
+            groundflares: 0,
+            waves_in: 0,
+            waves_out: 0,
+            treepeaking: 1.25,
+            treescaling: 4096.0,
+            treespreads: 0.75,
+            branchwidth: 0.15,
+            rootheight: 0.50,
+            rootshade: 0x00,
+            treeflares: 0x00,
+            leafflares: 0x00,
+            rockscaling: 500.0,
+            rockpeaking: 250.0,
+            rockdensity: 15,
+            mushscaling: 8191,
+            sky_brightness: 0,
+            snowy: 0,
+            frosty: 0,
+            waswet: 0,
+            liquid_water: 0,
+            sh_delta: 0,
+            dsd: 1000.0,
+            dsd1: 1000.0,
+            dsd2: 1000.0,
+            nray1: 0.0,
+            nray2: 0.0,
+            sun_x: -1000.0,
+            sun_y: 0.0,
+            sun_z: 0.0,
+            base_pp_pressure: 0.0,
+            rainy: 0.0,
+            m200: {
+                let mut m = [0u32; 200];
+                for i in 0..200 {
+                    m[i] = (i * 200) as u32;
+                }
+                m
+            },
             lft_sin: [0.0; 361],
             lft_cos: [0.0; 361],
             quadwords: 16000,
