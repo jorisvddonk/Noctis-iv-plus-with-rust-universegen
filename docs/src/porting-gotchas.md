@@ -886,16 +886,75 @@ by `build_surface()` (NOCTIS-1.CPP:1948) and the terrain helpers
   `x0 = (cx as u32).wrapping_sub(r)`, `x1 = (cx as u32) + r`,
   `while x < x1 { ... x = x.wrapping_add(1) }`. This was the primary cause of
   the type-2/3/4/8 heightmap divergence (the Rust port had used signed
-  `cx - r`, so its hills over-accumulated). After the fix, type-2 (venusian)
-  planets are byte-exact; most type-3/4/8 planet divergence is resolved, with
-  a few body-specific cases remaining (see AGENTS.md Remaining).
+  `cx - r`, so its hills over-accumulated). After this and the subsequent fixes
+  (§27, §28, plus the type-8 quartz tail), all planet sector output is
+  byte-exact.
 * **Status (CHOALUUS 80 + AWELER 28 bodies):** heightmap + objectchart match
-  100% for planets of types **0, 1, 2, 5, 6, 7, 9**. Remaining diffs:
-  - All **moons** that diverge are the §19 `s_background` far-heap OOB gap
-    (non-portable; expected).
-  - 3 **AWELER planets** still diverge (bodies 0 & 9 = type 8, body 5 = type
-    3). Body 5 diverges from heightmap byte 0 (whole map) → a base-terrain
-    function in the abitabili path; bodies 0/9 diverge only from byte ~9260
-    (row 46, localized feature). Both are separate from the round_hill fix and
-    still open. CHOALUUS type-3/8 planets all match, so the bug is
-    branch-specific, not universal to the type.
+  100% for all planets of types **0-9** (22/22 planets across both stars).
+  All moon diffs are the §19 `s_background` far-heap OOB gap (non-portable;
+  expected).
+
+## 26. `shade` gradient accumulators are `float` (2026-07-19)
+
+`shade()` (NOCTIS-0.CPP:1928) declares `k`, `delta_*`, `start_*` as `float`
+(32-bit), so every gradient step `k += delta_r` rounds back to f32.
+Emulating with `F80` or `f64` drifted the 64-colour ramp and broke type-7
+planet palettes. Pure per-step f32 rounding (`(k as f64 + delta as f64) as f32`)
+took type-7 planets to 100%. See AGENTS.md Fixed list.
+
+## 27. Sector jitter guard: C `!random(5)` = "run when 0" (2026-07-20)
+
+The heightmap jitter in `build_surface()` (NOCTIS-1.CPP:2288-2291) is guarded
+by:
+
+```c
+if (!waswet || (waswet && !random(5))) {
+    for (...) p_surfacemap[ptr] += fast_random(3);
+}
+```
+
+`!random(5)` in Borland C returns 0 (false) when `random(5)` is **non-zero**
+and 1 (true) when `random(5)` is **zero** — i.e., the jitter runs with
+**1 in 5 probability** on wet worlds (and always on dry ones).
+
+The Rust port had:
+
+```rust
+if w == 0 || (w != 0 && self.rng.random(5) != 0) { ... }
+```
+
+which **inverts** the test: jitter runs when `random(5) != 0` (4 in 5)
+instead of when `random(5) == 0` (1 in 5). Correct:
+
+```rust
+if w == 0 || (w != 0 && self.rng.random(5) == 0) { ... }
+```
+
+This caused AWELER body 5 (type 3, wet) to diverge from heightmap byte 0 —
+the entire map had wrong jitter values. After the fix, body 5 is byte-exact.
+
+## 28. Objects `nr_of_objects` reset checks `waswet`, not local `liquid_water` (2026-07-20)
+
+After building the heightmap and objectchart, C resets the `nr_of_objects`
+nibble on flat pixels (NOCTIS-1.CPP:2624-2627):
+
+```c
+if (waswet) {
+    for (ptr=0; ptr<40000; ptr++)
+        if (!p_surfacemap[ptr])
+            objectschart[ptr] &= 0xFC;   // zero bits 0-1 = nr_of_objects
+}
+```
+
+`waswet` is the **global** set earlier in `build_surface` during the
+abitabili/generate-tiling path. The port accidentally declared and tested a
+local `liquid_water` variable that was **never set to 1** — it was
+initialized to 0 and only assigned `liquid_water = 1` in a dead code path
+(behind `if liquid_water != 0 { ... }` when `liquid_water` was still 0).
+The reset never ran in Rust, so flat pixels kept non-zero `nr_of_objects`
+from prior writes.
+
+This caused AWELER body 5 (type 3, wet) objectchart divergence — the
+heightmap already differed due to §27, and even after fixing heightmap the
+objectchart bytes at flat-pixel locations were wrong. Fixed by changing the
+guard to `self.waswet != 0`.

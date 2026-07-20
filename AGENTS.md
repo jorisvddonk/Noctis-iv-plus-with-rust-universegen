@@ -106,27 +106,20 @@ Match rate by planet type (planet / moon):
 - None for surface maps. All 14975 surface maps across the 15- (and extended
   40-) star corpus match the canonical BCPP 3.1 / DOSBox-X fixtures. See
   `docs/test-fixtures.md` for per-type test coordinates.
-- **3 AWELER planets still diverge in sector heightmap/objectchart** (bodies
-  0 & 9 = type 8, body 5 = type 3). These are NOT the §19 moon far-heap gap
-  (they are planets). Body 5 (type 3) diverges from byte 0 of the heightmap
-  (entire map) → a base-terrain function in the abitabili path is broken
-  (likely `randoface`/`atm_cyclon`/`contrast` applied to the heightmap).
-  Bodies 0 & 9 (type 8) diverge only from byte ~9260 (row 46) — a localized
-  feature function (hills/craters/`fast_random` jitter) differs. Both are
-  separate from the round_hill fix and still under investigation. CHOALUUS's
-  type-3/8 planets all match, so the bug is body-specific (triggered by
-  certain random branches), not universal to the type.
+- None for sector (heightmap + objectchart, planets). All 11 CHOALUUS plus
+  all 11 AWELER planets match byte-exact across both default and seedval
+  pseudo landings. Moon sector divergence (see §19 below) is non-portable.
 
 ### Surface SECTOR verification (heightmap + objectchart)
 - Stored in `planets.sect_{def,rand}_{hm,oc}` (canonical, BCPP 3.1 /
   DOSBox-X) and `planets.rust_sect_{def,rand}_{hm,oc}` (Rust port). Driven by
   `tests/db/bulk_sectors.py` (`rust` computes, `cmp` compares — mirrors
   `compare.py`). Verified on **CHOALUUS** (80 bodies) + **AWELER** (28 bodies):
-  - **CHOALUUS: 73/80 match** — all 11 planets byte-exact (heightmap +
+  - **CHOALUUS: 77/80 match** — all 11 planets byte-exact (heightmap +
     objectchart, both default landing at lon=0/lat=60 and seedval pseudo
-    landing); the 7 remaining diffs are all **moons** (§19 far-heap gap).
-  - **AWELER: 25/28 match** — all moons plus most planets match; 3 planets
-    (bodies 0, 5, 9 — types 8, 3, 8) still diverge (see Remaining below).
+    landing); the 3 remaining diffs are all **moons** (§19 far-heap gap).
+  - **AWELER: 28/28 match** — all 11 planets (types 0-9) and 17 moons
+    byte-exact for both default and seedval pseudo landings.
   - `recompute-sector.sh` + `bulk_sectors.py` reproduce canonical byte-for-byte
     and compare; extend `load`/`rust`/`cmp` to the full corpus to confirm holds
     everywhere.
@@ -143,6 +136,20 @@ Match rate by planet type (planet / moon):
   computing `x0 = (cx as u32).wrapping_sub(r)`, `x1 = (cx as u32) + r` and
   comparing `x < x1` as unsigned. This took the type-2 planet (AWELER body 3)
   to byte-exact and closed most of the type-2/3/4/8 planet gap. See §25.
+- **Jitter guard (2026-07-20).** C condition `if (!waswet || (waswet &&
+  !random(5)))` runs the heightmap jitter only when `random(5)==0` (1 in 5
+  chance for wet worlds). The port inverted the test (`random(5) != 0`),
+  jittering 4 out of 5 times instead of 1. Fixed to `_r5 == 0`. Body 5
+  (type 3) heightmap now byte-exact. See §27.
+- **Objects `nr_of_objects` reset (2026-07-20).** C line 2624 resets
+  `nr_of_objects = 0` on flat pixels when `if (waswet)` — referencing the
+  global `waswet`, not a local. The port declared and tested a dead local
+  `liquid_water` that was never set to 1. Fixed to `self.waswet != 0`. Body 5
+  objectchart now byte-exact. See §28.
+- **Type-8 quartz tail (2026-07-20).** C line 2393 adds a shared tail after
+  the type-8 feature block (hills/craters/jitter): `if (!random(5)) quartz=1`.
+  The port omitted it. Added `if self.rng.random(5) == 0 { self.quartz = 1; }`
+  in the type-8 match arm. AWELER bodies 0 & 9 (type 8) now byte-exact.
 - `recompute-sector.sh` now exists (mirror of `recompute-canonical.sh`,
   invokes the harness `sector` command per body/landing) and is verified to
   reproduce the committed canonical byte-for-byte. Use it to (re)generate
