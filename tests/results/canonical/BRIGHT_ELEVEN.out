@@ -1,0 +1,22 @@
+=== PLANET TEXTURES (all 5 bodies) ===
+PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=1585687288.051875
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=1 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-147796059.797010
+  rtperiod=640 rotation=0 term_start=216 term_end=346
+surface_map      len=46080  fnv=0F567C15 crc=71BFA0EC
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=AA80986D crc=1A0D700B
+PLANET body=2 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=26925278.644082
+  rtperiod=450 rotation=0 term_start=216 term_end=346
+surface_map      len=46080  fnv=3963BFBC crc=331AAC38
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=C47F097D crc=11C4A5F5
+PLANET body=3 type=10 (companion star - not a planet) owner=-1 seedval=-200419813928.800160
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=4 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=-1819237233.314665
+  rtperiod=680 rotation=0 term_start=216 term_end=346
+surface_map      len=46080  fnv=D164FE6E crc=2E1ABB48
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=C99381E6 crc=6A8D2624

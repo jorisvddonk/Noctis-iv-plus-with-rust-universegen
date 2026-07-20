@@ -1,0 +1,31 @@
+=== PLANET TEXTURES (all 6 bodies) ===
+PLANET body=0 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=188923704.798026
+  rtperiod=627 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=6262573D crc=902FC010
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=D141506F crc=08A47779
+PLANET body=1 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-365980265.832990
+  rtperiod=279 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=C26E4C55 crc=B24A9AC8
+atmo_overlay     len=32400  fnv=57943CDF crc=52F687F2
+palette64        len=192    fnv=1E2EFAEC crc=8761003E
+PLANET body=2 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-4054532942.126910
+  rtperiod=342 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=67903B36 crc=26E428B0
+atmo_overlay     len=32400  fnv=0CD7953E crc=E74AFC4E
+palette64        len=192    fnv=C9633F84 crc=FAB5C829
+PLANET body=3 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=2 seedval=831256078.031813
+  rtperiod=566 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=3E837B90 crc=F8369047
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=B4DE2915 crc=D71AEAA5
+PLANET body=4 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=2 seedval=121273903.735519
+  rtperiod=526 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=E110FF3E crc=D3D52847
+atmo_overlay     len=32400  fnv=6D817AFD crc=E062A22D
+palette64        len=192    fnv=ADF270EB crc=3BFD0E07
+PLANET body=5 type=5 (small, solid, thin atmosphere.) owner=2 seedval=127553458.621501
+  rtperiod=654 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=37590404 crc=F690BBA3
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=F842B9EC crc=B861E4C9

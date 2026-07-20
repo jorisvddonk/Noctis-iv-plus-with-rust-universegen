@@ -1,0 +1,31 @@
+=== PLANET TEXTURES (all 6 bodies) ===
+PLANET body=0 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=0.000000
+  rtperiod=625 rotation=0 term_start=124 term_end=254
+surface_map      len=46080  fnv=5E157C9D crc=D0003BCD
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=2FD3E634 crc=648C7F72
+PLANET body=1 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-201991.328885
+  rtperiod=398 rotation=0 term_start=124 term_end=254
+surface_map      len=46080  fnv=25C3A9F7 crc=E35CC89A
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=E6457AAF crc=9F0C67CC
+PLANET body=2 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-156714.265725
+  rtperiod=198 rotation=0 term_start=124 term_end=254
+surface_map      len=46080  fnv=E1730875 crc=AC14C158
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=D04EC0A2 crc=20BB270E
+PLANET body=3 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-9978928.618688
+  rtperiod=727 rotation=0 term_start=124 term_end=254
+surface_map      len=46080  fnv=2C78F088 crc=B5880710
+atmo_overlay     len=32400  fnv=BE796A4A crc=2F1F6FFE
+palette64        len=192    fnv=BF5452F6 crc=B6A0EB5C
+PLANET body=4 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=67858121.271812
+  rtperiod=850 rotation=0 term_start=124 term_end=254
+surface_map      len=46080  fnv=8D037C35 crc=ED2E1784
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=19BE8252 crc=55AEFE11
+PLANET body=5 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=48742963.396311
+  rtperiod=614 rotation=0 term_start=124 term_end=254
+surface_map      len=46080  fnv=8D037C35 crc=ED2E1784
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=8DAAA5C6 crc=841FEC71

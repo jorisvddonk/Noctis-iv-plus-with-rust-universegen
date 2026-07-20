@@ -1,0 +1,6 @@
+=== PLANET TEXTURES (all 1 bodies) ===
+PLANET body=0 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-36421684.980161
+  rtperiod=226 rotation=0 term_start=79 term_end=209
+surface_map      len=46080  fnv=A1752293 crc=A599B442
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=BA9E97BC crc=C9ED1F09

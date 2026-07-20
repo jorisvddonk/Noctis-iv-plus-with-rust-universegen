@@ -1,0 +1,36 @@
+=== PLANET TEXTURES (all 7 bodies) ===
+PLANET body=0 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-539518.395655
+  rtperiod=351 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=6D3FCD8A crc=A9C35ECD
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=157181D3 crc=0E184B92
+PLANET body=1 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-2143546.297973
+  rtperiod=511 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=D4D1783A crc=64B9E9FE
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=C0EBA636 crc=344B33E6
+PLANET body=2 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-8643276.560042
+  rtperiod=544 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=F564D14C crc=BCEA7611
+atmo_overlay     len=32400  fnv=9A49E616 crc=83343BAF
+palette64        len=192    fnv=E1EE4C44 crc=D31747B8
+PLANET body=3 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=38145794.594653
+  rtperiod=580 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=2F64A813 crc=06BE98A8
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=C058489E crc=AFB940DA
+PLANET body=4 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=11760571.536349
+  rtperiod=241 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=38F9BE64 crc=40E2EE5F
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=3E4F99E0 crc=E3450B3F
+PLANET body=5 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-38352221.544880
+  rtperiod=707 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=741A03A7 crc=8F2903B7
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=BDBC514C crc=457DB3AC
+PLANET body=6 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-420814019.520968
+  rtperiod=442 rotation=0 term_start=341 term_end=111
+surface_map      len=46080  fnv=6D1AE9A1 crc=E9E1456C
+atmo_overlay     len=32400  fnv=BEF0BCD4 crc=FE017AF9
+palette64        len=192    fnv=34152D8F crc=4261C813

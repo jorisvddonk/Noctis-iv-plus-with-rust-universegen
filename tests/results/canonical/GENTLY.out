@@ -1,0 +1,11 @@
+=== PLANET TEXTURES (all 2 bodies) ===
+PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-44699359.571229
+  rtperiod=455 rotation=0 term_start=137 term_end=267
+surface_map      len=46080  fnv=4B5CDD16 crc=48BCBE6E
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=AB94E646 crc=B9548776
+PLANET body=1 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-1006827746.988374
+  rtperiod=567 rotation=0 term_start=137 term_end=267
+surface_map      len=46080  fnv=382ED466 crc=A80D502B
+atmo_overlay     len=32400  fnv=3386AF4D crc=6F0B4AC9
+palette64        len=192    fnv=77023A9A crc=5F916B4E

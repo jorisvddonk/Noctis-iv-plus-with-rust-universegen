@@ -1,0 +1,6 @@
+=== PLANET TEXTURES (all 1 bodies) ===
+PLANET body=0 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=-1 seedval=0.000000
+  rtperiod=625 rotation=0 term_start=69 term_end=199
+surface_map      len=46080  fnv=B30452C7 crc=647D1CD4
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=BCB46EE1 crc=468A9EC1

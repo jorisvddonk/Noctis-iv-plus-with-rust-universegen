@@ -1,0 +1,16 @@
+=== PLANET TEXTURES (all 3 bodies) ===
+PLANET body=0 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-1032.767154
+  rtperiod=770 rotation=0 term_start=151 term_end=281
+surface_map      len=46080  fnv=AA86AB21 crc=7D551802
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=B49D6500 crc=97B35087
+PLANET body=1 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-1678788.082323
+  rtperiod=610 rotation=0 term_start=151 term_end=281
+surface_map      len=46080  fnv=61455CBA crc=B62F5099
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=4018154B crc=873DC27C
+PLANET body=2 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=1184769.069948
+  rtperiod=369 rotation=0 term_start=151 term_end=281
+surface_map      len=46080  fnv=8AFD8F94 crc=9233C550
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=0C26B747 crc=9307BA22

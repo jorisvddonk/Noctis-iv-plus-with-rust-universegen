@@ -1,0 +1,41 @@
+=== PLANET TEXTURES (all 8 bodies) ===
+PLANET body=0 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-2223963.857467
+  rtperiod=603 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=997C683B crc=3B23DF0A
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=98A6E83E crc=8C938804
+PLANET body=1 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=0.000000
+  rtperiod=625 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=00DC249D crc=DC9B41B1
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=2FD3E634 crc=648C7F72
+PLANET body=2 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=-1 seedval=-2332124.042724
+  rtperiod=373 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=5319481F crc=7E05195E
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=46134188 crc=6DDAD55E
+PLANET body=3 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-1775920.551392
+  rtperiod=504 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=D3DD24D9 crc=0D1FFDEF
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=6367E5FC crc=7A927CF9
+PLANET body=4 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=26629616.974341
+  rtperiod=714 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=9457F91C crc=B3C9E700
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=66045A0C crc=299CCF7C
+PLANET body=5 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=127632047.371953
+  rtperiod=321 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=921CC3E6 crc=23796028
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=EC367ED6 crc=8A094A96
+PLANET body=6 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-151469750.266237
+  rtperiod=248 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=1FB36219 crc=CFD1239C
+atmo_overlay     len=32400  fnv=163D1C17 crc=F88937B8
+palette64        len=192    fnv=C97FB914 crc=52082C25
+PLANET body=7 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-2291360386.502899
+  rtperiod=556 rotation=0 term_start=148 term_end=278
+surface_map      len=46080  fnv=68B7B55A crc=A902A965
+atmo_overlay     len=32400  fnv=A9CD9D02 crc=51C4318D
+palette64        len=192    fnv=CC042406 crc=0691FB27

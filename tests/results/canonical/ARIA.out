@@ -1,0 +1,6 @@
+=== PLANET TEXTURES (all 1 bodies) ===
+PLANET body=0 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=565105.401810
+  rtperiod=581 rotation=0 term_start=154 term_end=284
+surface_map      len=46080  fnv=32845EFF crc=DCEEBCD5
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=44945E7B crc=930155E3

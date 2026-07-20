@@ -1,0 +1,6 @@
+=== PLANET TEXTURES (all 1 bodies) ===
+PLANET body=0 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=675168.716433
+  rtperiod=477 rotation=0 term_start=52 term_end=182
+surface_map      len=46080  fnv=CE923514 crc=A46CE341
+atmo_overlay     len=32400  fnv=2ED40745 crc=832E5AA1
+palette64        len=192    fnv=E5601F8F crc=B27E5CFC

@@ -1,0 +1,36 @@
+=== PLANET TEXTURES (all 7 bodies) ===
+PLANET body=0 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=0.000000
+  rtperiod=625 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=590D3CCA crc=2664C4E1
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=AC1946D6 crc=12C60613
+PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=63966.863609
+  rtperiod=126 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=D97113E7 crc=2AA8218A
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=945808CB crc=537D9280
+PLANET body=2 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-913281.640705
+  rtperiod=787 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=5C9C8735 crc=6A43C4FC
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=A2DEC493 crc=C15AB06A
+PLANET body=3 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=44287179.603900
+  rtperiod=560 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=0D09E289 crc=FAC85373
+atmo_overlay     len=32400  fnv=66AA156D crc=F95EFCF4
+palette64        len=192    fnv=EE233B40 crc=D7CCE6BF
+PLANET body=4 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-75677371.031496
+  rtperiod=478 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=B7F3483B crc=59ABD0DE
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=19B3BA94 crc=8D37AC4F
+PLANET body=5 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=272881516.097189
+  rtperiod=403 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=1EBC7777 crc=98D318EA
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=8DDA6046 crc=DE8E0B9F
+PLANET body=6 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=99150036.748502
+  rtperiod=329 rotation=0 term_start=108 term_end=238
+surface_map      len=46080  fnv=4C411C1C crc=802DFC38
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=38BF6D0D crc=8194CD36

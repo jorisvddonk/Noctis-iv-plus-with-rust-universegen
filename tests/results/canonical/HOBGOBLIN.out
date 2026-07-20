@@ -1,0 +1,36 @@
+=== PLANET TEXTURES (all 7 bodies) ===
+PLANET body=0 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=144899.048559
+  rtperiod=486 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=373A3F15 crc=CF29808A
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=DB6E041F crc=0510D7B9
+PLANET body=1 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=4283489.505357
+  rtperiod=326 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=8CA92AE8 crc=AFFEE6D2
+atmo_overlay     len=32400  fnv=0DB75D15 crc=34313C1E
+palette64        len=192    fnv=A6741E08 crc=68307D9A
+PLANET body=2 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-472971.830965
+  rtperiod=337 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=B89DDE30 crc=B6156519
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=51DAAC42 crc=74BBE8E2
+PLANET body=3 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-45733506.715432
+  rtperiod=635 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=14D935E9 crc=4209E178
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=07AFC16A crc=B78A4E28
+PLANET body=4 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=52753233.899153
+  rtperiod=264 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=E219E9D4 crc=83F43EC8
+atmo_overlay     len=32400  fnv=11FDD012 crc=1DF67375
+palette64        len=192    fnv=975A7A4D crc=951BF9E1
+PLANET body=5 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=4219635.903729
+  rtperiod=251 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=82B33058 crc=2A704140
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=0D159B35 crc=AD306AE3
+PLANET body=6 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-4954122.621974
+  rtperiod=767 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=373A3F15 crc=CF29808A
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=3C8D2A38 crc=D918B6D0

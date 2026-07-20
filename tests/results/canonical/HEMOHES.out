@@ -1,0 +1,6 @@
+=== PLANET TEXTURES (all 1 bodies) ===
+PLANET body=0 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=468731881.266344
+  rtperiod=640 rotation=0 term_start=141 term_end=271
+surface_map      len=46080  fnv=24BE29D7 crc=2BB7C77B
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=7FB3652F crc=56BDD8EA

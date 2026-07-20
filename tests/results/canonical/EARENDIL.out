@@ -1,0 +1,16 @@
+=== PLANET TEXTURES (all 3 bodies) ===
+PLANET body=0 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=2283593.890186
+  rtperiod=591 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=5F264F32 crc=648A180D
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=850BCFE5 crc=AFDD3919
+PLANET body=1 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=33429033.060197
+  rtperiod=433 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=5F264F32 crc=648A180D
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=E37DF5F9 crc=B0503A8C
+PLANET body=2 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=-1 seedval=-6305822.268453
+  rtperiod=457 rotation=0 term_start=271 term_end=41
+surface_map      len=46080  fnv=C8121DD6 crc=F2293349
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=7FDFE42A crc=6E39FBB0
