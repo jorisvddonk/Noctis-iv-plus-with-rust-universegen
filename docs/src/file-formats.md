@@ -111,33 +111,49 @@ Save file for planetary surface state. Created during landing, deleted on takeof
 
 ---
 
-## STARMAP.BIN - Star Database
+## STARMAP2.BIN - Star Map (NoctisMapper format)
 
-The procedural star map database.
+The NoctisMapper starmap format. Source of truth for star name, class, and Parsis coordinates.
 
-### Structure
+### File Structure
 
-| Section | Description |
-|---------|-------------|
-| Header | Consolidation marker and metadata |
-| Star Records | Variable-length star entries |
-| Labels | User-added star labels |
+- No file header
+- Fixed-length entries, 44 bytes each
 
-### Star Record Format
+### Entry Format
+
+| Offset | Size | Type | Description |
+|--------|------|------|-------------|
+| 0 | 4 | int32 | `star_x` - Parsis X coordinate |
+| 4 | 4 | int32 | `star_y` - Parsis Y coordinate (engine-facing; negate for user-facing) |
+| 8 | 4 | int32 | `star_z` - Parsis Z coordinate |
+| 12 | 4 | int32 | `index` - 0 for stars, >0 for planets/moons |
+| 16 | 4 | int32 | `body_type` - 0 for stars, planet type for bodies |
+| 20 | 20 | char[20] | `name` - Star or body name (space-padded, no null terminator) |
+| 40 | 4 | char[4] | `type_str` - `" S##"` for stars (class), `" P##"` for bodies (number) |
+
+### Star Entry
+
+- `index` == 0
+- `body_type` == 0
+- `type_str` format: `" S"` followed by two-digit class (e.g. `" S00"`, `" S05"`)
+
+### Coordinate Convention
+
+- File stores **engine-facing** Y (starmap convention: negated from galactic chart)
+- To get user-facing Y (what the player sees on the galactic chart): `user_y = -engine_y`
+- The C harness negates at the boundary: `ap_target_y = -y` (where `y` is user-facing CLI input)
+- The Rust CLI negates at the boundary: `EngineY::from_user_y(y)`
+- The DB column `y_user` stores **user-facing** Y
+
+### Example
 
 ```
-double identity      // Unique star identifier
-char class          // Star class (0-11)
-float x, y, z       // Position
-float radius         // Star radius
-char r, g, b        // Color components
-char spin            // Rotation phase
-// ... more fields
+Entry for BALASTRACKONASTREYA:
+  x = -18928, y = -29680 (engine), z = -67336
+  user-facing: (-18928, 29680, -67336)
+  class = S00
 ```
-
-### Consolidation
-
-The first 4 bytes contain a consolidation marker. After modification, this marks the end of validated data.
 
 ---
 

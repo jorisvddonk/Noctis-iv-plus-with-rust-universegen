@@ -17,6 +17,7 @@ import argparse
 import os
 import re
 import sqlite3
+import struct
 import subprocess
 import sys
 import urllib.parse
@@ -80,16 +81,46 @@ def select(entries, per_class, existing_names):
 COORD_RE = re.compile(r"Paris coordinates:\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)")
 CLASS_RE = re.compile(r"Star class:\s*S(\d+)")
 
+STARMAP2_PATH = os.path.join(REPO, "data", "starmap2.bin")
+
+def load_starmap2():
+    """Parse starmap2.bin and return dict name -> (class, x, y_user, z).
+    
+    starmap2.bin stores engine-facing y; we negate to user-facing for the DB.
+    """
+    if not os.path.exists(STARMAP2_PATH):
+        raise FileNotFoundError(f"starmap2.bin not found at {STARMAP2_PATH}")
+    with open(STARMAP2_PATH, "rb") as f:
+        data = f.read()
+    out = {}
+    ENTRY_SIZE = 44
+    for i in range(0, len(data) - ENTRY_SIZE, ENTRY_SIZE):
+        entry = data[i:i+ENTRY_SIZE]
+        idx = struct.unpack("<i", entry[12:16])[0]
+        if idx != 0:
+            continue
+        x = struct.unpack("<i", entry[0:4])[0]
+        y_eng = struct.unpack("<i", entry[4:8])[0]
+        z = struct.unpack("<i", entry[8:12])[0]
+        body_type = struct.unpack("<i", entry[16:20])[0]
+        if body_type != 0:
+            continue
+        name = entry[20:40].rstrip(b" ").decode("ascii", errors="replace")
+        type_str = entry[40:44].decode("ascii", errors="replace").rstrip()
+        if not name or not type_str.startswith(" S"):
+            continue
+        cls = int(type_str[2:4])
+        y_user = -y_eng
+        out[name] = (cls, x, y_user, z)
+    return out
+
 
 def fetch_star(name):
-    """Return (cls, x, y, z) from the per-star .txt."""
-    url = f"{BASE}/stars/{urllib.parse.quote(name)}.txt"
-    text = fetch(url)
-    c = CLASS_RE.search(text)
-    co = COORD_RE.search(text)
-    if not c or not co:
-        raise ValueError(f"could not parse coords/class for {name}")
-    return int(c.group(1)), int(co.group(1)), int(co.group(2)), int(co.group(3))
+    """Return (cls, x, y, z) from starmap2.bin (user-facing y)."""
+    smap = load_starmap2()
+    if name not in smap:
+        raise ValueError(f"star '{name}' not found in starmap2.bin")
+    return smap[name]
 
 
 def safe_filename(name):
