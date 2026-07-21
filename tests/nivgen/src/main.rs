@@ -294,7 +294,6 @@ fn cmd_fill_db(args: &[String]) {
     let db_path = args.iter().position(|a| a == "--db").and_then(|p| args.get(p + 1))
         .map(|s| s.as_str()).unwrap_or("db/noctis.db");
     let conn = rusqlite::Connection::open(db_path).expect("open DB");
-    conn.execute_batch("DELETE FROM planets").expect("clear planets");
     let mut stmt = conn.prepare("SELECT id, x, y_user, z FROM stars ORDER BY id")
         .expect("prepare stmt");
     let stars: Vec<(i64, f64, f64, f64)> = stmt.query_map([], |row| {
@@ -303,11 +302,13 @@ fn cmd_fill_db(args: &[String]) {
 
     let mut update_star = conn.prepare("UPDATE stars SET class = ?1 WHERE id = ?2")
         .expect("prepare update star");
-    let mut insert = conn.prepare(
-        "INSERT OR IGNORE INTO planets \
-         (star_id, body_index, planet_type, seedval, is_moon, p_owner, p_moonid) \
-         VALUES (?1,?2,?3,?4,?5,?6,?7)"
-    ).expect("prepare insert");
+    let mut upsert = conn.prepare(
+        "INSERT INTO planets (star_id, body_index, planet_type, seedval, is_moon, p_owner, p_moonid) \
+         VALUES (?1,?2,?3,?4,?5,?6,?7) \
+         ON CONFLICT(star_id, body_index) DO UPDATE SET \
+         planet_type=excluded.planet_type, seedval=excluded.seedval, \
+         is_moon=excluded.is_moon, p_owner=excluded.p_owner, p_moonid=excluded.p_moonid"
+    ).expect("prepare upsert");
 
     for (i, (sid, x, y_user, z)) in stars.iter().enumerate() {
         let mut g = nivgen::system::SystemGen::new();
@@ -316,7 +317,6 @@ fn cmd_fill_db(args: &[String]) {
         let known = [
             ("BALASTRACKONASTREYA", 0i32, -18928.0, 29680.0, -67336.0),
             ("FENIA",               0, 4342128.0, 4559934.0, -807862.0),
-            ("CHOALUUS",            9, 1399069584.0, 1988408.0, 1399905480.0),
             ("PITSTOP 12",          5, 104784.0, -8554.0, 49535587.0),
             ("AWELER",              3, 1977136.0, 5126384.0, -394992.0),
         ];
@@ -333,12 +333,12 @@ fn cmd_fill_db(args: &[String]) {
             .expect("update star class");
         for bi in 0..g.nearstar_nob as usize {
             let sv = g.surface_seedval_for(bi as i32);
-            insert.execute(rusqlite::params![
+            upsert.execute(rusqlite::params![
                 sid, bi as i32, g.p_type[bi] as i32, sv,
                 (g.p_owner[bi] > -1) as i32,
                 g.p_owner[bi] as i32,
                 g.p_moonid[bi] as i32,
-            ]).expect("insert planet");
+            ]).expect("upsert planet");
         }
         if (i + 1) % 100 == 0 || i == stars.len() - 1 {
             println!("[{}/{}] star_id={} cls={} nob={}",
