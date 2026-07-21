@@ -217,7 +217,7 @@ def load_star(conn, star):
     print(f"{star}: loaded sector hashes for {len(bodies)} bodies")
 
 
-NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "debug", "nivgen")
+NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "release", "nivgen")
 
 
 def rust_sector_hashes(x, y, z, body, lon, lat, gap=None):
