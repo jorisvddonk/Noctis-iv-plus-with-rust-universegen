@@ -54,11 +54,12 @@ def fname(star, body, kind, lon, lat):
 
 
 def gen_star(conn, star, force=False):
-    sid = conn.execute("SELECT id, x, y, z FROM stars WHERE name=?",
+    sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
                        (star,)).fetchone()
     if not sid:
         print(f"star '{star}' not found"); sys.exit(1)
-    sid, x, y, z = sid
+    sid, x, y_eng, z = sid
+    y_usr = -y_eng  # DB stores engine-facing; CLI expects user-facing
     bodies = conn.execute(
         "SELECT body_index, seedval FROM planets WHERE star_id=? ORDER BY body_index",
         (sid,)).fetchall()
@@ -112,7 +113,7 @@ def gen_star(conn, star, force=False):
         run_lines = ["@echo off"]
         for body, lon, lat, outpath, name, dosname in cmds:
             run_lines.append(
-                f"NIVTEST.EXE sector -x {x} -y {y} -z {z} -p {body}"
+                f"NIVTEST.EXE sector -x {x} -y {y_usr} -z {z} -p {body}"
                 f" -lon {lon} -lat {lat} -o D:\\{dosname}"
             )
         run_lines.append("exit")
@@ -236,11 +237,12 @@ def rust_sector_hashes(x, y, z, body, lon, lat, gap=None):
 
 def rust_star(conn, star):
     """Compute Rust sector hashes for every body/landing and store them."""
-    sid = conn.execute("SELECT id, x, y, z FROM stars WHERE name=?",
+    sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
                        (star,)).fetchone()
     if not sid:
         print(f"star '{star}' not found"); sys.exit(1)
-    _, x, y, z = sid
+    _, x, y_eng, z = sid
+    y_usr = -y_eng  # DB stores engine-facing; CLI expects user-facing
     bodies = conn.execute(
         "SELECT body_index, seedval, sect_gap FROM planets WHERE star_id=? "
         "ORDER BY body_index", (sid[0],)).fetchall()
@@ -252,7 +254,7 @@ def rust_star(conn, star):
             ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc"),
             ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc"),
         ):
-            hm, oc = rust_sector_hashes(x, y, z, body, lon, lat, gap)
+            hm, oc = rust_sector_hashes(x, y_usr, z, body, lon, lat, gap)
             if hm:
                 up[hm_col] = hm
             if oc:
@@ -279,7 +281,13 @@ def cmp_star(conn, star):
         "rust_sect_rand_hm, rust_sect_rand_oc FROM planets "
         "WHERE star_id=? ORDER BY body_index", (sid,)).fetchall()
     ok = 0
+    no_canon = 0
     for (b, cdm, cdo, crm, cro, rdm, rdo, rrm, rro) in bodies:
+        # If no canonical data at all, report that instead of "match"
+        if cdm is None and cdo is None and crm is None and cro is None:
+            print(f"  body {b:3d}: NO CANONICAL DATA")
+            no_canon += 1
+            continue
         parts = []
         for (canon, rust, lbl) in ((cdm, rdm, "def-hm"), (cdo, rdo, "def-oc"),
                                    (crm, rrm, "rand-hm"), (cro, rro, "rand-oc")):
@@ -293,7 +301,8 @@ def cmp_star(conn, star):
             print(f"  body {b:3d}: DIFF({' '.join(parts)})")
         else:
             ok += 1
-    print(f"{star}: {ok}/{len(bodies)} bodies match (sectors)")
+    label = f"{ok}/{len(bodies)} bodies match" if no_canon == 0 else f"{ok}/{len(bodies)} bodies match ({no_canon} no canonical)"
+    print(f"{star}: {label}")
 
 
 def main():
