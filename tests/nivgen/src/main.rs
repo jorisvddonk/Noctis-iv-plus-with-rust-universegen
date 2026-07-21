@@ -31,6 +31,7 @@ fn main() {
         "planet-all" => cmd_planet_all(&args),
         "sector" => cmd_sector(&args),
         "surftex" => cmd_surftex(&args),
+        "fill-db" => cmd_fill_db(&args),
         _ => {
             eprintln!("unknown command: {}", cmd);
             std::process::exit(1);
@@ -288,6 +289,46 @@ fn cmd_sector(args: &[String]) {
 }
 
 fn cmd_surftex(_args: &[String]) { eprintln!("surftex: not yet implemented"); }
+
+fn cmd_fill_db(args: &[String]) {
+    let db_path = args.iter().position(|a| a == "--db").and_then(|p| args.get(p + 1))
+        .map(|s| s.as_str()).unwrap_or("db/noctis.db");
+    let conn = rusqlite::Connection::open(db_path).expect("open DB");
+    conn.execute_batch("DELETE FROM planets").expect("clear planets");
+    let mut stmt = conn.prepare("SELECT id, x, y_user, z FROM stars ORDER BY id")
+        .expect("prepare stmt");
+    let stars: Vec<(i64, f64, f64, f64)> = stmt.query_map([], |row| {
+        Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+    }).expect("query stars").filter_map(|r| r.ok()).collect();
+
+    let mut update_star = conn.prepare("UPDATE stars SET class = ?1 WHERE id = ?2")
+        .expect("prepare update star");
+    let mut insert = conn.prepare(
+        "INSERT OR IGNORE INTO planets \
+         (star_id, body_index, planet_type, seedval, is_moon, p_owner, p_moonid) \
+         VALUES (?1,?2,?3,0.0,?4,?5,?6)"
+    ).expect("prepare insert");
+
+    for (i, (sid, x, y, z)) in stars.iter().enumerate() {
+        let mut g = nivgen::system::SystemGen::new();
+        g.generate(*x, nivgen::system::EngineY::from_user_y(*y), *z);
+        update_star.execute(rusqlite::params![g.nearstar_class, sid])
+            .expect("update star class");
+        for bi in 0..g.nearstar_nob as usize {
+            insert.execute(rusqlite::params![
+                sid, bi as i32, g.p_type[bi] as i32,
+                (g.p_owner[bi] > -1) as i32,
+                g.p_owner[bi] as i32,
+                g.p_moonid[bi] as i32,
+            ]).expect("insert planet");
+        }
+        if (i + 1) % 100 == 0 || i == stars.len() - 1 {
+            println!("[{}/{}] star_id={} cls={} nob={}",
+                i + 1, stars.len(), sid, g.nearstar_class, g.nearstar_nob);
+        }
+    }
+    println!("Done.");
+}
 
 fn hashline(f: &mut Option<std::fs::File>, label: &str, buf: &[u8]) {
     let fnv = fnv1a(buf);

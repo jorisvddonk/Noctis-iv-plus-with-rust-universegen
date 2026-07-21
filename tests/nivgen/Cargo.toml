@@ -8,6 +8,7 @@ license = "MIT"
 [dependencies]
 extended = "0.1.0"
 swfp = "0.1.0"
+rusqlite = { version = "0.31", features = ["bundled"] }
 
 [lib]
 name = "nivgen"
