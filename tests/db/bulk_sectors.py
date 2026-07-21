@@ -35,6 +35,10 @@ SECT_DIR = os.path.join(REPO, "tests", "results", "sectors")
 RECOMPUTE = os.path.join(REPO, "tests", "scripts", "recompute-sector.sh")
 
 
+def safe_filename(name):
+    return name.replace(" ", "_").replace("/", "_")
+
+
 def coords_from_seedval(seedval):
     """Deterministic pseudo-random landing coords from a planet seedval.
 
@@ -211,9 +215,18 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
                 print("  [!] BUILD FAILED"); return
             save_source_hash()
 
-        # RUN.BAT with ALL stars' commands
+        # RUN.BAT: planet-all for each star, then all sector landings
         run_lines = ["@echo off"]
+        seen_stars = []
         for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+            if star_name not in seen_stars:
+                seen_stars.append(star_name)
+                canon_idx = len(seen_stars) - 1
+                canon_name = f"PLANET{canon_idx}.OUT"
+                run_lines.append(
+                    f"NIVTEST.EXE planet-all -x {cx} -y {cy} -z {cz}"
+                    f" -o D:\\{canon_name}"
+                )
             run_lines.append(
                 f"NIVTEST.EXE sector -x {cx} -y {cy} -z {cz} -p {body}"
                 f" -lon {lon} -lat {lat} -o D:\\{dosname}"
@@ -278,6 +291,26 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
             n_cmds = sum(1 for c in all_cmds if info.get((c[0], c[1], c[4])) == sn)
             print(f"{sn}: {n}/{n_cmds} landings generated")
         print(f"Booted DOSBox-X once for {len(stars)} stars")
+
+        # Load canonical surface hashes from planet-all outputs
+        canon_dir = os.path.join(REPO, "tests", "results", "canonical")
+        load_script = os.path.join(REPO, "tests", "db", "load_canonical.py")
+        for idx, star_name in enumerate(seen_stars):
+            canon_name = f"PLANET{idx}.OUT"
+            canon_src = os.path.join(work, canon_name)
+            canon_dst = os.path.join(canon_dir, f"{safe_filename(star_name)}.out")
+            if os.path.exists(canon_src):
+                shutil.copy2(canon_src, canon_dst)
+                r = subprocess.run(
+                    [sys.executable, load_script, star_name, canon_dst],
+                    capture_output=True, text=True
+                )
+                if r.returncode == 0:
+                    print(f"  [canon] {star_name}: {r.stdout.strip()}")
+                else:
+                    print(f"  [canon] {star_name}: FAILED: {r.stderr[-200:]}")
+            else:
+                print(f"  [canon] {star_name}: no planet-all output", flush=True)
 
     finally:
         shutil.rmtree(work, ignore_errors=True)
