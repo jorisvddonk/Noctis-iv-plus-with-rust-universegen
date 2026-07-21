@@ -54,43 +54,54 @@ def fname(star, body, kind, lon, lat):
 
 
 def gen_star(conn, star, force=False, build_flag=False):
+    gen_stars_batch(conn, [star], force, build_flag)
+
+# ---------- helpers ----------
+
+def _star_cmds(conn, star, force):
+    """Collect pending (body, lon, lat, dosname, outpath, x, y_usr, z) for one star."""
     sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
                        (star,)).fetchone()
     if not sid:
-        print(f"star '{star}' not found"); sys.exit(1)
+        return [], None, None, None, None
     sid, x, y_eng, z = sid
-    y_usr = -y_eng  # DB stores engine-facing; CLI expects user-facing
+    y_usr = -y_eng
     bodies = conn.execute(
         "SELECT body_index, seedval FROM planets WHERE star_id=? ORDER BY body_index",
         (sid,)).fetchall()
-
-    # Collect pending combos
-    cmds = []  # (body, lon, lat, outpath, outname, dosname)
+    cmds = []
     for body, seedval in bodies:
         lon_r, lat_r = coords_from_seedval(seedval)
-        for (kind, lon, lat) in (("def", 0, 60), ("rand", lon_r, lat_r)):
+        for kind, lon, lat in (("def", 0, 60), ("rand", lon_r, lat_r)):
             name = fname(star, body, kind, lon, lat)
             out = os.path.join(SECT_DIR, name)
             if os.path.exists(out) and not force:
-                print(f"  body {body:3d} {kind}: exists, skip")
                 continue
-            print(f"  body {body:3d} {kind}: lon={lon} lat={lat} ...", flush=True)
-            # DOS 8.3-safe name: s{BODY}{D/R}.out
             suf = "D" if kind == "def" else "R"
-            dosname = f"s{body}{suf}.out"
-            cmds.append((body, lon, lat, out, name, dosname))
+            cmds.append((body, lon, lat, f"s{body}{suf}.out", out, x, y_usr, z))
+    return cmds, x, y_usr, z, star
 
-    if not cmds:
-        print(f"{star}: nothing to generate")
+def gen_stars_batch(conn, stars, force=False, build_flag=False):
+    """Generate C canonical sector fixtures for multiple stars in one DOSBox-X boot."""
+    all_cmds = []
+    info = {}
+    for s in stars:
+        cmds, _, _, _, _ = _star_cmds(conn, s, force)
+        all_cmds.extend(cmds)
+        for c in cmds:
+            info[(c[0], c[3])] = s  # (body, dosname) -> star
+
+    if not all_cmds:
+        print(f"{', '.join(stars[:3])}{'...' if len(stars)>3 else ''}: nothing to generate")
         return
 
-    # Determine toolchain mount point
+    # Toolchain
     if os.path.isfile(os.path.join(TOOLCHAIN, "BIN", "BCC.EXE")):
         tc_mount = TOOLCHAIN
     elif os.path.isfile(os.path.join(TOOLCHAIN, "TC", "BIN", "BCC.EXE")):
         tc_mount = os.path.join(TOOLCHAIN, "TC")
     else:
-        print(f"[sector] toolchain not found at {TOOLCHAIN}"); sys.exit(1)
+        print("[sector] toolchain not found"); sys.exit(1)
 
     dosbox_x = os.environ.get("DOSBOX_X") or shutil.which("dosbox-x")
     if not dosbox_x:
@@ -104,7 +115,6 @@ def gen_star(conn, star, force=False, build_flag=False):
 
         if need_build:
             os.makedirs(exe_dir, exist_ok=True)
-            # Copy sources into work for compilation
             for f in ["NOCTIS-0.CPP", "NOCTIS-1.CPP"]:
                 shutil.copy2(os.path.join(SRC, f), work)
             for pat in ("*.h", "*.H"):
@@ -114,9 +124,6 @@ def gen_star(conn, star, force=False, build_flag=False):
                 shutil.copy2(os.path.join(HAR, f), work)
             for f in ["BUILD.BAT", "LINK.RSP"]:
                 shutil.copy2(os.path.join(DOSBOX, f), work)
-
-        # Build the EXE if needed (one DOSBox-X boot).
-        if need_build:
             build_conf = (
                 "[cpu]\r\ncputype=486\r\ncycles=max\r\n[dos]\r\nxms=true\r\nems=true\r\n"
                 "[autoexec]\r\n"
@@ -127,7 +134,7 @@ def gen_star(conn, star, force=False, build_flag=False):
                 "d:\r\n"
                 "call BUILD.BAT\r\n"
                 "if exist BUILD.FAIL goto end\r\n"
-                f"copy D:\\NIVTEST.EXE E:\\\r\n"
+                "copy D:\\NIVTEST.EXE E:\\\r\n"
                 ":end\r\n"
                 "exit\r\n"
             )
@@ -142,32 +149,22 @@ def gen_star(conn, star, force=False, build_flag=False):
             if not os.path.exists(exe_path):
                 print("  [!] BUILD FAILED"); return
 
-        # Write RUN.BAT — one sector command per output file
+        # RUN.BAT with ALL stars' commands
         run_lines = ["@echo off"]
-        for body, lon, lat, outpath, name, dosname in cmds:
+        for body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
             run_lines.append(
-                f"NIVTEST.EXE sector -x {x} -y {y_usr} -z {z} -p {body}"
+                f"NIVTEST.EXE sector -x {cx} -y {cy} -z {cz} -p {body}"
                 f" -lon {lon} -lat {lat} -o D:\\{dosname}"
             )
         run_lines.append("exit")
         with open(os.path.join(work, "RUN.BAT"), "w") as f:
             f.write("\r\n".join(run_lines) + "\r\n")
 
-        # Write niv.conf
-        if need_build:
-            build_section = "call BUILD.BAT\r\n"
-        else:
-            build_section = f"copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL\r\n"
+        build_section = "call BUILD.BAT\r\n" if need_build else f"copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL\r\n"
         conf = (
-            "[cpu]\r\n"
-            "cputype=486\r\n"
-            "cycles=max\r\n"
-            "core=dynamic\r\n"
-            "[dos]\r\n"
-            "xms=true\r\n"
-            "ems=true\r\n"
-            "[sdl]\r\n"
-            "startup_verbosity=quiet\r\n"
+            "[cpu]\r\ncputype=486\r\ncycles=max\r\ncore=dynamic\r\n"
+            "[dos]\r\nxms=true\r\nems=true\r\n"
+            "[sdl]\r\nstartup_verbosity=quiet\r\n"
             "[autoexec]\r\n"
             f"mount c {tc_mount}\r\n"
             f"mount d {work}\r\n"
@@ -183,7 +180,11 @@ def gen_star(conn, star, force=False, build_flag=False):
         with open(os.path.join(work, "niv.conf"), "w") as f:
             f.write(conf)
 
-        # Boot DOSBox-X once: compiles + runs all sector commands
+        # Print progress
+        for body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+            sn = info.get((body, dosname), "?")
+            print(f"  {sn} body {body:3d}: lon={lon} lat={lat} ...", flush=True)
+
         env = os.environ.copy()
         env["SDL_VIDEODRIVER"] = "dummy"
         env["SDL_AUDIODRIVER"] = "dummy"
@@ -191,7 +192,6 @@ def gen_star(conn, star, force=False, build_flag=False):
             [dosbox_x, "-conf", os.path.join(work, "niv.conf"), "-exit"],
             capture_output=True, text=True, env=env)
 
-        # Check build status
         fail_flag = os.path.join(work, "BUILD.FAIL")
         if os.path.exists(fail_flag):
             log = os.path.join(work, "BUILD.LOG")
@@ -201,16 +201,22 @@ def gen_star(conn, star, force=False, build_flag=False):
             print(f"  [!] stderr: {r.stderr[-500:]}", flush=True)
             return
 
-        # Copy output files
-        ok = 0
-        for body, lon, lat, outpath, name, dosname in cmds:
+        # Copy outputs, grouped by star
+        star_ok = {}
+        for body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+            sn = info.get((body, dosname), "?")
             src = os.path.join(work, dosname)
             if os.path.exists(src):
                 shutil.copy2(src, outpath)
-                ok += 1
+                star_ok[sn] = star_ok.get(sn, 0) + 1
             else:
-                print(f"  body {body:3d}: missing output {name}", flush=True)
-        print(f"{star}: {ok}/{len(cmds)} landings generated (DOSBox-X booted once)", flush=True)
+                print(f"  body {body:3d}: missing output", flush=True)
+
+        for sn, n in star_ok.items():
+            n_cmds = sum(1 for c in all_cmds if info.get((c[0], c[3])) == sn)
+            print(f"{sn}: {n}/{n_cmds} landings generated")
+        print(f"Booted DOSBox-X once for {len(stars)} stars")
+
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -389,7 +395,6 @@ def main():
     if args.cmd == "cmp":
         cmp_star(conn, star)
     if args.cmd == "one_iter":
-        # Pick batch_size stars without canonical data
         batch_size = getattr(args, 'batch', 1)
         rows = conn.execute(
             "SELECT name FROM stars WHERE id IN "
@@ -400,9 +405,8 @@ def main():
             print("no star without canonical data")
             return
         batch = [r[0] for r in rows]
+        gen_stars_batch(conn, batch, args.force, args.build)
         for s in batch:
-            print(f"[one_iter] star: {s}")
-            gen_star(conn, s, args.force, args.build)
             load_star(conn, s)
             rust_star(conn, s)
             cmp_star(conn, s)
