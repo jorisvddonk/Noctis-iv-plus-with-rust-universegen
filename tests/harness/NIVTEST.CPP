@@ -211,9 +211,12 @@ static void gen_system(double x, double y, double z)
 {
 	/* Feed the star's Parsis coordinates into the autopilot-target globals,
 	   exactly the values the game would hold when a star is targeted, then
-	   run the real two-stage generation. */
+	   run the real two-stage generation.
+
+	   -x, -y, -z are user-facing Parsis (the galactic chart negates y).
+	   The engine expects starmap-convention (negated) y, so flip sign. */
 	ap_target_x = x;
-	ap_target_y = y;
+	ap_target_y = -y;
 	ap_target_z = z;
 
 	_delay = 0;               /* so prepare_nearstar copies ap_target_* */
@@ -279,7 +282,8 @@ static int cmd_system(int argc, char **argv)
 {
 	double x = argd(argc, argv, "-x", 0);
 	double y = argd(argc, argv, "-y", 0);
- 	double z = argd(argc, argv, "-z", 0);
+	double z = argd(argc, argv, "-z", 0);
+
 	gen_system(x, y, z);
  	out("=== SYSTEM ===\n");
 	dump_system_props();
