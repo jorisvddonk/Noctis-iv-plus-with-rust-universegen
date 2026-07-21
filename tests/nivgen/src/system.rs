@@ -417,7 +417,7 @@ impl SystemGen {
             pixilating_effect: 0,
             pixel_spreads: 0,
             multicolormask: 0,
-            oc_gap: [0,0,0,0,0,0,0,0,0,0,0,0,197,9,181,84],
+            oc_gap: [0,0,0,0,0,0,0,0,0,0,0,0,197,9,240,84],
             rng: BorlandRng::new(),
             frng: crate::rng::FastRng::new(),
         }
