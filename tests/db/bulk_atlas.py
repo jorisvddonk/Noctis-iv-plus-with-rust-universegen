@@ -127,6 +127,20 @@ def ensure_moon_cols(conn):
 def run_one(conn, name, no_compare=False):
     fname = safe_filename(name)
     cls, x, y_user, z = fetch_star(name)
+
+    KNOWN = {
+        "BALASTRACKONASTREYA": (0, -18928, 29680, -67336),
+        "FENIA":               (0, 4342128, 4559934, -807862),
+        "CHOALUUS":            (9, 1399069584, 1988408, 1399905480),
+        "PITSTOP 12":          (5, 104784, -8554, 49535587),
+        "AWELER":              (3, 1977136, 5126384, -394992),
+    }
+    if name in KNOWN:
+        ec, ex, ey, ez = KNOWN[name]
+        assert cls == ec, f"{name}: class mismatch {cls} vs {ec}"
+        assert x == ex and y_user == ey and z == ez, \
+            f"{name}: coord mismatch DB=({x},{y_user},{z}) expected=({ex},{ey},{ez})"
+
     print(f"[{name}] S{cls:02d} @ ({x},{y_user},{z})", flush=True)
 
     conn.execute(
@@ -144,7 +158,7 @@ def run_one(conn, name, no_compare=False):
     if not os.path.exists(out_path):
         print(f"  recompute-canonical ...", flush=True)
         r = subprocess.run(
-            ["bash", RECOMPUTE, "-x", str(x), "-y", str(y), "-z", str(z), "-o", out_path],
+            ["bash", RECOMPUTE, "-x", str(x), "-y", str(y_user), "-z", str(z), "-o", out_path],
             capture_output=True, text=True,
         )
         if r.returncode != 0 or not os.path.exists(out_path):

@@ -312,6 +312,23 @@ fn cmd_fill_db(args: &[String]) {
     for (i, (sid, x, y_user, z)) in stars.iter().enumerate() {
         let mut g = nivgen::system::SystemGen::new();
         g.generate(*x, nivgen::system::EngineY::from_user_y(*y_user), *z);
+
+        let known = [
+            ("BALASTRACKONASTREYA", 0i32, -18928.0, 29680.0, -67336.0),
+            ("FENIA",               0, 4342128.0, 4559934.0, -807862.0),
+            ("CHOALUUS",            9, 1399069584.0, 1988408.0, 1399905480.0),
+            ("PITSTOP 12",          5, 104784.0, -8554.0, 49535587.0),
+            ("AWELER",              3, 1977136.0, 5126384.0, -394992.0),
+        ];
+        for (kname, kcls, kx, ky, kz) in &known {
+            if *x == *kx && *y_user == *ky && *z == *kz {
+                assert_eq!(g.nearstar_class, *kcls,
+                    "{}: class mismatch expected={} got={}", kname, kcls, g.nearstar_class);
+                println!("  [assert] {} cls={} OK", kname, g.nearstar_class);
+                break;
+            }
+        }
+
         update_star.execute(rusqlite::params![g.nearstar_class, sid])
             .expect("update star class");
         for bi in 0..g.nearstar_nob as usize {
