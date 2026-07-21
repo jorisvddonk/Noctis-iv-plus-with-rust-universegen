@@ -309,9 +309,9 @@ fn cmd_fill_db(args: &[String]) {
          VALUES (?1,?2,?3,?4,?5,?6,?7)"
     ).expect("prepare insert");
 
-    for (i, (sid, x, y_eng, z)) in stars.iter().enumerate() {
+    for (i, (sid, x, y_user, z)) in stars.iter().enumerate() {
         let mut g = nivgen::system::SystemGen::new();
-        g.generate(*x, nivgen::system::EngineY::new(*y_eng), *z);
+        g.generate(*x, nivgen::system::EngineY::from_user_y(*y_user), *z);
         update_star.execute(rusqlite::params![g.nearstar_class, sid])
             .expect("update star class");
         for bi in 0..g.nearstar_nob as usize {

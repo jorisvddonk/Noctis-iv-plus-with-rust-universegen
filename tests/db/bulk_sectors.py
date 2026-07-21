@@ -106,15 +106,12 @@ def gen_star(conn, star, force=False, build_flag=False, keep_fixtures=False):
 # ---------- helpers ----------
 
 def _star_cmds(conn, star, force):
-    """Collect pending (body, lon, lat, dosname, outpath, x, y_usr, z) for one star."""
-    all_sids = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
-                       (star,)).fetchall()
-    print(f"  [DBG] _star_cmds({star}): found {len(all_sids)} star row(s): {[(r[0],r[1],r[2],r[3]) for r in all_sids]}")
-    sid = all_sids[0] if all_sids else None
+    """Collect pending (body, lon, lat, dosname, outpath, x, y_user, z) for one star."""
+    sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
+                       (star,)).fetchone()
     if not sid:
         return [], None, None, None, None
-    sid, x, y_eng, z = sid
-    y_usr = -y_eng
+    sid, x, y_usr, z = sid
     bodies = conn.execute(
         "SELECT body_index, seedval FROM planets WHERE star_id=? ORDER BY body_index",
         (sid,)).fetchall()
@@ -136,10 +133,8 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
     """Generate C canonical sector fixtures for multiple stars in one DOSBox-X boot."""
     all_cmds = []
     info = {}
-    print(f"  [DBG] gen_stars_batch: stars list = {stars}")
     for s in stars:
         cmds, _, _, _, _ = _star_cmds(conn, s, force)
-        print(f"  [DBG] {s} -> {len(cmds)} cmds, total so far {len(all_cmds)}")
         for c in cmds:
             all_cmds.append((s,) + c)  # prepend star name
             info[(s, c[0], c[3])] = s  # (star, body, dosname) -> star
@@ -354,8 +349,7 @@ def rust_star(conn, star):
                        (star,)).fetchone()
     if not sid:
         print(f"star '{star}' not found"); sys.exit(1)
-    _, x, y_eng, z = sid
-    y_usr = -y_eng  # DB stores engine-facing; CLI expects user-facing
+    _, x, y_usr, z = sid
     bodies = conn.execute(
         "SELECT body_index, seedval, sect_gap FROM planets WHERE star_id=? "
         "ORDER BY body_index", (sid[0],)).fetchall()
