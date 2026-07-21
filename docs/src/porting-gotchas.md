@@ -1020,8 +1020,9 @@ therefore the class differ from the starmap‑canonical value.
 
 * CLI tools (`rawsys3`, `nivgen`): negate the user‑provided y before passing
   it to `extract_ap_target_infos` / `prepare_nearstar`.
-* Rust `generate()`: `self.ap_target_y = y.abs()` handles both conventions
-  (callers may pass user‑facing or engine‑facing y).
+* Rust `generate()`: takes `EngineY` newtype, not raw `f64`. At the CLI
+  boundary `main.rs` calls `EngineY::from_user_y(y)` which negates. Using
+  a wrong‑convention value is a compile‑time error.
 * C `RAWSYS3.CPP`: `ap_target_y = -atof(argv[2])`.
 
 Without this normalisation, stars whose chart y is negative (e.g. PITSTOP 12

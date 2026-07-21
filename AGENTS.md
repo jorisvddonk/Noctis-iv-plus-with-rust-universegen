@@ -30,7 +30,7 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
   tests/rawsys3/build-and-run.sh X Y Z
   ```
   Takes user-facing Parsis coordinates (y negated on the galactic chart),
-  normalises y sign internally, and prints the star's class, body count,
+  normalises y sign internally via `-y`, and prints the star's class, body count,
   and per-body type/owner. Matches starmap/Feltyrion output exactly.
 
 ## Critical rules
@@ -40,8 +40,8 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
    ground truth is `tests/rawsys3/build-and-run.sh` output — NOT the 2026
    `NIVTEST.EXE` system command. RAWSYS3 is built with the original BC31
    toolchain and has no 2026 modifications. The Rust `generate()` normalises
-   the y sign via `y.abs()` to match both user-facing and engine-facing
-   coordinate conventions (§30).
+   the y sign via `EngineY::from_user_y()`. Passing a wrong-convention y
+   is a compile-time type error (§30).
 2. The most common divergence sources are **16-bit `int`/`unsigned`
    arithmetic**, **`imul ax` low-word replacement**, and **x87 80-bit
    float precision**. See the gotchas doc.
