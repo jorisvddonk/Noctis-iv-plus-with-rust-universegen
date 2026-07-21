@@ -814,10 +814,8 @@ impl SystemGen {
                     self.rockyground(a, 1, 1);
                 }
                 if n == 4 {
-                    let a = 10;
-                    let b = 2;
                     let c = -self.rng.random(5);
-                    self.rockyground(a, b, c);
+                    self.rockyground(10, 2, c);
                 }
                 n = self.rng.random(48) + 32 - self.albedo;
                 if n > 30 {

@@ -65,6 +65,15 @@ The AGENTS.md documents 6 differing bytes across 40000:
 
 ### The inclination loop OOB read
 
+(NOTE: The LCG random() call sequence through ALL terrain generation was
+simulated step-by-step and MATCHES Rust byte-for-byte. Every seed from the
+re-seed at `srand(lat*lon)` through rockyground (40k calls), both std_crater
+loops, the srf_darkline loop, and the post-switch felisian loop was verified
+against Rust's trace seeds. The simulation produces the SAME seed at the
+inclination loop entry as Rust. Despite this, the objectchart diverges,
+confirming the issue is in the inclination loop's `surf_h` OOB reads or the
+loop body itself, not in any prior random() call sequence.)
+
 The `build_surface` loop at NOCTIS-1.CPP:2660-2730 processes all 40000
 objectchart quadrants and calls `surf_h(ptr+200)` at line 2687 for the
 "inclination" calculation. For `ptr >= 39800`:
