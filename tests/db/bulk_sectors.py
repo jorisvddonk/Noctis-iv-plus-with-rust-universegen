@@ -447,6 +447,34 @@ def report_all(conn):
     print(f'  r-o*  = only rand-oc differs (object chart bug)')
     print()
 
+    # Surface hash breakdown
+    surf_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL').fetchone()[0]
+    if surf_tot > 0:
+        surf_rows = conn.execute('''
+            SELECT planet_type, is_moon,
+                   SUM(CASE WHEN surf_fnv = rust_surf_fnv THEN 1 ELSE 0 END) as surf_ok,
+                   SUM(CASE WHEN atmo_fnv = rust_atmo_fnv THEN 1 ELSE 0 END) as atmo_ok,
+                   SUM(CASE WHEN pal_fnv = rust_pal_fnv THEN 1 ELSE 0 END) as pal_ok,
+                   COUNT(*) as tot
+            FROM planets WHERE surf_fnv IS NOT NULL
+            GROUP BY planet_type, is_moon ORDER BY planet_type, is_moon
+        ''').fetchall()
+
+        print('Surface hash breakdown (bodies with canonical data):')
+        print(f'{"Typ":>3} {"P/M":>3} {"surf":>5} {"atmo":>5} {"pal":>5} {"tot":>5}')
+        print('-' * 33)
+        st_p = st_m = 0
+        for t, m, s, a, p, tot in surf_rows:
+            print(f'{t:3d} {"M" if m else "P":>3} {s:5d} {a:5d} {p:5d} {tot:5d}')
+            if m: st_m += tot
+            else: st_p += tot
+        print('-' * 33)
+        print(f'{"ALL":>3} {"":>3} {"":>5} {"":>5} {"":>5} {st_p+st_m:5d}')
+    else:
+        print('Surface hash breakdown: no canonical surface data in DB')
+        print('(run load_canonical.py after fill-db to populate surf/atmo/pal hashes)')
+    print()
+
     # Summary
     n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
     print(f'Stars with data: {n_stars}')
