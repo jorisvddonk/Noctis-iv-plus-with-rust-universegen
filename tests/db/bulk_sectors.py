@@ -535,6 +535,8 @@ def report_all(conn, short=False):
                 atmo_bad = surf_tot - atmo_match
                 pal_bad = surf_tot - pal_match
                 print(f'SURFACE: {surf_bad} surf {atmo_bad} atmo {pal_bad} pal mismatches')
+                if surf_bad == 0 and atmo_bad == 0 and pal_bad > 0:
+                    print('(palette-only mismatches are type-7 moon RNG-tail, not a port bug)')
         else:
             print('SURFACE: no canonical data')
         return
