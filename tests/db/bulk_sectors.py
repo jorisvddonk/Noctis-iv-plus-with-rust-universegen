@@ -359,6 +359,8 @@ def main():
         p.add_argument("star", nargs="?")
         p.add_argument("--force", action="store_true")
         p.add_argument("--build", action="store_true", help="force recompile C harness")
+        p.add_argument("--batch", type=int, default=1,
+            help="batch N stars in one DOSBox-X boot (one_iter only)")
     args = ap.parse_args()
     conn = sqlite3.connect(DB_PATH)
 
@@ -387,11 +389,23 @@ def main():
     if args.cmd == "cmp":
         cmp_star(conn, star)
     if args.cmd == "one_iter":
-        print(f"[one_iter] star: {star}")
-        gen_star(conn, star, args.force, args.build)
-        load_star(conn, star)
-        rust_star(conn, star)
-        cmp_star(conn, star)
+        # Pick batch_size stars without canonical data
+        batch_size = getattr(args, 'batch', 1)
+        rows = conn.execute(
+            "SELECT name FROM stars WHERE id IN "
+            "(SELECT star_id FROM planets GROUP BY star_id "
+            "HAVING COUNT(sect_def_hm) = 0) "
+            "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
+        if not rows:
+            print("no star without canonical data")
+            return
+        batch = [r[0] for r in rows]
+        for s in batch:
+            print(f"[one_iter] star: {s}")
+            gen_star(conn, s, args.force, args.build)
+            load_star(conn, s)
+            rust_star(conn, s)
+            cmp_star(conn, s)
     conn.close()
 
 
