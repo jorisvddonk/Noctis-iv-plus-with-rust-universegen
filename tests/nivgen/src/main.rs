@@ -293,6 +293,7 @@ fn cmd_surftex(_args: &[String]) { eprintln!("surftex: not yet implemented"); }
 fn cmd_fill_db(args: &[String]) {
     let db_path = args.iter().position(|a| a == "--db").and_then(|p| args.get(p + 1))
         .map(|s| s.as_str()).unwrap_or("db/noctis.db");
+    let do_assert = !args.contains(&"--no-assert".to_string());
     let conn = rusqlite::Connection::open(db_path).expect("open DB");
     let mut stmt = conn.prepare("SELECT id, x, y_user, z FROM stars ORDER BY id")
         .expect("prepare stmt");
@@ -310,22 +311,43 @@ fn cmd_fill_db(args: &[String]) {
          is_moon=excluded.is_moon, p_owner=excluded.p_owner, p_moonid=excluded.p_moonid"
     ).expect("prepare upsert");
 
+    if do_assert {
+        let known = [
+            ("BALASTRACKONASTREYA", 0i32, -18928.0, 29680.0, -67336.0),
+            ("FENIA",               0, 4342128.0, 4559934.0, -807862.0),
+            ("CHOALUUS",            9, 1399069584.0, 1988408.0, 1399905480.0),
+            ("PITSTOP 12",          5, 104784.0, -8554.0, 49535587.0),
+            ("AWELER",              3, 1977136.0, 5126384.0, -394992.0),
+        ];
+        for (kname, _kcls, kx, ky, kz) in &known {
+                if stars.iter().any(|(_sid, x, y, z)| *x == *kx && *y == *ky && *z == *kz) {
+                    let actual_name: String = conn.query_row("SELECT name FROM stars WHERE id=?",
+                        [stars.iter().find(|(_sid, x, y, z)| *x == *kx && *y == *ky && *z == *kz).unwrap().0],
+                        |r| r.get(0)).unwrap();
+                    assert_eq!(kname, &actual_name, "assert lookup mismatch for coords ({},{},{})", kx, ky, kz);
+                }
+        }
+    }
+
     for (i, (sid, x, y_user, z)) in stars.iter().enumerate() {
         let mut g = nivgen::system::SystemGen::new();
         g.generate(*x, nivgen::system::EngineY::from_user_y(*y_user), *z);
 
-        let known = [
-            ("BALASTRACKONASTREYA", 0i32, -18928.0, 29680.0, -67336.0),
-            ("FENIA",               0, 4342128.0, 4559934.0, -807862.0),
-            ("PITSTOP 12",          5, 104784.0, -8554.0, 49535587.0),
-            ("AWELER",              3, 1977136.0, 5126384.0, -394992.0),
-        ];
-        for (kname, kcls, kx, ky, kz) in &known {
-            if *x == *kx && *y_user == *ky && *z == *kz {
-                assert_eq!(g.nearstar_class, *kcls,
-                    "{}: class mismatch expected={} got={}", kname, kcls, g.nearstar_class);
-                println!("  [assert] {} cls={} OK", kname, g.nearstar_class);
-                break;
+        if do_assert {
+            let known = [
+                ("BALASTRACKONASTREYA", 0i32, -18928.0, 29680.0, -67336.0),
+                ("FENIA",               0, 4342128.0, 4559934.0, -807862.0),
+                ("CHOALUUS",            9, 1399069584.0, 1988408.0, 1399905480.0),
+                ("PITSTOP 12",          5, 104784.0, -8554.0, 49535587.0),
+                ("AWELER",              3, 1977136.0, 5126384.0, -394992.0),
+            ];
+            for (kname, kcls, kx, ky, kz) in &known {
+                if *x == *kx && *y_user == *ky && *z == *kz {
+                    assert_eq!(g.nearstar_class, *kcls,
+                        "{}: class mismatch expected={} got={}", kname, kcls, g.nearstar_class);
+                    println!("  [assert] {} cls={} OK", kname, g.nearstar_class);
+                    break;
+                }
             }
         }
 
