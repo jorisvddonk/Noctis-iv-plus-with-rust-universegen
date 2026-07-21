@@ -150,6 +150,8 @@ Match rate by planet type (planet / moon):
     ```bash
     while python3 db/bulk_sectors.py one_iter 2>&1 | tail -3; do :; done
     ```
+  - `bulk_sectors.py db-report` prints the per-type/per-moon match/diff
+    table with summary statistics — **always use this for reporting status**.
 
 ### Fixed (sector)
 - **`round_hill` unsigned-`r` loop underflow (2026-07-20).** `round_hill`
