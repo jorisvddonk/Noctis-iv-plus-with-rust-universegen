@@ -1,5 +1,6 @@
 use nivgen::rng::{BorlandRng, FastRng};
 use nivgen::system::SystemGen;
+use nivgen::system::EngineY;
 use nivgen::hash::{fnv1a, crc32, FNV_OFFSET};
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -117,7 +118,7 @@ fn cmd_system(args: &[String]) {
     let z = argd(args, "-z", 0.0);
     let json = args.iter().any(|a| a == "--json");
     let mut g = SystemGen::new();
-    g.generate(x, y, z);
+    g.generate(x, EngineY::from_user_y(y), z);
     if json {
         emit_json_system(&mut f, &g);
     } else {
@@ -161,7 +162,7 @@ fn cmd_scan(args: &[String]) {
     let y = argd(args, "-y", 0.0);
     let z = argd(args, "-z", 0.0);
     let mut g = SystemGen::new();
-    g.generate(x, y, z);
+    g.generate(x, EngineY::from_user_y(y), z);
     let mut h = FNV_OFFSET;
     let rec = format!("{} {} {} {}", g.nearstar_class, g.nearstar_nop, g.nearstar_nob, g.nearstar_spin);
     h = fnv1a_update_str(h, &rec);
@@ -191,7 +192,7 @@ fn cmd_planet_all(args: &[String]) {
 
     let mut g = SystemGen::new();
     g.secs = secs;
-    g.generate(x, y, z);
+    g.generate(x, EngineY::from_user_y(y), z);
     emit!(f, "=== PLANET TEXTURES (all {} bodies) ===\n", g.nearstar_nob);
     for n in 0..g.nearstar_nob as i32 {
         g.gen_planet_surface(n);
@@ -222,7 +223,7 @@ fn cmd_planet(args: &[String]) {
 
     let mut g = SystemGen::new();
     g.secs = secs;
-    g.generate(x, y, z);
+    g.generate(x, EngineY::from_user_y(y), z);
     if p < 0 || p as usize >= g.nearstar_nob as usize {
         emit!(f, "; ERROR body index {} out of range (nob={})\n", p, g.nearstar_nob);
         return;
@@ -247,7 +248,7 @@ fn cmd_sector(args: &[String]) {
     } else { String::new() };
 
     let mut g = SystemGen::new();
-    g.generate(x, y, z);
+    g.generate(x, EngineY::from_user_y(y), z);
     if p < 0 || p as usize >= g.nearstar_nob as usize {
         emit!(f, "; ERROR body index {} out of range (nob={})\n", p, g.nearstar_nob);
         return;

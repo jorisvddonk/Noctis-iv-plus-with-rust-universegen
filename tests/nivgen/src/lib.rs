@@ -5,5 +5,5 @@ pub mod surface;
 pub mod surface_sector;
 pub mod system;
 
-pub use system::{MAXBODIES, PLANET_DESCRIPTION, SystemGen};
+pub use system::{MAXBODIES, PLANET_DESCRIPTION, SystemGen, EngineY};
 mod ext_test;

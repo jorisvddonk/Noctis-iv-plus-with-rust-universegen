@@ -3,9 +3,35 @@
 //! Ported bug-for-bug from `source/NOCTIS-0.CPP`. The generator is a pure
 //! function of the Parsis coordinates (x, y, z); the RNG is fully reseeded
 //! from those coordinates inside these functions, so output is deterministic.
+//!
+//! ## Y‑coordinate convention
+//!
+//! The engine uses **engine-facing** y (starmap convention: y is stored as
+//! positive in the binary). The galactic chart displays **user-facing** y,
+//! which is the negation (`engine_y = -user_y`).
+//!
+//! All public API functions accept `EngineY`, never raw `f64`. At the CLI
+//! boundary (`main.rs`) the user-supplied y is negated and wrapped. This
+//! makes sign errors a compile-time type error.
 
 use crate::rng::BorlandRng;
 use crate::f80::F80;
+
+/// Engine-facing y coordinate (starmap convention, always positive in the binary).
+/// Construct via `EngineY::from_user_y()` at the CLI boundary, or directly
+/// when you already have an engine-facing value.
+#[derive(Debug, Clone, Copy)]
+pub struct EngineY(f64);
+
+impl EngineY {
+    /// Wrap an already-engine-facing y (no conversion).
+    pub fn new(y: f64) -> Self { EngineY(y) }
+
+    /// Convert from user-facing (chart) y: `engine_y = -user_y`.
+    pub fn from_user_y(user_y: f64) -> Self { EngineY(-user_y) }
+
+    pub fn get(self) -> f64 { self.0 }
+}
 
 /// Full DOS segment size the surface buffers occupy (16-bit `di` range).
 ///
@@ -365,11 +391,10 @@ impl SystemGen {
         }
     }
 
-    pub fn generate(&mut self, x: f64, y: f64, z: f64) {
+    pub fn generate(&mut self, x: f64, y: EngineY, z: f64) {
         self.ap_target_x = x;
-        // y can be user-facing (negated) or engine-facing depending on caller.
-        // The engine/starmap convention is positive y, so normalize the sign.
-        self.ap_target_y = y.abs();
+        // y arrives as engine-facing (already negated from user-facing at boundary).
+        self.ap_target_y = y.get();
         self.ap_target_z = z;
         self.extract_ap_target_infos();
         self.prepare_nearstar();
