@@ -77,6 +77,8 @@ def _star_cmds(conn, star, force):
             out = os.path.join(SECT_DIR, name)
             if os.path.exists(out) and not force:
                 continue
+            if force and os.path.exists(out):
+                os.remove(out)  # Delete so gen produces a fresh file (no append)
             suf = "D" if kind == "def" else "R"
             cmds.append((body, lon, lat, f"s{body}{suf}.out", out, x, y_usr, z))
     return cmds, x, y_usr, z, star
@@ -396,15 +398,18 @@ def main():
         cmp_star(conn, star)
     if args.cmd == "one_iter":
         batch_size = getattr(args, 'batch', 1)
-        rows = conn.execute(
-            "SELECT name FROM stars WHERE id IN "
-            "(SELECT star_id FROM planets GROUP BY star_id "
-            "HAVING COUNT(sect_def_hm) = 0) "
-            "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
-        if not rows:
-            print("no star without canonical data")
-            return
-        batch = [r[0] for r in rows]
+        if args.star:
+            batch = [args.star]
+        else:
+            rows = conn.execute(
+                "SELECT name FROM stars WHERE id IN "
+                "(SELECT star_id FROM planets GROUP BY star_id "
+                "HAVING COUNT(sect_def_hm) = 0) "
+                "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
+            if not rows:
+                print("no star without canonical data")
+                return
+            batch = [r[0] for r in rows]
         gen_stars_batch(conn, batch, args.force, args.build)
         for s in batch:
             load_star(conn, s)

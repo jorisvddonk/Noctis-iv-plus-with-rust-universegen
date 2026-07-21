@@ -3,4 +3,4 @@ SECTOR body=64 type=5 lon=256 lat=83 sctype=2 albedo=32 night=0
   global_surface_seed=49957
 heightmap        len=40000  fnv=D1F9752A crc=18606B2A
 objectchart      len=40000  fnv=D8D3CB98 crc=C00B872D
-gap               len=16   000000000000000000000000C509BD54
+gap               len=16   000000000000000000000000C509BA54
