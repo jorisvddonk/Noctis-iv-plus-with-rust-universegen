@@ -367,6 +367,8 @@ impl SystemGen {
 
     pub fn generate(&mut self, x: f64, y: f64, z: f64) {
         self.ap_target_x = x;
+        // y can be user-facing (negated) or engine-facing depending on caller.
+        // The engine/starmap convention is positive y, so normalize the sign.
         self.ap_target_y = y.abs();
         self.ap_target_z = z;
         self.extract_ap_target_infos();

@@ -10,9 +10,9 @@ void main(int argc, char **argv) {
     if (argc < 4) return;
     _delay = 0;
     ap_target_x = atof(argv[1]);
-    // Input y is "user-facing Parsis" (negated in the galactic chart).
-    // The engine/starmap stores |y|, so fabs() makes it engine-facing.
-    ap_target_y = fabs(atof(argv[2]));
+    // Input y is user-facing Parsis (negated on the galactic chart).
+    // The engine/starmap convention is positive y, so flip the sign.
+    ap_target_y = -atof(argv[2]);
     ap_target_z = atof(argv[3]);
     extract_ap_target_infos();
     prepare_nearstar();
