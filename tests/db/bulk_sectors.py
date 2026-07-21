@@ -528,6 +528,13 @@ def report_all(conn, short=False):
         print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
         if surf_tot > 0:
             print(f'SURFACE: {surf_match}/{surf_tot} surf {atmo_match}/{surf_tot} atmo {pal_match}/{surf_tot} pal')
+            if surf_match == surf_tot and atmo_match == surf_tot and pal_match == surf_tot:
+                print('SURFACE: ALL MATCH')
+            else:
+                surf_bad = surf_tot - surf_match
+                atmo_bad = surf_tot - atmo_match
+                pal_bad = surf_tot - pal_match
+                print(f'SURFACE: {surf_bad} surf {atmo_bad} atmo {pal_bad} pal mismatches')
         else:
             print('SURFACE: no canonical data')
         return
