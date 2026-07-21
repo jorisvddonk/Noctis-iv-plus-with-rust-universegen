@@ -521,14 +521,20 @@ def report_all(conn, short=False):
             else: tot_p += ok+df+rh+ro
             tot_ok += ok; tot_def += df; tot_rb += rh; tot_ro += ro
         surf_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL').fetchone()[0]
-        surf_match = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv = rust_surf_fnv AND surf_fnv IS NOT NULL').fetchone()[0]
-        atmo_match = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv = rust_atmo_fnv AND atmo_fnv IS NOT NULL').fetchone()[0]
-        pal_match = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv = rust_pal_fnv AND pal_fnv IS NOT NULL').fetchone()[0]
         n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
-        print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
         if surf_tot > 0:
-            print(f'SURFACE: {surf_match}/{surf_tot} surf {atmo_match}/{surf_tot} atmo {pal_match}/{surf_tot} pal')
+            surf_match = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv = rust_surf_fnv AND surf_fnv IS NOT NULL').fetchone()[0]
+            atmo_match = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv = rust_atmo_fnv AND atmo_fnv IS NOT NULL').fetchone()[0]
+            pal_match = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv = rust_pal_fnv AND pal_fnv IS NOT NULL').fetchone()[0]
+            surf_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL AND rust_surf_fnv IS NOT NULL AND surf_fnv != rust_surf_fnv').fetchone()[0]
+            atmo_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv IS NOT NULL AND rust_atmo_fnv IS NOT NULL AND atmo_fnv != rust_atmo_fnv').fetchone()[0]
+            pal_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv IS NOT NULL AND rust_pal_fnv IS NOT NULL AND pal_fnv != rust_pal_fnv').fetchone()[0]
+            surf_none = surf_tot - surf_match
+            label = 'MATCH' if surf_diff == 0 and atmo_diff == 0 else 'MISMATCH'
+            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
+            print(f'SURFACE: {label} {surf_match}/{surf_tot} surf {atmo_match}/{surf_tot} atmo {pal_match}/{surf_tot} pal ({surf_none} unprocessed)')
         else:
+            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
             print('SURFACE: no canonical data')
         return
 
