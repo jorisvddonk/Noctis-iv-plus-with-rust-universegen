@@ -126,15 +126,16 @@ def ensure_moon_cols(conn):
 
 def run_one(conn, name, no_compare=False):
     fname = safe_filename(name)
-    cls, x, y, z = fetch_star(name)
-    print(f"[{name}] S{cls:02d} @ ({x},{y},{z})", flush=True)
+    cls, x, y_user, z = fetch_star(name)
+    y_eng = -y_user
+    print(f"[{name}] S{cls:02d} @ ({x},{y_user},{z})", flush=True)
 
     conn.execute(
-        "INSERT OR IGNORE INTO stars (name, class, x, y, z) VALUES (?,?,?,?,?)",
-        (name, cls, x, y, z),
+        "INSERT OR IGNORE INTO stars (name, class, x, y_user, z) VALUES (?,?,?,?,?)",
+        (name, cls, x, y_eng, z),
     )
     conn.commit()
-    row = conn.execute("SELECT id FROM stars WHERE x=? AND y=? AND z=?", (x, y, z)).fetchone()
+    row = conn.execute("SELECT id FROM stars WHERE x=? AND y_user=? AND z=?", (x, y_eng, z)).fetchone()
     if not row:
         print(f"  [!] insert failed (dup coords?) — skipping", flush=True)
         return None
