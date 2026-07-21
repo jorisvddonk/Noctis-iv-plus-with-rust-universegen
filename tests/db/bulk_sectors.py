@@ -366,29 +366,52 @@ def report_all(conn):
                              AND sect_rand_hm = rust_sect_rand_hm
                              AND sect_rand_oc = rust_sect_rand_oc THEN 1 ELSE 0 END) as ok,
                SUM(CASE WHEN (sect_def_hm != rust_sect_def_hm OR sect_def_oc != rust_sect_def_oc)
-                             AND sect_rand_hm = rust_sect_rand_hm
-                             AND sect_rand_oc = rust_sect_rand_oc THEN 1 ELSE 0 END) as def_only,
+                             THEN 1 ELSE 0 END) as def,
                SUM(CASE WHEN sect_def_hm = rust_sect_def_hm AND sect_def_oc = rust_sect_def_oc
                              AND sect_rand_hm != rust_sect_rand_hm
                              AND sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as rand_both,
                SUM(CASE WHEN sect_def_hm = rust_sect_def_hm AND sect_def_oc = rust_sect_def_oc
                              AND sect_rand_hm = rust_sect_rand_hm
-                             AND sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as rand_oc,
-               SUM(CASE WHEN sect_def_hm != rust_sect_def_hm OR sect_def_oc != rust_sect_def_oc
-                             OR sect_rand_hm != rust_sect_rand_hm
-                             OR sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as diff
+                             AND sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as rand_oc
         FROM planets WHERE sect_def_hm IS NOT NULL
         GROUP BY planet_type, is_moon ORDER BY planet_type, is_moon
     """).fetchall()
+
+    print(f'Planet-type breakdown (bodies with sector data):')
     print(f'{"Typ":>3} {"P/M":>3} {"match":>5} {"def*":>5} {"r-b*":>5} {"r-o*":>5} {"tot":>5}')
     print('-' * 36)
-    for t, m, ok, df, rh, ro, tt in rows:
+    tot_p, tot_m, tot_ok, tot_def, tot_rb, tot_ro = 0,0,0,0,0,0
+    for t, m, ok, df, rh, ro in rows:
         print(f'{t:3d} {"M" if m else "P":>3} {ok:5d} {df:5d} {rh:5d} {ro:5d} {ok+df+rh+ro:5d}')
+        if m: tot_m += ok+df+rh+ro
+        else: tot_p += ok+df+rh+ro
+        tot_ok += ok; tot_def += df; tot_rb += rh; tot_ro += ro
+    print('-' * 36)
+    print(f'{"ALL":>3} {"":>3} {tot_ok:5d} {tot_def:5d} {tot_rb:5d} {tot_ro:5d} {tot_ok+tot_def+tot_rb+tot_ro:5d}')
     print()
-    print('  match = all 4 hashes match')
-    print('  def*  = def-hm or def-oc differs (fixture corruption)')
-    print('  r-b*  = rand-hm + rand-oc differ (heightmap+object bug)')
-    print('  r-o*  = only rand-oc differs (object chart bug)')
+    print(f'  match = all 4 hashes match')
+    print(f'  def*  = def-hm or def-oc differs (fixture corruption)')
+    print(f'  r-b*  = rand-hm + rand-oc differ (heightmap+object bug)')
+    print(f'  r-o*  = only rand-oc differs (object chart bug)')
+    print()
+
+    # Summary
+    n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
+    print(f'Stars with data: {n_stars}')
+    print(f'  Planets: {tot_p}  Moons: {tot_m}  Total: {tot_p+tot_m}')
+    print(f'  Full match: {tot_ok}  Any diff: {tot_def+tot_rb+tot_ro}')
+
+    # Star class breakdown
+    print()
+    print('Star-class breakdown (stars with sector data):')
+    sc = conn.execute('''
+        SELECT s.class, COUNT(DISTINCT s.id)
+        FROM stars s JOIN planets p ON p.star_id = s.id
+        WHERE p.sect_def_hm IS NOT NULL
+        GROUP BY s.class ORDER BY s.class
+    ''').fetchall()
+    for cls, cnt in sc:
+        print(f'  S{cls:02d}: {cnt} stars')
 
 
 def main():
