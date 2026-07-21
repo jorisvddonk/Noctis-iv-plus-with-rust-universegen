@@ -100,8 +100,8 @@ def sources_changed():
     return not source_hash_matches()
 
 
-def gen_star(conn, star, force=False, build_flag=False):
-    gen_stars_batch(conn, [star], force, build_flag)
+def gen_star(conn, star, force=False, build_flag=False, keep_fixtures=False):
+    gen_stars_batch(conn, [star], force, build_flag, keep_fixtures)
 
 # ---------- helpers ----------
 
@@ -130,7 +130,7 @@ def _star_cmds(conn, star, force):
             cmds.append((body, lon, lat, f"s{body}{suf}.out", out, x, y_usr, z))
     return cmds, x, y_usr, z, star
 
-def gen_stars_batch(conn, stars, force=False, build_flag=False):
+def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=False):
     """Generate C canonical sector fixtures for multiple stars in one DOSBox-X boot."""
     all_cmds = []
     info = {}
@@ -159,11 +159,12 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False):
     work = tempfile.mkdtemp(prefix="sector_")
     try:
         # Wipe all stale fixture .out files so we never confuse old results
-        for f in glob.glob(os.path.join(SECT_DIR, "*.out")):
-            os.remove(f)
-        nuked = len(glob.glob(os.path.join(SECT_DIR, "*.out")))
-        if nuked:
-            print(f"  [batch {batch_idx}] cleaned {nuked} leftover fixture(s)")
+        if not keep_fixtures:
+            for f in glob.glob(os.path.join(SECT_DIR, "*.out")):
+                os.remove(f)
+            nuked = len(glob.glob(os.path.join(SECT_DIR, "*.out")))
+            if nuked:
+                print(f"  [batch {batch_idx}] cleaned {nuked} leftover fixture(s)")
 
         need_build = build_flag or not os.path.exists(EXE_PATH) or sources_changed()
 
@@ -476,6 +477,7 @@ def main():
         p.add_argument("star", nargs="?")
         p.add_argument("--force", action="store_true")
         p.add_argument("--build", action="store_true", help="force recompile C harness")
+        p.add_argument("--keep-fixtures", action="store_true", help="don't wipe stale .out files")
         p.add_argument("--batch", type=int, default=1,
             help="batch N stars in one DOSBox-X boot (one_iter only)")
     args = ap.parse_args()
@@ -498,7 +500,7 @@ def main():
             print(f"[{args.cmd}] auto-selected: {star}")
 
     if args.cmd in ("gen", "run"):
-        gen_star(conn, star, args.force, args.build)
+        gen_star(conn, star, args.force, args.build, args.keep_fixtures)
     if args.cmd in ("load", "run"):
         load_star(conn, star)
     if args.cmd == "rust":
@@ -521,7 +523,7 @@ def main():
                 print("no star without canonical data")
                 return
             batch = [r[0] for r in rows]
-        gen_stars_batch(conn, batch, args.force, args.build)
+        gen_stars_batch(conn, batch, args.force, args.build, args.keep_fixtures)
         for s in batch:
             load_star(conn, s)
             rust_star(conn, s)
