@@ -53,6 +53,53 @@ def fname(star, body, kind, lon, lat):
     return f"{base}_b{body}_{kind}_{lon}_{lat}.out"
 
 
+EXE_DIR = os.path.join(REPO, "tests", ".harness_build")
+EXE_PATH = os.path.join(EXE_DIR, "NIVTEST.EXE")
+HASH_FILE = os.path.join(EXE_DIR, "NIVTEST.EXE.srchash")
+
+SRC_FILES = [
+    os.path.join(HAR, "NIVTEST.CPP"),
+    os.path.join(HAR, "NIVHASH.C"), os.path.join(HAR, "NIVHASH.H"), os.path.join(HAR, "NIVSTUBS.C"),
+    os.path.join(SRC, "NOCTIS-0.CPP"), os.path.join(SRC, "NOCTIS-1.CPP"),
+    os.path.join(DOSBOX, "BUILD.BAT"), os.path.join(DOSBOX, "LINK.RSP"),
+]
+for pat in ("*.h", "*.H"):
+    SRC_FILES.extend(glob.glob(os.path.join(SRC, pat)))
+
+
+def compute_source_hash():
+    """SHA256 of all source files that go into the C harness EXE."""
+    import hashlib
+    h = hashlib.sha256()
+    for f in sorted(SRC_FILES):
+        if os.path.exists(f):
+            with open(f, "rb") as fh:
+                h.update(fh.read())
+        else:
+            h.update(b"MISSING:" + f.encode())
+    return h.hexdigest()
+
+
+def source_hash_matches():
+    """True if current source hash matches the saved hash file."""
+    if not os.path.exists(HASH_FILE):
+        return False
+    with open(HASH_FILE) as f:
+        saved = f.read().strip()
+    return saved == compute_source_hash()
+
+
+def save_source_hash():
+    """Write current source hash to hash file."""
+    os.makedirs(EXE_DIR, exist_ok=True)
+    with open(HASH_FILE, "w") as f:
+        f.write(compute_source_hash() + "\n")
+
+
+def sources_changed():
+    return not source_hash_matches()
+
+
 def gen_star(conn, star, force=False, build_flag=False):
     gen_stars_batch(conn, [star], force, build_flag)
 
@@ -111,12 +158,10 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False):
 
     work = tempfile.mkdtemp(prefix="sector_")
     try:
-        exe_dir = os.path.join(REPO, "tests", ".harness_build")
-        exe_path = os.path.join(exe_dir, "NIVTEST.EXE")
-        need_build = build_flag or not os.path.exists(exe_path)
+        need_build = build_flag or not os.path.exists(EXE_PATH) or sources_changed()
 
         if need_build:
-            os.makedirs(exe_dir, exist_ok=True)
+            os.makedirs(EXE_DIR, exist_ok=True)
             for f in ["NOCTIS-0.CPP", "NOCTIS-1.CPP"]:
                 shutil.copy2(os.path.join(SRC, f), work)
             for pat in ("*.h", "*.H"):
@@ -131,7 +176,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False):
                 "[autoexec]\r\n"
                 f"mount c {tc_mount}\r\n"
                 f"mount d {work}\r\n"
-                f"mount e {exe_dir}\r\n"
+                f"mount e {EXE_DIR}\r\n"
                 "path C:\\BIN\r\n"
                 "d:\r\n"
                 "call BUILD.BAT\r\n"
@@ -148,8 +193,9 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False):
             subprocess.run(
                 [dosbox_x, "-conf", os.path.join(work, "build.conf"), "-exit"],
                 capture_output=True, text=True, env=env)
-            if not os.path.exists(exe_path):
+            if not os.path.exists(EXE_PATH):
                 print("  [!] BUILD FAILED"); return
+            save_source_hash()
 
         # RUN.BAT with ALL stars' commands
         run_lines = ["@echo off"]
@@ -170,7 +216,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False):
             "[autoexec]\r\n"
             f"mount c {tc_mount}\r\n"
             f"mount d {work}\r\n"
-            f"mount e {exe_dir}\r\n"
+            f"mount e {EXE_DIR}\r\n"
             "path C:\\BIN;E:\\\r\n"
             "d:\r\n"
             + build_section
