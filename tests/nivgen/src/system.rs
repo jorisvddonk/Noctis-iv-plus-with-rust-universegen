@@ -33,6 +33,26 @@ impl EngineY {
     pub fn get(self) -> f64 { self.0 }
 }
 
+/// Look up a star by name in a STARMAP.BIN buffer and return the class
+/// encoded in bytes 22-23 of the matching label, or `None` if not found.
+pub fn starmap_class(name: &str, bin: &[u8]) -> Option<i32> {
+    let entry_size = 32;
+    let start = 4;
+    let entries = (bin.len() - start) / entry_size;
+    for i in 0..entries {
+        let off = start + i * entry_size;
+        let label = &bin[off + 8..off + 32];
+        if label[21] != b'S' { continue; }
+        let label_name = std::str::from_utf8(&label[..20]).unwrap_or("").trim_end();
+        if label_name.eq_ignore_ascii_case(name) {
+            let tens = (label[22] as char).to_digit(10)? as i32;
+            let ones = (label[23] as char).to_digit(10)? as i32;
+            return Some(tens * 10 + ones);
+        }
+    }
+    None
+}
+
 /// Full DOS segment size the surface buffers occupy (16-bit `di` range).
 ///
 /// Both surface buffers are sized to a full 64 KB segment (not the 64800-byte

@@ -117,8 +117,23 @@ fn cmd_system(args: &[String]) {
     let y = argd(args, "-y", 0.0);
     let z = argd(args, "-z", 0.0);
     let json = args.iter().any(|a| a == "--json");
+    let name = args.iter().position(|a| a == "--name").and_then(|p| args.get(p + 1));
+    let starmap_path = args.iter().position(|a| a == "--starmap").and_then(|p| args.get(p + 1));
+
     let mut g = SystemGen::new();
     g.generate(x, EngineY::from_user_y(y), z);
+
+    // If --name and --starmap both given, verify computed class matches starmap.
+    if let (Some(n), Some(sp)) = (name, starmap_path) {
+        if let Ok(bin) = std::fs::read(sp) {
+            if let Some(expected) = nivgen::system::starmap_class(n, &bin) {
+                if g.nearstar_class != expected {
+                    panic!("CLASS MISMATCH: computed={} expected={} for {} (x={} y={} z={})",
+                        g.nearstar_class, expected, n, x as i64, y as i64, z as i64);
+                }
+            }
+        }
+    }
     if json {
         emit_json_system(&mut f, &g);
     } else {
