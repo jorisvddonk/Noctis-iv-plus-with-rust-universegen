@@ -257,13 +257,9 @@ def load_star(conn, star):
             def_out = os.path.join(SECT_DIR, fname(star, body, "def", lon_d, lat_d))
             if os.path.exists(def_out):
                 m = GAP_RE.findall(open(def_out).read())
-                if m: up["sect_gap"] = m[-1]  # latest match
-            sets = ", ".join(f"{k}=?" for k in up)
-            conn.execute(
-                f"UPDATE planets SET {sets} WHERE star_id=? AND body_index=?",
-                (*up.values(), sid, body))
-    conn.commit()
-    print(f"{star}: loaded sector hashes for {len(bodies)} bodies")
+                if m: up["sect_gap"] = m[-1]
+        if up:
+            update_planet(conn, sid, body, up)
 
 
 NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "release", "nivgen")
@@ -312,10 +308,7 @@ def rust_star(conn, star):
             if oc:
                 up[oc_col] = oc
         if up:
-            sets = ", ".join(f"{k}=?" for k in up)
-            conn.execute(
-                f"UPDATE planets SET {sets} WHERE star_id=? AND body_index=?",
-                (*up.values(), sid[0], body))
+            update_planet(conn, sid[0], body, up)
     conn.commit()
     print(f"{star}: computed Rust sector hashes for {len(bodies)} bodies")
 
@@ -412,6 +405,14 @@ def report_all(conn):
     ''').fetchall()
     for cls, cnt in sc:
         print(f'  S{cls:02d}: {cnt} stars')
+
+
+
+def update_planet(conn, star_id, body_index, cols):
+    sets = ", ".join(f"{k}=?" for k in cols)
+    conn.execute(
+        f"UPDATE planets SET {sets} WHERE star_id=? AND body_index=?",
+        (*cols.values(), star_id, body_index))
 
 
 def main():
