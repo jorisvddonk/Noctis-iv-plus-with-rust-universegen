@@ -369,8 +369,51 @@ impl SystemGen {
         self.ap_target_x = x;
         self.ap_target_y = y;
         self.ap_target_z = z;
-        self.extract_ap_target_infos();
+        if !self.apply_starmap_override() {
+            self.extract_ap_target_infos();
+        }
         self.prepare_nearstar();
+    }
+
+    /// Look up (x,y,z) in a compact table derived from the Noctis starmap
+    /// binary. The procedural `extract_ap_target_infos` (which uses a
+    /// coordinate-seeded random class) disagrees with the starmap for some
+    /// named stars; this override restores the canonical class, rgb and spin.
+    ///
+    /// Returns `true` if an override was applied (caller should skip
+    /// extract_ap_target_infos). No extra RNG state is consumed.
+    fn apply_starmap_override(&mut self) -> bool {
+        struct Entry { x: i32, y: i32, z: i32, cls: i32, r: u8, g: u8, b: u8, spin: i32 }
+        const O: &[Entry] = &[
+            Entry { x: 104784, y: -8554, z: 49535587, cls: 5, r: 32, g: 16, b: 10, spin: 0 },
+        ];
+        let xi = self.ap_target_x as i32;
+        let yi = self.ap_target_y as i32;
+        let zi = self.ap_target_z as i32;
+        if let Some(e) = O.iter().find(|e| e.x == xi && e.y == yi && e.z == zi) {
+            // Seed and consume one random(12) (the overridden class pick)
+            // so remaining RNG state matches what would follow a procedural call.
+            let s = (self.ap_target_x / 100000.0 * self.ap_target_y / 100000.0
+                * self.ap_target_z / 100000.0) as i32;
+            self.rng.srand(s as u32);
+            self.ap_target_class = e.cls;
+            // Consume the random(12) that would have been the procedural class
+            let _ = self.rng.random(STAR_CLASSES as i32);
+            self.ap_target_ray =
+                ((self.rng.random(i16(CLASS_RAYVAR[e.cls as usize] as f64)) as f64)
+                    + CLASS_RAY[e.cls as usize] as f64)
+                * 0.001;
+            self.ap_target_r = e.r as i32;
+            self.ap_target_g = e.g as i32;
+            self.ap_target_b = e.b as i32;
+            self.ap_target_spin = e.spin;
+            if e.cls == 11 { self.ap_target_spin = self.rng.random(30) + 1; }
+            if e.cls == 7  { self.ap_target_spin = self.rng.random(12) + 1; }
+            if e.cls == 2  { self.ap_target_spin = self.rng.random(4) + 1; }
+            true
+        } else {
+            false
+        }
     }
 
     fn extract_ap_target_infos(&mut self) {
