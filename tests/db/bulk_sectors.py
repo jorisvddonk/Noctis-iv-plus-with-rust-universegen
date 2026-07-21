@@ -328,6 +328,8 @@ def main():
             print("no star without canonical data")
             return
         star = row[0]
+        if args.cmd != "one_iter":
+            print(f"[{args.cmd}] auto-selected: {star}")
 
     if args.cmd == "gen":
         gen_star(conn, star, args.force)
@@ -338,6 +340,7 @@ def main():
     if args.cmd == "cmp":
         cmp_star(conn, star)
     if args.cmd == "one_iter":
+        print(f"[one_iter] star: {star}")
         gen_star(conn, star, args.force)
         load_star(conn, star)
         rust_star(conn, star)

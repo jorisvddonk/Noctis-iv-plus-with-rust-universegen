@@ -1,6 +1,0 @@
-=== SURFACE SECTOR (heightmap) ===
-SECTOR body=25 type=1 lon=134 lat=106 sctype=2 albedo=32 night=0
-  global_surface_seed=116010
-heightmap        len=40000  fnv=6B8A0522 crc=B1A696A4
-objectchart      len=40000  fnv=30462763 crc=C1C9BC05
-gap               len=16   000000000000000000000000C509BD54
