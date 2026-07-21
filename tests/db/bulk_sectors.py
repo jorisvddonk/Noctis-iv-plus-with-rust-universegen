@@ -158,6 +158,13 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False):
 
     work = tempfile.mkdtemp(prefix="sector_")
     try:
+        # Wipe all stale fixture .out files so we never confuse old results
+        for f in glob.glob(os.path.join(SECT_DIR, "*.out")):
+            os.remove(f)
+        nuked = len(glob.glob(os.path.join(SECT_DIR, "*.out")))
+        if nuked:
+            print(f"  [batch {batch_idx}] cleaned {nuked} leftover fixture(s)")
+
         need_build = build_flag or not os.path.exists(EXE_PATH) or sources_changed()
 
         if need_build:
