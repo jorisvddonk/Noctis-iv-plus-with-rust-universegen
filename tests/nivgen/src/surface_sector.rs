@@ -769,8 +769,13 @@ impl SystemGen {
             9 => self.leafflares = 4,
             _ => self.leafflares = 0,
         }
-        self.treescaling = f(3000.0 + self.rng.flandom() * 3000.0 - self.rng.flandom() * 1500.0);
-        self.treespreads = f(0.75 + self.rng.flandom() * 0.50 - self.rng.flandom() * 0.50);
+        // C evaluates right-to-left: right flandom() first, then left.
+        let _ts_r = self.rng.flandom();
+        let _ts_l = self.rng.flandom();
+        self.treescaling = f(3000.0 + _ts_l * 3000.0 - _ts_r * 1500.0);
+        let _sp_r = self.rng.flandom();
+        let _sp_l = self.rng.flandom();
+        self.treespreads = f(0.75 + _sp_l * 0.50 - _sp_r * 0.50);
         self.branchwidth = f(0.05 + self.rng.flandom() * 0.15);
         self.rootheight = f(0.05 + self.rng.flandom());
 
@@ -788,6 +793,7 @@ impl SystemGen {
         }
 
         // veniamo all'ambiente di superficie...
+        // esso dipende strettamente dalle coordinate di sbarco.
         self.frng.srand((self.landing_pt_lat * self.landing_pt_lon) as u32);
         self.rng.srand((self.landing_pt_lat * self.landing_pt_lon) as u32);
 
@@ -859,7 +865,10 @@ impl SystemGen {
                     self.srf_darkline(1, r, -1, -1, 256);
                     n -= 1;
                 }
-                self.rockdensity = (15 + 16 * self.rng.random(2)) * self.rng.random(2);
+                // C evaluates right-to-left: right random(2) first, then left.
+                let _rd_r = self.rng.random(2);
+                let _rd_l = self.rng.random(2);
+                self.rockdensity = (15 + 16 * _rd_l) * _rd_r;
                 self.rockscaling = f(150.0 + self.rng.random(500) as f64);
                 self.rockpeaking = f(100.0 + self.rng.random(300) as f64);
             }
@@ -882,7 +891,10 @@ impl SystemGen {
                 }
                 match self.rng.random(2) {
                     0 => {
-                        n = self.albedo + self.rng.random(200) - self.rng.random(100);
+                        // C evaluates right-to-left: random(100) first, then random(200)
+                        let _r100 = self.rng.random(100);
+                        let _r200 = self.rng.random(200);
+                        n = self.albedo + _r200 - _r100;
                         hf = f(self.rng.random(10) as f64 * 0.02);
                         if n < 0 {
                             n = 0;
@@ -1177,7 +1189,9 @@ impl SystemGen {
                     self.srf_darkline(0, r, -1, -1, 200);
                     n -= 1;
                 }
-                n = self.albedo + self.rng.random(200) - self.rng.random(100);
+                let _n_r = self.rng.random(100);
+                let _n_l = self.rng.random(200);
+                n = self.albedo + _n_l - _n_r;
                 if n < 0 {
                     n = 0;
                 }
@@ -1188,7 +1202,10 @@ impl SystemGen {
                     self.std_crater(1, cx, cz, -cr, 31, 0.15, 1.0, 256);
                     n -= 1;
                 }
-                n = self.albedo + self.rng.random(100) - self.rng.random(50);
+                // C evaluates right-to-left: random(50) first, then random(100)
+                let _n50 = self.rng.random(50);
+                let _n100 = self.rng.random(100);
+                n = self.albedo + _n100 - _n50;
                 if n < 0 {
                     n = 0;
                 }
