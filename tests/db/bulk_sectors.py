@@ -53,7 +53,7 @@ def fname(star, body, kind, lon, lat):
     return f"{base}_b{body}_{kind}_{lon}_{lat}.out"
 
 
-def gen_star(conn, star, force=False):
+def gen_star(conn, star, force=False, build_flag=False):
     sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
                        (star,)).fetchone()
     if not sid:
@@ -98,16 +98,49 @@ def gen_star(conn, star, force=False):
 
     work = tempfile.mkdtemp(prefix="sector_")
     try:
-        # Copy sources
-        for f in ["NOCTIS-0.CPP", "NOCTIS-1.CPP"]:
-            shutil.copy2(os.path.join(SRC, f), work)
-        for pat in ("*.h", "*.H"):
-            for f in glob.glob(os.path.join(SRC, pat)):
-                shutil.copy2(f, work)
-        for f in ["NIVTEST.CPP", "NIVHASH.C", "NIVHASH.H", "NIVSTUBS.C"]:
-            shutil.copy2(os.path.join(HAR, f), work)
-        for f in ["BUILD.BAT", "LINK.RSP"]:
-            shutil.copy2(os.path.join(DOSBOX, f), work)
+    exe_dir = os.path.join(REPO, "tests", ".harness_build")
+    exe_path = os.path.join(exe_dir, "NIVTEST.EXE")
+    need_build = build_flag or not os.path.exists(exe_path)
+
+        if need_build:
+            os.makedirs(exe_dir, exist_ok=True)
+            # Copy sources into work for compilation
+            for f in ["NOCTIS-0.CPP", "NOCTIS-1.CPP"]:
+                shutil.copy2(os.path.join(SRC, f), work)
+            for pat in ("*.h", "*.H"):
+                for f in glob.glob(os.path.join(SRC, pat)):
+                    shutil.copy2(f, work)
+            for f in ["NIVTEST.CPP", "NIVHASH.C", "NIVHASH.H", "NIVSTUBS.C"]:
+                shutil.copy2(os.path.join(HAR, f), work)
+            for f in ["BUILD.BAT", "LINK.RSP"]:
+                shutil.copy2(os.path.join(DOSBOX, f), work)
+
+        # Build the EXE if needed (one DOSBox-X boot).
+        if need_build:
+            build_conf = (
+                "[cpu]\r\ncputype=486\r\ncycles=max\r\n[dos]\r\nxms=true\r\nems=true\r\n"
+                "[autoexec]\r\n"
+                f"mount c {tc_mount}\r\n"
+                f"mount d {work}\r\n"
+                f"mount e {exe_dir}\r\n"
+                "path C:\\BIN\r\n"
+                "d:\r\n"
+                "call BUILD.BAT\r\n"
+                "if exist BUILD.FAIL goto end\r\n"
+                f"copy D:\\NIVTEST.EXE E:\\\r\n"
+                ":end\r\n"
+                "exit\r\n"
+            )
+            with open(os.path.join(work, "build.conf"), "w") as f:
+                f.write(build_conf)
+            env = os.environ.copy()
+            env["SDL_VIDEODRIVER"] = "dummy"
+            env["SDL_AUDIODRIVER"] = "dummy"
+            subprocess.run(
+                [dosbox_x, "-conf", os.path.join(work, "build.conf"), "-exit"],
+                capture_output=True, text=True, env=env)
+            if not os.path.exists(exe_path):
+                print("  [!] BUILD FAILED"); return
 
         # Write RUN.BAT — one sector command per output file
         run_lines = ["@echo off"]
@@ -121,6 +154,7 @@ def gen_star(conn, star, force=False):
             f.write("\r\n".join(run_lines) + "\r\n")
 
         # Write niv.conf
+        build_line = "call BUILD.BAT\r\n" if need_build else f"copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL\r\n"
         conf = (
             "[cpu]\r\n"
             "cputype=486\r\n"
@@ -131,7 +165,10 @@ def gen_star(conn, star, force=False):
             "[autoexec]\r\n"
             f"mount c {tc_mount}\r\n"
             f"mount d {work}\r\n"
-            "path C:\\BIN\r\n"
+            f"mount e {exe_dir}\r\n"
+            "path C:\\BIN;E:\\\r\n"
+            "d:\r\n"
+            + build_line
             "d:\r\n"
             "call BUILD.BAT\r\n"
             "if exist BUILD.FAIL goto end\r\n"
@@ -220,10 +257,13 @@ def load_star(conn, star):
 NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "release", "nivgen")
 
 
-def rust_sector_hashes(x, y, z, body, lon, lat, gap=None):
+def rust_sector_hashes(x, y, z, body, lon, lat, star_name=None, gap=None):
     """Run `nivgen sector` for one landing and return (hm_fnv, oc_fnv)."""
+    starmap_bin = os.path.join(REPO, "data", "STARMAP.BIN")
     cmd = [NIVGEN, "sector", "-x", str(x), "-y", str(y), "-z", str(z),
            "-p", str(body), "-lon", str(lon), "-lat", str(lat)]
+    if star_name:
+        cmd += ["--name", star_name, "--starmap", starmap_bin]
     if gap:
         cmd += ["-gap", gap]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -254,7 +294,7 @@ def rust_star(conn, star):
             ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc"),
             ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc"),
         ):
-            hm, oc = rust_sector_hashes(x, y_usr, z, body, lon, lat, gap)
+            hm, oc = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
             if hm:
                 up[hm_col] = hm
             if oc:
@@ -314,6 +354,7 @@ def main():
         p = sub.add_parser(name)
         p.add_argument("star", nargs="?")
         p.add_argument("--force", action="store_true")
+        p.add_argument("--build", action="store_true", help="force recompile C harness")
     args = ap.parse_args()
     conn = sqlite3.connect(DB_PATH)
 
@@ -333,8 +374,8 @@ def main():
         if args.cmd != "one_iter":
             print(f"[{args.cmd}] auto-selected: {star}")
 
-    if args.cmd == "gen":
-        gen_star(conn, star, args.force)
+    if args.cmd in ("gen", "run"):
+        gen_star(conn, star, args.force, args.build)
     if args.cmd in ("load", "run"):
         load_star(conn, star)
     if args.cmd == "rust":
@@ -343,7 +384,7 @@ def main():
         cmp_star(conn, star)
     if args.cmd == "one_iter":
         print(f"[one_iter] star: {star}")
-        gen_star(conn, star, args.force)
+        gen_star(conn, star, args.force, args.build)
         load_star(conn, star)
         rust_star(conn, star)
         cmp_star(conn, star)
