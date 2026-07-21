@@ -444,7 +444,7 @@ def cmp_star(conn, star):
     print(f"{star}: {label}")
 
 
-def report_all(conn):
+def report_all(conn, short=False):
     rows = conn.execute("""
         SELECT planet_type, is_moon,
                SUM(CASE WHEN sect_def_hm = rust_sect_def_hm AND sect_def_oc = rust_sect_def_oc
@@ -461,6 +461,18 @@ def report_all(conn):
         FROM planets WHERE sect_def_hm IS NOT NULL
         GROUP BY planet_type, is_moon ORDER BY planet_type, is_moon
     """).fetchall()
+
+    if short:
+        tot_p = tot_m = tot_ok = tot_def = tot_rb = tot_ro = 0
+        for t, m, ok, df, rh, ro in rows:
+            if m: tot_m += ok+df+rh+ro
+            else: tot_p += ok+df+rh+ro
+            tot_ok += ok; tot_def += df; tot_rb += rh; tot_ro += ro
+        surf_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL').fetchone()[0]
+        n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
+        print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
+        print(f'SURFACE: {surf_tot} bodies with canonical data')
+        return
 
     print(f'Planet-type breakdown (bodies with sector data):')
     print(f'{"Typ":>3} {"P/M":>3} {"match":>5} {"def*":>5} {"r-b*":>5} {"r-o*":>5} {"tot":>5}')
@@ -548,6 +560,8 @@ def main():
             help="batch N stars in one DOSBox-X boot (one_iter only)")
         p.add_argument("--dry-run", action="store_true",
             help="print what would be generated without running DOSBox-X")
+        p.add_argument("--short", action="store_true",
+            help="condensed report for notifications")
     args = ap.parse_args()
     conn = sqlite3.connect(DB_PATH)
 
@@ -576,7 +590,7 @@ def main():
     if args.cmd == "cmp":
         cmp_star(conn, star)
     if args.cmd == "db-report":
-        report_all(conn)
+        report_all(conn, short=args.short)
     if args.cmd == "one_iter":
         batch_size = getattr(args, 'batch', 1)
         if args.star:
