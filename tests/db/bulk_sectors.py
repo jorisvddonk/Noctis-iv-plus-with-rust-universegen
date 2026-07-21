@@ -530,11 +530,13 @@ def report_all(conn, short=False):
             atmo_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv IS NOT NULL AND rust_atmo_fnv IS NOT NULL AND atmo_fnv != rust_atmo_fnv').fetchone()[0]
             pal_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv IS NOT NULL AND rust_pal_fnv IS NOT NULL AND pal_fnv != rust_pal_fnv').fetchone()[0]
             surf_none = surf_tot - surf_match
-            label = 'MATCH' if surf_diff == 0 and atmo_diff == 0 else 'MISMATCH'
-            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
-            print(f'SURFACE: {label} {surf_match}/{surf_tot} surf {atmo_match}/{surf_tot} atmo {pal_match}/{surf_tot} pal ({surf_none} unprocessed)')
+            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
+            surf_status = 'MATCH' if surf_diff == 0 else f'MISMATCH ({surf_diff} bad)'
+            atmo_status = 'MATCH' if atmo_diff == 0 else f'MISMATCH ({atmo_diff} bad)'
+            pal_status = 'MATCH' if pal_diff == 0 else f'MISMATCH ({pal_diff} bad)'
+            print(f'SURFACE: {surf_match}/{surf_tot} surf {surf_status} | {atmo_match}/{surf_tot} atmo {atmo_status} | {pal_match}/{surf_tot} pal {pal_status} | {surf_none} unprocessed')
         else:
-            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
+            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
             print('SURFACE: no canonical data')
         return
 
@@ -550,13 +552,11 @@ def report_all(conn, short=False):
     print('-' * 36)
     print(f'{"ALL":>3} {"":>3} {tot_ok:5d} {tot_def:5d} {tot_rb:5d} {tot_ro:5d} {tot_ok+tot_def+tot_rb+tot_ro:5d}')
     print()
-    print(f'  match = all 4 hashes match')
-    print(f'  def*  = def-hm or def-oc differs (fixture corruption)')
-    print(f'  r-b*  = rand-hm + rand-oc differ (heightmap+object bug)')
-    print(f'  r-o*  = only rand-oc differs (object chart bug)')
+    print(f'  MATCH    = all 4 hashes match ({tot_ok} bodies)')
+    print(f'  def*     = def-hm or def-oc differs ({tot_def} bodies)')
+    print(f'  r-b*     = rand-hm + rand-oc differ ({tot_rb} bodies)')
+    print(f'  r-o*     = only rand-oc differs ({tot_ro} bodies)')
     print()
-
-    # Surface hash breakdown
     surf_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL').fetchone()[0]
     if surf_tot > 0:
         surf_rows = conn.execute('''
