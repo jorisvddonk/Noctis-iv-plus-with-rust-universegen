@@ -1004,3 +1004,28 @@ The downstream effect: `nr_of_objects` at the end of the buffer (bytes
 39966-39973) differs because the inclination loop reads back the objectchart
 for `ptr+200` indices and produces different `incl` values for edge
 quadrants, which flips `nr_of_objects` nibbles.
+
+## 30. Y‑coordinate sign convention: user‑facing vs engine‑facing (2026-07-21)
+
+The Feltyrion galactic chart displays **user‑facing** Parsis coordinates.
+The engine/starmap internally uses the **negated** (engine‑facing) y sign.
+That is: `engine_y = -user_y`.
+
+Stars shown at y=&minus;8554 on the chart have y=+8554 in the starmap binary.
+The star‑class seed formula `srand(x/100000 * y/100000 * z/100000)` is
+sensitive to this sign — with the chart's (user‑facing) y the seed and
+therefore the class differ from the starmap‑canonical value.
+
+**Fix:** Normalise the y sign at the earliest interface boundary:
+
+* CLI tools (`rawsys3`, `nivgen`): negate the user‑provided y before passing
+  it to `extract_ap_target_infos` / `prepare_nearstar`.
+* Rust `generate()`: `self.ap_target_y = y.abs()` handles both conventions
+  (callers may pass user‑facing or engine‑facing y).
+* C `RAWSYS3.CPP`: `ap_target_y = -atof(argv[2])`.
+
+Without this normalisation, stars whose chart y is negative (e.g. PITSTOP 12
+at y=&minus;8554) produce the wrong class (class 1 instead of 5) and
+consequently the wrong planet count and planet types. With the fix,
+PITSTOP 12 correctly yields class 5, 2 planets (types 8=quartz,
+4=rocky/creased), matching the starmap and Feltyrion Explorer.
