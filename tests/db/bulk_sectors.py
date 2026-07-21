@@ -278,11 +278,12 @@ def cmp_star(conn, star):
     bodies = conn.execute(
         "SELECT body_index, sect_def_hm, sect_def_oc, sect_rand_hm, "
         "sect_rand_oc, rust_sect_def_hm, rust_sect_def_oc, "
-        "rust_sect_rand_hm, rust_sect_rand_oc FROM planets "
+        "rust_sect_rand_hm, rust_sect_rand_oc, seedval "
+        "FROM planets "
         "WHERE star_id=? ORDER BY body_index", (sid,)).fetchall()
     ok = 0
     no_canon = 0
-    for (b, cdm, cdo, crm, cro, rdm, rdo, rrm, rro) in bodies:
+    for (b, cdm, cdo, crm, cro, rdm, rdo, rrm, rro, sv) in bodies:
         # If no canonical data at all, report that instead of "match"
         if cdm is None and cdo is None and crm is None and cro is None:
             print(f"  body {b:3d}: NO CANONICAL DATA")
@@ -298,7 +299,8 @@ def cmp_star(conn, star):
             elif canon != rust:
                 parts.append(f"{lbl}={canon}/{rust}")
         if parts:
-            print(f"  body {b:3d}: DIFF({' '.join(parts)})")
+            lon, lat = coords_from_seedval(sv)
+            print(f"  body {b:3d}: DIFF lon={lon} lat={lat} {' '.join(parts)}")
         else:
             ok += 1
     label = f"{ok}/{len(bodies)} bodies match" if no_canon == 0 else f"{ok}/{len(bodies)} bodies match ({no_canon} no canonical)"
