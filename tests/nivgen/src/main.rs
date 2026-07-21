@@ -294,6 +294,9 @@ fn cmd_fill_db(args: &[String]) {
     let db_path = args.iter().position(|a| a == "--db").and_then(|p| args.get(p + 1))
         .map(|s| s.as_str()).unwrap_or("db/noctis.db");
     let do_assert = !args.contains(&"--no-assert".to_string());
+    if do_assert {
+        eprintln!("[assert] ON — use --no-assert to disable");
+    }
     let conn = rusqlite::Connection::open(db_path).expect("open DB");
     let mut stmt = conn.prepare("SELECT id, x, y_user, z FROM stars ORDER BY id")
         .expect("prepare stmt");
