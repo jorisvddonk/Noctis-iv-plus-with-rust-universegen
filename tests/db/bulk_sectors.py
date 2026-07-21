@@ -168,13 +168,16 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
 
     work = tempfile.mkdtemp(prefix="sector_")
     try:
-        # Wipe all stale fixture .out files so we never confuse old results
+        # Wipe stale fixture .out files for the stars being generated
         if not keep_fixtures:
-            for f in glob.glob(os.path.join(SECT_DIR, "*.out")):
-                os.remove(f)
-            nuked = len(glob.glob(os.path.join(SECT_DIR, "*.out")))
+            nuked = 0
+            for star_name in stars:
+                prefix = safe_filename(star_name) + "_"
+                for f in glob.glob(os.path.join(SECT_DIR, prefix + "*.out")):
+                    os.remove(f)
+                    nuked += 1
             if nuked:
-                print(f"  [batch {batch_idx}] cleaned {nuked} leftover fixture(s)")
+                print(f"  cleaned {nuked} stale fixture(s)")
 
         need_build = build_flag or not os.path.exists(EXE_PATH) or sources_changed()
 
@@ -528,7 +531,7 @@ def report_all(conn, short=False):
             pal_match = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv = rust_pal_fnv AND pal_fnv IS NOT NULL').fetchone()[0]
             surf_none = surf_tot - surf_match
             print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | def* {tot_def} MISMATCH | r-b* {tot_rb} MISMATCH | r-o* {tot_ro} MISMATCH | {n_stars} stars')
-            print(f'SURFACE: {surf_match}/{surf_tot} surf MATCH | {atmo_match}/{surf_tot} atmo MATCH | {pal_match}/{surf_tot} pal MISMATCH | {surf_none} unprocessed')
+            print(f'SURFACE: {surf_match}/{surf_tot} surf MATCH | {atmo_match}/{surf_tot} atmo MATCH | {pal_match}/{surf_tot} pal MATCH | {surf_none} unprocessed')
         else:
             print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | def* {tot_def} MISMATCH | r-b* {tot_rb} MISMATCH | r-o* {tot_ro} MISMATCH | {n_stars} stars')
             print('SURFACE: no canonical data')
@@ -659,6 +662,7 @@ def main():
         gen_star(conn, star, args.force, args.build, args.keep_fixtures)
     if args.cmd in ("load", "run"):
         load_star(conn, star)
+        conn.commit()
     if args.cmd == "rust":
         rust_star(conn, star)
     if args.cmd == "cmp":
