@@ -405,6 +405,58 @@ def rust_star(conn, star):
     print(f"{star}: computed Rust sector hashes for {len(bodies)} bodies")
 
 
+def rust_surface_hashes(x, y_user, z):
+    """Run `nivgen planet-all` once and return {body_index: (surf, atmo, pal)}."""
+    r = subprocess.run(
+        [NIVGEN, "planet-all", "-x", str(x), "-y", str(y_user), "-z", str(z)],
+        capture_output=True, text=True, timeout=120
+    )
+    t = r.stdout + r.stderr
+    out = {}
+    for m in re.finditer(
+        r"^PLANET (\d+) type=\d+ is_moon=\d+ surf=(\w+) atmo=(\w+) pal=(\w+)",
+        t, re.M,
+    ):
+        out[int(m.group(1))] = (m.group(2), m.group(3), m.group(4))
+    return out
+
+
+def surf_star(conn, star):
+    """Compute Rust surface hashes (surf/atmo/pal) for every body and store them."""
+    sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
+                       (star,)).fetchone()
+    if not sid:
+        print(f"star '{star}' not found"); sys.exit(1)
+    sid, x, y_user, z = sid
+    bodies = conn.execute(
+        "SELECT id, body_index FROM planets WHERE star_id=? AND surf_fnv IS NOT NULL "
+        "ORDER BY body_index", (sid,)).fetchall()
+    if not bodies:
+        print(f"{star}: no canonical surface data")
+        return
+    rust = rust_surface_hashes(x, y_user, z)
+    ok = 0
+    for pid, body in bodies:
+        h = rust.get(body)
+        if not h:
+            print(f"  body {body:3d}: NO OUTPUT")
+            continue
+        surf, atmo, pal = h
+        conn.execute(
+            "UPDATE planets SET rust_surf_fnv=?, rust_atmo_fnv=?, rust_pal_fnv=? WHERE id=?",
+            (surf, atmo, pal, pid)
+        )
+        c_surf = conn.execute("SELECT surf_fnv FROM planets WHERE id=?", (pid,)).fetchone()[0]
+        c_atmo = conn.execute("SELECT atmo_fnv FROM planets WHERE id=?", (pid,)).fetchone()[0]
+        c_pal = conn.execute("SELECT pal_fnv FROM planets WHERE id=?", (pid,)).fetchone()[0]
+        match = (surf == c_surf and atmo == c_atmo and pal == c_pal)
+        if match: ok += 1
+        status = "OK" if match else f"DIFF(surf={c_surf[:8]}/{surf[:8]} atmo={c_atmo[:8]}/{atmo[:8]} pal={c_pal[:8]}/{pal[:8]})"
+        print(f"  body {body:3d}: {status}")
+    conn.commit()
+    print(f"{star}: {ok}/{len(bodies)} surface bodies match")
+
+
 def cmp_star(conn, star):
     """Compare Rust vs canonical sector hashes; report OK/DIFF per body."""
     sid = conn.execute("SELECT id FROM stars WHERE name=?",
@@ -469,9 +521,15 @@ def report_all(conn, short=False):
             else: tot_p += ok+df+rh+ro
             tot_ok += ok; tot_def += df; tot_rb += rh; tot_ro += ro
         surf_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL').fetchone()[0]
+        surf_match = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv = rust_surf_fnv AND surf_fnv IS NOT NULL').fetchone()[0]
+        atmo_match = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv = rust_atmo_fnv AND atmo_fnv IS NOT NULL').fetchone()[0]
+        pal_match = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv = rust_pal_fnv AND pal_fnv IS NOT NULL').fetchone()[0]
         n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
         print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} match | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
-        print(f'SURFACE: {surf_tot} bodies with canonical data')
+        if surf_tot > 0:
+            print(f'SURFACE: {surf_match}/{surf_tot} surf {atmo_match}/{surf_tot} atmo {pal_match}/{surf_tot} pal')
+        else:
+            print('SURFACE: no canonical data')
         return
 
     print(f'Planet-type breakdown (bodies with sector data):')
@@ -509,12 +567,21 @@ def report_all(conn, short=False):
         print(f'{"Typ":>3} {"P/M":>3} {"surf":>5} {"atmo":>5} {"pal":>5} {"tot":>5}')
         print('-' * 33)
         st_p = st_m = 0
+        surf_ok = atmo_ok = pal_ok = 0
         for t, m, s, a, p, tot in surf_rows:
             print(f'{t:3d} {"M" if m else "P":>3} {s:5d} {a:5d} {p:5d} {tot:5d}')
             if m: st_m += tot
             else: st_p += tot
+            surf_ok += s; atmo_ok += a; pal_ok += p
         print('-' * 33)
-        print(f'{"ALL":>3} {"":>3} {"":>5} {"":>5} {"":>5} {st_p+st_m:5d}')
+        print(f'{"ALL":>3} {"":>3} {surf_ok:5d} {atmo_ok:5d} {pal_ok:5d} {st_p+st_m:5d}')
+        print()
+        print(f'  surf/atmo/pal columns: count of bodies where Rust hash == canonical hash')
+        print(f'  Rust surface hashes computed: {surf_ok+atmo_ok+pal_ok > 0}')
+        if surf_ok == st_p+st_m and atmo_ok == st_p+st_m and pal_ok == st_p+st_m:
+            print(f'  ALL SURFACE HASHES MATCH ({st_p+st_m}/{st_p+st_m})')
+        else:
+            print(f'  SURFACE MISMATCH: surf={surf_ok}/{st_p+st_m} atmo={atmo_ok}/{st_p+st_m} pal={pal_ok}/{st_p+st_m}')
     else:
         print('Surface hash breakdown: no canonical surface data in DB')
         print('(run load_canonical.py after fill-db to populate surf/atmo/pal hashes)')
@@ -562,6 +629,12 @@ def main():
             help="print what would be generated without running DOSBox-X")
         p.add_argument("--short", action="store_true",
             help="condensed report for notifications")
+        p.add_argument("--skip-sectors", action="store_true",
+            help="skip sector generation/comparison")
+        p.add_argument("--skip-surf", action="store_true",
+            help="skip surface hash generation/comparison")
+        p.add_argument("--skip-pal", action="store_true",
+            help="skip palette hash generation/comparison")
     args = ap.parse_args()
     conn = sqlite3.connect(DB_PATH)
 
@@ -593,24 +666,42 @@ def main():
         report_all(conn, short=args.short)
     if args.cmd == "one_iter":
         batch_size = getattr(args, 'batch', 1)
+        skip_sectors = getattr(args, 'skip_sectors', False)
+        skip_surf = getattr(args, 'skip_surf', False)
+        skip_pal = getattr(args, 'skip_pal', False)
         if args.star:
             batch = [args.star]
         else:
-            rows = conn.execute(
-                "SELECT name FROM stars WHERE id IN "
-                "(SELECT star_id FROM planets GROUP BY star_id "
-                "HAVING COUNT(sect_def_hm) = 0) "
-                "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
+            if skip_sectors:
+                # Pick stars with canonical surface data but no Rust surf hashes
+                rows = conn.execute(
+                    "SELECT name FROM stars WHERE id IN "
+                    "(SELECT star_id FROM planets WHERE surf_fnv IS NOT NULL "
+                    "GROUP BY star_id HAVING COUNT(rust_surf_fnv) = 0) "
+                    "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT name FROM stars WHERE id IN "
+                    "(SELECT star_id FROM planets GROUP BY star_id "
+                    "HAVING COUNT(sect_def_hm) = 0) "
+                    "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
             if not rows:
-                print("no star without canonical data")
+                print("no star needs processing")
                 return
             batch = [r[0] for r in rows]
-        gen_stars_batch(conn, batch, args.force, args.build, args.keep_fixtures, args.dry_run)
+        if not skip_sectors:
+            gen_stars_batch(conn, batch, args.force, args.build, args.keep_fixtures, args.dry_run)
         if not args.dry_run:
             for s in batch:
-                load_star(conn, s)
-                rust_star(conn, s)
-                cmp_star(conn, s)
+                if not skip_sectors:
+                    load_star(conn, s)
+                    rust_star(conn, s)
+                if not skip_surf:
+                    surf_star(conn, s)
+                if not skip_pal:
+                    pass  # pal is part of surf_star now
+                if not skip_sectors:
+                    cmp_star(conn, s)
     conn.close()
 
 
