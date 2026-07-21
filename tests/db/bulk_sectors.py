@@ -422,10 +422,7 @@ def main():
     if args.cmd == "rust":
         rust_star(conn, star)
     if args.cmd == "cmp":
-        if args.star:
-            cmp_star(conn, star)
-        else:
-            report_all(conn)
+        cmp_star(conn, star)
     if args.cmd == "db-report":
         report_all(conn)
     if args.cmd == "one_iter":
