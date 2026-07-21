@@ -359,10 +359,37 @@ def cmp_star(conn, star):
     print(f"{star}: {label}")
 
 
+def report_all(conn):
+    rows = conn.execute("""
+        SELECT planet_type, is_moon,
+               SUM(CASE WHEN sect_def_hm = rust_sect_def_hm AND sect_def_oc = rust_sect_def_oc
+                             AND sect_rand_hm = rust_sect_rand_hm
+                             AND sect_rand_oc = rust_sect_rand_oc THEN 1 ELSE 0 END) as ok,
+               SUM(CASE WHEN (sect_def_hm != rust_sect_def_hm OR sect_def_oc != rust_sect_def_oc)
+                             AND sect_rand_hm = rust_sect_rand_hm
+                             AND sect_rand_oc = rust_sect_rand_oc THEN 1 ELSE 0 END) as def_only,
+               SUM(CASE WHEN sect_def_hm = rust_sect_def_hm AND sect_def_oc = rust_sect_def_oc
+                             AND sect_rand_hm != rust_sect_rand_hm
+                             AND sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as rand_both,
+               SUM(CASE WHEN sect_def_hm = rust_sect_def_hm AND sect_def_oc = rust_sect_def_oc
+                             AND sect_rand_hm = rust_sect_rand_hm
+                             AND sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as rand_oc,
+               SUM(CASE WHEN sect_def_hm != rust_sect_def_hm OR sect_def_oc != rust_sect_def_oc
+                             OR sect_rand_hm != rust_sect_rand_hm
+                             OR sect_rand_oc != rust_sect_rand_oc THEN 1 ELSE 0 END) as diff
+        FROM planets WHERE sect_def_hm IS NOT NULL
+        GROUP BY planet_type, is_moon ORDER BY planet_type, is_moon
+    """).fetchall()
+    print(f'{"T":>3} {"P/M":>3} {"ok":>5} {"def":>5} {"r-both":>5} {"r-oc":>5} {"tot":>5}')
+    print('-' * 36)
+    for t, m, ok, df, rh, ro, tt in rows:
+        print(f'{t:3d} {"M" if m else "P":>3} {ok:5d} {df:5d} {rh:5d} {ro:5d} {ok+df+rh+ro:5d}')
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("gen", "load", "run", "rust", "cmp", "one_iter"):
+    for name in ("gen", "load", "run", "rust", "cmp", "one_iter", "db-report"):
         p = sub.add_parser(name)
         p.add_argument("star", nargs="?")
         p.add_argument("--force", action="store_true")
@@ -374,7 +401,7 @@ def main():
 
     # If no star name given, pick the next star without C canonical data.
     star = args.star
-    if not star:
+    if not star and args.cmd != "db-report":
         row = conn.execute(
             "SELECT name FROM stars WHERE id IN "
             "(SELECT star_id FROM planets GROUP BY star_id "
@@ -395,7 +422,12 @@ def main():
     if args.cmd == "rust":
         rust_star(conn, star)
     if args.cmd == "cmp":
-        cmp_star(conn, star)
+        if args.star:
+            cmp_star(conn, star)
+        else:
+            report_all(conn)
+    if args.cmd == "db-report":
+        report_all(conn)
     if args.cmd == "one_iter":
         batch_size = getattr(args, 'batch', 1)
         if args.star:
