@@ -20,10 +20,28 @@ against the original Borland C++ 3.1 source compiled under DOSBox-X.
   while porting, including the critical `imul ax` low-word replacement (§17).
 - `docs/test-fixtures.md` — coordinates and body indices for every planet
   type across all star classes.
+- `tests/rawsys3/` — **canonical ground-truth** OG-built module for raw
+  system generation. Compiled with the original BC31 toolchain (no 2026
+  harness code). **DO NOT MODIFY** `RAWSYS3.CPP` without extreme
+  confirmation — before editing, call `ntfy` to escalate the decision.
+
+  Usage:
+  ```bash
+  tests/rawsys3/build-and-run.sh X Y Z
+  ```
+  Takes user-facing Parsis coordinates (y negated on the galactic chart),
+  normalises y sign internally, and prints the star's class, body count,
+  and per-body type/owner. Matches starmap/Feltyrion output exactly.
 
 ## Critical rules
 1. Reproduce bugs, do not "correct" them. The Rust must match the C
    fixtures byte-for-byte (CRLF included).
+2. For **system gen** (star class, body count, planet types), the canonical
+   ground truth is `tests/rawsys3/build-and-run.sh` output — NOT the 2026
+   `NIVTEST.EXE` system command. RAWSYS3 is built with the original BC31
+   toolchain and has no 2026 modifications. The Rust `generate()` normalises
+   the y sign via `y.abs()` to match both user-facing and engine-facing
+   coordinate conventions (§30).
 2. The most common divergence sources are **16-bit `int`/`unsigned`
    arithmetic**, **`imul ax` low-word replacement**, and **x87 80-bit
    float precision**. See the gotchas doc.
