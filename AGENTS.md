@@ -145,6 +145,11 @@ Match rate by planet type (planet / moon):
   - `recompute-sector.sh` + `bulk_sectors.py` reproduce canonical byte-for-byte
     and compare; extend `load`/`rust`/`cmp` to the full corpus to confirm holds
     everywhere.
+  - `bulk_sectors.py one_iter` runs gen+load+rust+cmp for the next star
+    without canonical data — loop to hydrate the entire DB:
+    ```bash
+    while python3 db/bulk_sectors.py one_iter 2>&1 | tail -3; do :; done
+    ```
 
 ### Fixed (sector)
 - **`round_hill` unsigned-`r` loop underflow (2026-07-20).** `round_hill`
