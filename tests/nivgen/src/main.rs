@@ -306,17 +306,18 @@ fn cmd_fill_db(args: &[String]) {
     let mut insert = conn.prepare(
         "INSERT OR IGNORE INTO planets \
          (star_id, body_index, planet_type, seedval, is_moon, p_owner, p_moonid) \
-         VALUES (?1,?2,?3,0.0,?4,?5,?6)"
+         VALUES (?1,?2,?3,?4,?5,?6,?7)"
     ).expect("prepare insert");
 
-    for (i, (sid, x, y, z)) in stars.iter().enumerate() {
+    for (i, (sid, x, y_eng, z)) in stars.iter().enumerate() {
         let mut g = nivgen::system::SystemGen::new();
-        g.generate(*x, nivgen::system::EngineY::new(*y), *z);
+        g.generate(*x, nivgen::system::EngineY::new(*y_eng), *z);
         update_star.execute(rusqlite::params![g.nearstar_class, sid])
             .expect("update star class");
         for bi in 0..g.nearstar_nob as usize {
+            let sv = g.surface_seedval_for(bi as i32);
             insert.execute(rusqlite::params![
-                sid, bi as i32, g.p_type[bi] as i32,
+                sid, bi as i32, g.p_type[bi] as i32, sv,
                 (g.p_owner[bi] > -1) as i32,
                 g.p_owner[bi] as i32,
                 g.p_moonid[bi] as i32,
