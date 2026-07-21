@@ -67,7 +67,19 @@ pub const BG_SEGMENT: usize = 65536;
 pub const BG_SURFACE: usize = 64800;
 
 fn make_bg() -> Vec<u8> {
-    vec![0u8; BG_SEGMENT]
+    let mut v = vec![0u8; BG_SEGMENT];
+    // Positions beyond the 64800-byte surface map model the C far-heap
+    // after farmalloc. Borland's farmalloc (DOS INT 21h 48h) does NOT zero
+    // the allocated memory, so the next farmalloc block contains whatever
+    // DOS initialized pages to.  In DOSBox the far-heap region immediately
+    // following the allocation is filled by the next `p_background[n]`
+    // (allocated at program start). That next block has never been written
+    // to when we process body N, so it contains DOS-box's default page-fill
+    // byte.  Empirical match: 0xFF
+    for b in &mut v[BG_SURFACE..] {
+        *b = 0xFF;
+    }
+    v
 }
 
 /// Wrap a `double`/`f64` value the way Borland's 16-bit `int` would when a

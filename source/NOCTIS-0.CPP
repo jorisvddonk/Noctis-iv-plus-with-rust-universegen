@@ -4841,8 +4841,26 @@ rndpat:	asm {   add ax, cx
 	   l'elaborazione dell'overlay per l'atmosfera,
 	   nel caso ce ne sia bisogno, � contemporanea. */
 
+	if (logical_id == 24) {
+		int _vv[5], _ii;
+		for (_ii=0; _ii<5; _ii++) _vv[_ii] = random(0x7FFF);
+		FILE *_tf = fopen("D:\\TRACE.TXT", "a");
+		if (_tf) {
+			fprintf(_tf, "C_LCG5 body=%d:", logical_id);
+			for (_ii=0; _ii<5; _ii++) fprintf(_tf, " %d", _vv[_ii]);
+			fprintf(_tf, "\n");
+			fclose(_tf);
+		}
+		srand (seed);  // re-seed after consuming for trace
+	}
+
 	srand (seed);
 	QUADWORDS = 16200;
+
+	if (logical_id == 24) {
+		FILE *_tf = fopen("D:\\TRACE.TXT", "a");
+		if (_tf) { fprintf(_tf, "C_POST_SRAND body=%d seed=%u\n", logical_id, seed); fclose(_tf); }
+	}
 
 	switch (type) {
 		case 0: r = ranged_fast_random (3) + 5;
@@ -5150,6 +5168,17 @@ rndpat:	asm {   add ax, cx
 		return;
 	}
 
+	if (logical_id == 24) {
+		extern long _randseed;
+		FILE *_tf = fopen("D:\\TRACE.TXT", "a");
+		if (_tf) {
+			fprintf(_tf, "C_PAL_DBG body=%d type=%d colorbase=%d _randseed=%ld\n", logical_id, (int)type, (int)colorbase, _randseed);
+			fprintf(_tf, "  nearstar_rgb=(%d,%d,%d) nearstar_class=%d\n",
+				nearstar_r, nearstar_g, nearstar_b, (int)nearstar_class);
+			fclose(_tf);
+		}
+	}
+
 	type <<= 2;
 
 	r = planet_rgb_and_var[type+0];
@@ -5161,6 +5190,26 @@ rndpat:	asm {   add ax, cx
 	g <<= 1; g += nearstar_g; g >>= 1;
 	b <<= 1; b += nearstar_b; b >>= 1;
 
+	if (logical_id == 24) {
+		int _rr[18], _ii;
+		for (_ii=0; _ii<18; _ii++) _rr[_ii] = random(c);
+		FILE *_tf = fopen("D:\\TRACE.TXT", "a");
+		if (_tf) {
+			fprintf(_tf, "C_LCG18 body=%d:", logical_id);
+			for (_ii=0; _ii<18; _ii++) fprintf(_tf, " %d", _rr[_ii]);
+			fprintf(_tf, "\n");
+			fclose(_tf);
+		}
+		r1 = r + _rr[0] - _rr[1];
+		g1 = g + _rr[2] - _rr[3];
+		b1 = b + _rr[4] - _rr[5];
+		r2 = r + _rr[6] - _rr[7];
+		g2 = g + _rr[8] - _rr[9];
+		b2 = b + _rr[10] - _rr[11];
+		r3 = r + _rr[12] - _rr[13];
+		g3 = g + _rr[14] - _rr[15];
+		b3 = b + _rr[16] - _rr[17];
+	} else {
 	r1 = r + random(c) - random(c);
 	g1 = g + random(c) - random(c);
 	b1 = b + random(c) - random(c);
@@ -5170,10 +5219,21 @@ rndpat:	asm {   add ax, cx
 	r3 = r + random(c) - random(c);
 	g3 = g + random(c) - random(c);
 	b3 = b + random(c) - random(c);
+	}
 
 	r1 *= 0.25; g1 *= 0.25; b1 *= 0.25;
 	r2 *= 0.75; g2 *= 0.75; b2 *= 0.75;
 	r3 *= 1.25; g3 *= 1.25; b3 *= 1.25;
+
+	if (logical_id == 24) {
+		FILE *_tf = fopen("D:\\TRACE.TXT", "a");
+		if (_tf) {
+			fprintf(_tf, "C_RGB body=%d r=%d g=%d b=%d c=%d\n", logical_id, r, g, b, c);
+			fprintf(_tf, "  r1=%.6f g1=%.6f b1=%.6f r2=%.6f g2=%.6f b2=%.6f r3=%.6f g3=%.6f b3=%.6f\n",
+				r1, g1, b1, r2, g2, b2, r3, g3, b3);
+			fclose(_tf);
+		}
+	}
 
 	type >>= 2;
 
@@ -5181,6 +5241,18 @@ rndpat:	asm {   add ax, cx
 	shade (tmppal, colorbase + 16, 16, r1, g1, b1, r2, g2, b2);
 	shade (tmppal, colorbase + 32, 16, r2, g2, b2, r3, g3, b3);
 	shade (tmppal, colorbase + 48, 16, r3, g3, b3, 64, 64, 64);
+
+	if (logical_id == 24) {
+		int _bi = (int)colorbase * 3;
+		int _k;
+		FILE *_tf = fopen("D:\\TRACE.TXT", "a");
+		if (_tf) {
+			fprintf(_tf, "C_PAL_PRE body=%d:", logical_id);
+			for (_k = 0; _k < 192; _k++) fprintf(_tf, " %02X", tmppal[_bi + _k]);
+			fprintf(_tf, "\n");
+			fclose(_tf);
+		}
+	}
 
 	brt = nearstar_p_owner[logical_id];
 	if (brt == -1) brt = logical_id;

@@ -10,7 +10,6 @@
 use crate::system::SystemGen;
 use crate::f80::F80;
 use std::f64::consts::PI;
-use std::io::Write;
 
 pub const DEG: f64 = PI / 180.0;
 
@@ -34,32 +33,6 @@ fn f64_to_u16_trunc(x: f64) -> u32 {
     let t = x.trunc();
     ((t as i32) & 0xFFFF) as u32
 }
-
-#[allow(dead_code)]
-fn dbg_dump(name: &str, buf: &[u8]) {
-    if CURRENT_BODY.load(Ordering::Relaxed) != capture_body() {
-        return;
-    }
-    let _ = std::fs::create_dir_all("/tmp/rchk");
-    let _ = std::fs::File::create(format!("/tmp/rchk/CHK_{}.BIN", name))
-        .and_then(|mut f| f.write_all(buf));
-}
-
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::OnceLock;
-// Validation-only: capture checkpoints only for this body (C's `planet -n N`
-// generates a single body; Rust's generate() hits many — avoid contamination).
-// Tunable via env CAPTURE_BODY (default 0).
-fn capture_body() -> i32 {
-    static V: OnceLock<i32> = OnceLock::new();
-    *V.get_or_init(|| {
-        std::env::var("CAPTURE_BODY")
-            .ok()
-            .and_then(|s| s.parse::<i32>().ok())
-            .unwrap_or(0)
-    })
-}
-static CURRENT_BODY: AtomicI32 = AtomicI32::new(-1);
 
 /// Borland signed-16-bit wrap.
 pub fn i16w(x: f64) -> i32 {
@@ -740,10 +713,6 @@ impl SystemGen {
 
     // --- surface() main (NOCTIS-0.CPP:4766) ---
     pub fn surface(&mut self, logical_id: i32, ptype: i32, seedval: f64, colorbase: i32) {
-        CURRENT_BODY.store(logical_id, Ordering::Relaxed);
-        if std::env::var("NIVDBG").is_ok() {
-            eprintln!("surface entry logical_id={} ptype={} capture={}", logical_id, ptype, capture_body());
-        }
         if ptype == 10 {
             return;
         }
@@ -773,8 +742,6 @@ impl SystemGen {
 
         self.rng.srand(seed as u32);
         self.rndpat(seed);
-        dbg_dump("0_RN", &self.p_background);
-        dbg_dump("0A_O", &self.objectschart);
 
         // overlay (objectschart) cleared to 0 (32400 bytes)
         for i in self.objectschart.iter_mut() {
@@ -829,7 +796,6 @@ impl SystemGen {
             }
         }
 
-        dbg_dump("T_MG", &self.p_background);
         // merge terrain + atmosphere overlay
         let mut px = 0usize;
         let mut py = 0usize;
@@ -849,9 +815,6 @@ impl SystemGen {
             py += 2;
             px += 1;
         }
-        dbg_dump("T_AF", &self.p_background);
-        { dbg_dump("5_ME", &self.p_background); dbg_dump("5A_M", &self.objectschart); }
-
         if ptype == 2 {
             if self.rng.random(3) == 0 {
                 self.psmooth_grays();
@@ -859,7 +822,6 @@ impl SystemGen {
             }
         }
 
-        dbg_dump("T_PS", &self.p_background);
         // terminator
         let mut ts = plwp + 35;
         if ts >= 360 {
@@ -910,7 +872,6 @@ impl SystemGen {
                 self.ssmooth();
             }
         }
-        { dbg_dump("6_FI", &self.p_background); dbg_dump("6A_F", &self.objectschart); }
 
         if colorbase == 255 {
             self.quadwords = qw;
@@ -927,30 +888,26 @@ impl SystemGen {
         let mut g = pg; g <<= 1; g += self.nearstar_g; g >>= 1;
         let mut b = pb; b <<= 1; b += self.nearstar_b; b >>= 1;
 
-        let c1 = self.rng.random(pc) - self.rng.random(pc);
-        let c2 = self.rng.random(pc) - self.rng.random(pc);
-        let c3 = self.rng.random(pc) - self.rng.random(pc);
-        let r1 = (r + c1) as f64 * 0.25;
-        let g1 = (g + c2) as f64 * 0.25;
-        let b1 = (b + c3) as f64 * 0.25;
-        let r2 = (r + self.rng.random(pc) - self.rng.random(pc)) as f64 * 0.75;
-        let g2 = (g + self.rng.random(pc) - self.rng.random(pc)) as f64 * 0.75;
-        let b2 = (b + self.rng.random(pc) - self.rng.random(pc)) as f64 * 0.75;
-        let r3 = (r + self.rng.random(pc) - self.rng.random(pc)) as f64 * 1.25;
-        let g3 = (g + self.rng.random(pc) - self.rng.random(pc)) as f64 * 1.25;
-        let b3 = (b + self.rng.random(pc) - self.rng.random(pc)) as f64 * 1.25;
+        let mut rr = [0i32; 18];
+        for v in rr.iter_mut() {
+            *v = self.rng.random(pc);
+        }
+        let r1 = (r + rr[0] - rr[1]) as f64 * 0.25;
+        let g1 = (g + rr[2] - rr[3]) as f64 * 0.25;
+        let b1 = (b + rr[4] - rr[5]) as f64 * 0.25;
+        let r2 = (r + rr[6] - rr[7]) as f64 * 0.75;
+        let g2 = (g + rr[8] - rr[9]) as f64 * 0.75;
+        let b2 = (b + rr[10] - rr[11]) as f64 * 0.75;
+        let r3 = (r + rr[12] - rr[13]) as f64 * 1.25;
+        let g3 = (g + rr[14] - rr[15]) as f64 * 1.25;
+        let b3 = (b + rr[16] - rr[17]) as f64 * 1.25;
 
         self.shade(colorbase + 0, 16, 0.0, 0.0, 0.0, r1, g1, b1);
         self.shade(colorbase + 16, 16, r1, g1, b1, r2, g2, b2);
         self.shade(colorbase + 32, 16, r2, g2, b2, r3, g3, b3);
         self.shade(colorbase + 48, 16, r3, g3, b3, 64.0, 64.0, 64.0);
 
-        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
-            let base = (3 * colorbase) as usize;
-            let sz = 192.min(self.tmppal.len().saturating_sub(base));
-            use std::io::Write;
-            let _ = std::fs::write("/tmp/rchk/PAL_PRE.BIN", &self.tmppal[base..base+sz]);
-        }
+
         let mut brt = self.p_owner[logical_id as usize];
         if brt == -1 {
             brt = logical_id;
@@ -961,24 +918,7 @@ impl SystemGen {
             brt = 64 - (4 * (brt - 4));
         }
 
-        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
-            use std::io::Write;
-            let _ = std::fs::write("/tmp/rchk/BRT.BIN", &[brt as u8, (brt>>8) as u8, (brt>>16) as u8, (brt>>24) as u8]);
-        }
         self.tavola_colori(colorbase, brt, brt, brt);
-        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
-            let base = (3 * colorbase) as usize;
-            let sz = 192.min(self.tmppal.len().saturating_sub(base));
-            use std::io::Write;
-            let _ = std::fs::write("/tmp/rchk/PAL.BIN", &self.tmppal[base..base+sz]);
-        }
-
-        if CURRENT_BODY.load(Ordering::Relaxed) == capture_body() {
-            use std::io::Write;
-            let base = (3 * colorbase) as usize;
-            let sz = 192.min(self.tmppal.len().saturating_sub(base));
-            let _ = std::fs::write(format!("/tmp/rchk/pal_{}.raw", capture_body()), &self.tmppal[base..base+sz]);
-        }
         self.quadwords = qw;
     }
 
@@ -1168,7 +1108,6 @@ impl SystemGen {
         if self.frng.ranged(2) != 0 {
             self.ssmooth();
         }
-        dbg_dump("C4_SM", &self.p_background);
         // lmrip loop: cmp byte[di],32 ; jne proxy ; mov word[di],0x3E01 ; mov byte[di+360],0x01
         for i in 0..64000usize {
             if self.p_background[i] == 32 {
@@ -1182,7 +1121,6 @@ impl SystemGen {
                 }
             }
         }
-        dbg_dump("C4_LM", &self.p_background);
         let r = self.frng.ranged(30);
         let mut r = r;
         if r > 20 {
@@ -1203,7 +1141,6 @@ impl SystemGen {
         if self.frng.ranged(2) != 0 {
             self.lssmooth();
         }
-        dbg_dump("C4_FIN", &self.p_background);
     }
 
     fn surf_case5(&mut self) {
