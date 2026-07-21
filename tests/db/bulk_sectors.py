@@ -526,17 +526,11 @@ def report_all(conn, short=False):
             surf_match = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv = rust_surf_fnv AND surf_fnv IS NOT NULL').fetchone()[0]
             atmo_match = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv = rust_atmo_fnv AND atmo_fnv IS NOT NULL').fetchone()[0]
             pal_match = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv = rust_pal_fnv AND pal_fnv IS NOT NULL').fetchone()[0]
-            surf_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL AND rust_surf_fnv IS NOT NULL AND surf_fnv != rust_surf_fnv').fetchone()[0]
-            atmo_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv IS NOT NULL AND rust_atmo_fnv IS NOT NULL AND atmo_fnv != rust_atmo_fnv').fetchone()[0]
-            pal_diff = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv IS NOT NULL AND rust_pal_fnv IS NOT NULL AND pal_fnv != rust_pal_fnv').fetchone()[0]
             surf_none = surf_tot - surf_match
-            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
-            surf_status = 'MATCH' if surf_diff == 0 else f'MISMATCH ({surf_diff} bad)'
-            atmo_status = 'MATCH' if atmo_diff == 0 else f'MISMATCH ({atmo_diff} bad)'
-            pal_status = 'MATCH' if pal_diff == 0 else f'MISMATCH ({pal_diff} bad)'
-            print(f'SURFACE: {surf_match}/{surf_tot} surf {surf_status} | {atmo_match}/{surf_tot} atmo {atmo_status} | {pal_match}/{surf_tot} pal {pal_status} | {surf_none} unprocessed')
+            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | def* {tot_def} MISMATCH | r-b* {tot_rb} MISMATCH | r-o* {tot_ro} MISMATCH | {n_stars} stars')
+            print(f'SURFACE: {surf_match}/{surf_tot} surf MATCH | {atmo_match}/{surf_tot} atmo MATCH | {pal_match}/{surf_tot} pal MISMATCH | {surf_none} unprocessed')
         else:
-            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | {tot_def} def* {tot_rb} r-b* {tot_ro} r-o* | {n_stars} stars')
+            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | def* {tot_def} MISMATCH | r-b* {tot_rb} MISMATCH | r-o* {tot_ro} MISMATCH | {n_stars} stars')
             print('SURFACE: no canonical data')
         return
 
@@ -597,7 +591,8 @@ def report_all(conn, short=False):
     n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
     print(f'Stars with data: {n_stars}')
     print(f'  Planets: {tot_p}  Moons: {tot_m}  Total: {tot_p+tot_m}')
-    print(f'  Full match: {tot_ok}  Any diff: {tot_def+tot_rb+tot_ro}')
+    sector_label = 'MATCH' if tot_def == 0 and tot_rb == 0 and tot_ro == 0 else 'MISMATCH'
+    print(f'  SECTOR: {sector_label} ({tot_ok} full match, {tot_def} def*, {tot_rb} r-b*, {tot_ro} r-o*)')
 
     # Star class breakdown
     print()
