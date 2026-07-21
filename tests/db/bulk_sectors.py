@@ -380,10 +380,15 @@ def report_all(conn):
         FROM planets WHERE sect_def_hm IS NOT NULL
         GROUP BY planet_type, is_moon ORDER BY planet_type, is_moon
     """).fetchall()
-    print(f'{"T":>3} {"P/M":>3} {"ok":>5} {"def":>5} {"r-both":>5} {"r-oc":>5} {"tot":>5}')
+    print(f'{"Typ":>3} {"P/M":>3} {"match":>5} {"def*":>5} {"r-b*":>5} {"r-o*":>5} {"tot":>5}')
     print('-' * 36)
     for t, m, ok, df, rh, ro, tt in rows:
         print(f'{t:3d} {"M" if m else "P":>3} {ok:5d} {df:5d} {rh:5d} {ro:5d} {ok+df+rh+ro:5d}')
+    print()
+    print('  match = all 4 hashes match')
+    print('  def*  = def-hm or def-oc differs (fixture corruption)')
+    print('  r-b*  = rand-hm + rand-oc differ (heightmap+object bug)')
+    print('  r-o*  = only rand-oc differs (object chart bug)')
 
 
 def main():
