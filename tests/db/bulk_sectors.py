@@ -308,20 +308,40 @@ def cmp_star(conn, star):
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("gen", "load", "run", "rust", "cmp"):
+    for name in ("gen", "load", "run", "rust", "cmp", "one_iter"):
         p = sub.add_parser(name)
-        p.add_argument("star")
+        p.add_argument("star", nargs="?")
         p.add_argument("--force", action="store_true")
     args = ap.parse_args()
     conn = sqlite3.connect(DB_PATH)
-    if args.cmd in ("gen", "run"):
-        gen_star(conn, args.star, args.force)
+
+    # If no star name given, pick the next star without C canonical data.
+    star = args.star
+    if not star:
+        row = conn.execute(
+            "SELECT name FROM stars WHERE id IN "
+            "(SELECT star_id FROM planets GROUP BY star_id "
+            "HAVING COUNT(sect_def_hm) = 0) "
+            "ORDER BY id LIMIT 1"
+        ).fetchone()
+        if not row:
+            print("no star without canonical data")
+            return
+        star = row[0]
+
+    if args.cmd == "gen":
+        gen_star(conn, star, args.force)
     if args.cmd in ("load", "run"):
-        load_star(conn, args.star)
+        load_star(conn, star)
     if args.cmd == "rust":
-        rust_star(conn, args.star)
+        rust_star(conn, star)
     if args.cmd == "cmp":
-        cmp_star(conn, args.star)
+        cmp_star(conn, star)
+    if args.cmd == "one_iter":
+        gen_star(conn, star, args.force)
+        load_star(conn, star)
+        rust_star(conn, star)
+        cmp_star(conn, star)
     conn.close()
 
 
