@@ -98,9 +98,9 @@ def gen_star(conn, star, force=False, build_flag=False):
 
     work = tempfile.mkdtemp(prefix="sector_")
     try:
-    exe_dir = os.path.join(REPO, "tests", ".harness_build")
-    exe_path = os.path.join(exe_dir, "NIVTEST.EXE")
-    need_build = build_flag or not os.path.exists(exe_path)
+        exe_dir = os.path.join(REPO, "tests", ".harness_build")
+        exe_path = os.path.join(exe_dir, "NIVTEST.EXE")
+        need_build = build_flag or not os.path.exists(exe_path)
 
         if need_build:
             os.makedirs(exe_dir, exist_ok=True)
@@ -154,7 +154,10 @@ def gen_star(conn, star, force=False, build_flag=False):
             f.write("\r\n".join(run_lines) + "\r\n")
 
         # Write niv.conf
-        build_line = "call BUILD.BAT\r\n" if need_build else f"copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL\r\n"
+        if need_build:
+            build_section = "call BUILD.BAT\r\n"
+        else:
+            build_section = f"copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL\r\n"
         conf = (
             "[cpu]\r\n"
             "cputype=486\r\n"
@@ -168,10 +171,8 @@ def gen_star(conn, star, force=False, build_flag=False):
             f"mount e {exe_dir}\r\n"
             "path C:\\BIN;E:\\\r\n"
             "d:\r\n"
-            + build_line
-            "d:\r\n"
-            "call BUILD.BAT\r\n"
-            "if exist BUILD.FAIL goto end\r\n"
+            + build_section
+            + "if exist BUILD.FAIL goto end\r\n"
             "call RUN.BAT\r\n"
             ":end\r\n"
             "exit\r\n"
