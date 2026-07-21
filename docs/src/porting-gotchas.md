@@ -635,10 +635,37 @@ deterministic. Consequences:
   rendering all produce **identical** hashes for rows 0-127 — the execution
   mode / heap state no longer matters. Verified: FENIA body 16 moon =
   `78837023` from both single-body and planet-all.
-- No need to model the far-heap tail at all. `s_background`/`p_background`
-  are still sized to a full 64 KB segment (`BG_SEGMENT = 65536`) purely so
-  the `.len()` bounds checks in `surface.rs` reproduce C's 16-bit `di`
-  addressing (`[0, 0xFFFF]`); the tail is left zero and never hashed.
+- No need to model the far-heap tail for **surface hashing** (rows 0-127).
+  `s_background`/`p_background` are sized to a full 64 KB segment
+  (`BG_SEGMENT = 65536`) purely so the `.len()` bounds checks in
+  `surface.rs` reproduce C's 16-bit `di` addressing (`[0, 0xFFFF]`).
+- **However**, the tail DOES affect **palette** correctness: `randoface()`
+  iterates the full 64800-byte buffer and calls `random()` for every pixel
+  with `gr >= 1`. A single differing byte in the tail shifts the `random(24)`
+  palette stream by 2 positions (see `docs/src/type7-palette-investigation.md`).
+
+  In DOSBox the C far-heap allocation immediately after the moon's
+  `s_background` buffer is the **next** star's `p_background` (farmalloc'd at
+  program start, never written before body N is processed). DOSBox fills new
+  pages with **0xFF** (the default page-fill byte). Rust's `Vec<u8>` had those
+  736 bytes zeroed, which caused `lssmooth()`'s OOB reads (at di+360 for the
+  last ~400 iterations) to return 0x00 instead of 0xFF. This changed 1 pixel's
+  value in row 179 → randoface matched 1 fewer pixel → 2 fewer LCG calls →
+  palette divergence.
+
+  **Fix:** fill `Vec` positions 64800-65535 with `0xFF` in `make_bg()`:
+
+  ```rust
+  fn make_bg() -> Vec<u8> {
+      let mut v = vec![0u8; BG_SEGMENT];
+      for b in &mut v[BG_SURFACE..] {
+          *b = 0xFF;
+      }
+      v
+  }
+  ```
+
+  (See `docs/src/type7-palette-investigation.md` for the full analysis.)
 
 After switching to sampled-row hashing and recomputing every canonical hash
 from BCPP 3.1 / DOSBox-X (`planet-all` per star, one boot each, via
