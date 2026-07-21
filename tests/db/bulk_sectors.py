@@ -248,16 +248,16 @@ def load_star(conn, star):
             if not os.path.exists(out):
                 continue
             t = open(out).read()
-            hm = HM_RE.search(t)
-            oc = OC_RE.search(t)
-            if hm: up[hm_col] = hm.group(1)
-            if oc: up[oc_col] = oc.group(1)
+            hm = HM_RE.findall(t)
+            oc = OC_RE.findall(t)
+            if hm: up[hm_col] = hm[-1]  # latest match
+            if oc: up[oc_col] = oc[-1]
         if up:
             # also capture gap from def landing (same for both landings)
             def_out = os.path.join(SECT_DIR, fname(star, body, "def", lon_d, lat_d))
             if os.path.exists(def_out):
-                m = GAP_RE.search(open(def_out).read())
-                if m: up["sect_gap"] = m.group(1)
+                m = GAP_RE.findall(open(def_out).read())
+                if m: up["sect_gap"] = m[-1]  # latest match
             sets = ", ".join(f"{k}=?" for k in up)
             conn.execute(
                 f"UPDATE planets SET {sets} WHERE star_id=? AND body_index=?",
