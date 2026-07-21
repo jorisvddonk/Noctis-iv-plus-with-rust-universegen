@@ -107,8 +107,10 @@ def gen_star(conn, star, force=False, build_flag=False, keep_fixtures=False):
 
 def _star_cmds(conn, star, force):
     """Collect pending (body, lon, lat, dosname, outpath, x, y_usr, z) for one star."""
-    sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
-                       (star,)).fetchone()
+    all_sids = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
+                       (star,)).fetchall()
+    print(f"  [DBG] _star_cmds({star}): found {len(all_sids)} star row(s): {[(r[0],r[1],r[2],r[3]) for r in all_sids]}")
+    sid = all_sids[0] if all_sids else None
     if not sid:
         return [], None, None, None, None
     sid, x, y_eng, z = sid
@@ -130,18 +132,27 @@ def _star_cmds(conn, star, force):
             cmds.append((body, lon, lat, f"s{body}{suf}.out", out, x, y_usr, z))
     return cmds, x, y_usr, z, star
 
-def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=False):
+def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=False, dry_run=False):
     """Generate C canonical sector fixtures for multiple stars in one DOSBox-X boot."""
     all_cmds = []
     info = {}
+    print(f"  [DBG] gen_stars_batch: stars list = {stars}")
     for s in stars:
         cmds, _, _, _, _ = _star_cmds(conn, s, force)
-        all_cmds.extend(cmds)
+        print(f"  [DBG] {s} -> {len(cmds)} cmds, total so far {len(all_cmds)}")
         for c in cmds:
-            info[(c[0], c[3])] = s  # (body, dosname) -> star
+            all_cmds.append((s,) + c)  # prepend star name
+            info[(s, c[0], c[3])] = s  # (star, body, dosname) -> star
 
     if not all_cmds:
         print(f"{', '.join(stars[:3])}{'...' if len(stars)>3 else ''}: nothing to generate")
+        return
+
+    if dry_run:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+            sn = info.get((star_name, body, dosname), "?")
+            print(f"  {sn} body {body:3d}: lon={lon} lat={lat} dosname={dosname}")
+        print(f"[dry-run] {len(all_cmds)} commands for {len(stars)} stars")
         return
 
     # Toolchain
@@ -207,7 +218,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
 
         # RUN.BAT with ALL stars' commands
         run_lines = ["@echo off"]
-        for body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
             run_lines.append(
                 f"NIVTEST.EXE sector -x {cx} -y {cy} -z {cz} -p {body}"
                 f" -lon {lon} -lat {lat} -o D:\\{dosname}"
@@ -237,8 +248,8 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
             f.write(conf)
 
         # Print progress
-        for body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
-            sn = info.get((body, dosname), "?")
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+            sn = info.get((star_name, body, dosname), "?")
             print(f"  {sn} body {body:3d}: lon={lon} lat={lat} ...", flush=True)
 
         env = os.environ.copy()
@@ -259,8 +270,8 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
 
         # Copy outputs, grouped by star
         star_ok = {}
-        for body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
-            sn = info.get((body, dosname), "?")
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+            sn = info.get((star_name, body, dosname), "?")
             src = os.path.join(work, dosname)
             if os.path.exists(src):
                 shutil.copy2(src, outpath)
@@ -269,7 +280,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
                 print(f"  body {body:3d}: missing output", flush=True)
 
         for sn, n in star_ok.items():
-            n_cmds = sum(1 for c in all_cmds if info.get((c[0], c[3])) == sn)
+            n_cmds = sum(1 for c in all_cmds if info.get((c[0], c[1], c[4])) == sn)
             print(f"{sn}: {n}/{n_cmds} landings generated")
         print(f"Booted DOSBox-X once for {len(stars)} stars")
 
@@ -480,6 +491,8 @@ def main():
         p.add_argument("--keep-fixtures", action="store_true", help="don't wipe stale .out files")
         p.add_argument("--batch", type=int, default=1,
             help="batch N stars in one DOSBox-X boot (one_iter only)")
+        p.add_argument("--dry-run", action="store_true",
+            help="print what would be generated without running DOSBox-X")
     args = ap.parse_args()
     conn = sqlite3.connect(DB_PATH)
 
@@ -523,11 +536,12 @@ def main():
                 print("no star without canonical data")
                 return
             batch = [r[0] for r in rows]
-        gen_stars_batch(conn, batch, args.force, args.build, args.keep_fixtures)
-        for s in batch:
-            load_star(conn, s)
-            rust_star(conn, s)
-            cmp_star(conn, s)
+        gen_stars_batch(conn, batch, args.force, args.build, args.keep_fixtures, args.dry_run)
+        if not args.dry_run:
+            for s in batch:
+                load_star(conn, s)
+                rust_star(conn, s)
+                cmp_star(conn, s)
     conn.close()
 
 
