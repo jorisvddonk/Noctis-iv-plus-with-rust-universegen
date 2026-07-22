@@ -1,16 +1,16 @@
 === PLANET TEXTURES (all 3 bodies) ===
-PLANET body=0 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=3570539.268045
-  rtperiod=915 rotation=0 term_start=303 term_end=73
-surface_map      len=46080  fnv=82C4D35F crc=F6747603
-atmo_overlay     len=32400  fnv=C53B5C11 crc=B4D2EEC3
-palette64        len=192    fnv=9E8F34CB crc=45D31E62
-PLANET body=1 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=216874628.542451
-  rtperiod=326 rotation=0 term_start=303 term_end=73
-surface_map      len=46080  fnv=23E73EAD crc=812CB144
-atmo_overlay     len=32400  fnv=44843AC5 crc=68FAB607
-palette64        len=192    fnv=82FF3D79 crc=581D1682
-PLANET body=2 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-605727945.598507
-  rtperiod=315 rotation=0 term_start=303 term_end=73
-surface_map      len=46080  fnv=16D47C5C crc=ABC81717
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=AE0246BD crc=1D0B46D0
+PLANET body=0 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=26858.522745
+  rtperiod=598 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=4A0C1217 crc=F6BDB929
+atmo_overlay     len=32400  fnv=6F0380EF crc=6C77FF43
+palette64        len=192    fnv=6719D1A4 crc=78532BD2
+PLANET body=1 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=132720.979478
+  rtperiod=659 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=6B4C7EBD crc=8194C7F0
+atmo_overlay     len=32400  fnv=4C63442E crc=EA37BD1F
+palette64        len=192    fnv=2A2D402C crc=AABDF96B
+PLANET body=2 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-1008889.020043
+  rtperiod=382 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=996A9DB3 crc=6D3C747A
+atmo_overlay     len=32400  fnv=B9D265A7 crc=A73A6B92
+palette64        len=192    fnv=64A79BEA crc=3FF78F6D

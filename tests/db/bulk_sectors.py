@@ -109,7 +109,7 @@ def gen_star(conn, star, force=False, build_flag=False, keep_fixtures=False):
 
 # ---------- helpers ----------
 
-def _star_cmds(conn, star, force):
+def _star_cmds(conn, star, force, star_idx=0):
     """Collect pending (body, lon, lat, dosname, outpath, x, y_user, z) for one star."""
     sid = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?",
                        (star,)).fetchone()
@@ -130,15 +130,15 @@ def _star_cmds(conn, star, force):
             if force and os.path.exists(out):
                 os.remove(out)  # Delete so gen produces a fresh file (no append)
             suf = "D" if kind == "def" else "R"
-            cmds.append((body, lon, lat, f"s{body}{suf}.out", out, x, y_usr, z))
+            cmds.append((body, lon, lat, f"s{star_idx}_{body}{suf}.out", out, x, y_usr, z))
     return cmds, x, y_usr, z, star
 
 def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=False, dry_run=False):
     """Generate C canonical sector fixtures for multiple stars in one DOSBox-X boot."""
     all_cmds = []
     info = {}
-    for s in stars:
-        cmds, _, _, _, _ = _star_cmds(conn, s, force)
+    for si, s in enumerate(stars):
+        cmds, _, _, _, _ = _star_cmds(conn, s, force, star_idx=si)
         for c in cmds:
             all_cmds.append((s,) + c)  # prepend star name
             info[(s, c[0], c[3])] = s  # (star, body, dosname) -> star
@@ -346,14 +346,20 @@ def load_star(conn, star):
             t = open(out).read()
             hm = HM_RE.findall(t)
             oc = OC_RE.findall(t)
-            if hm: up[hm_col] = hm[-1]  # latest match
-            if oc: up[oc_col] = oc[-1]
+            if hm:
+                if len(hm) > 1:
+                    print(f"  WARN {star} body {body} {kind}: {len(hm)} heightmap blocks in file, using first")
+                up[hm_col] = hm[0]
+            if oc:
+                if len(oc) > 1:
+                    print(f"  WARN {star} body {body} {kind}: {len(oc)} objectchart blocks in file, using first")
+                up[oc_col] = oc[0]
         if up:
             # also capture gap from def landing (same for both landings)
             def_out = os.path.join(SECT_DIR, fname(star, body, "def", lon_d, lat_d))
             if os.path.exists(def_out):
                 m = GAP_RE.findall(open(def_out).read())
-                if m: up["sect_gap"] = m[-1]
+                if m: up["sect_gap"] = m[0]
         if up:
             update_planet(conn, sid, body, up)
 

@@ -36,23 +36,23 @@ def planet_hashes(star_x, star_y, star_z, body):
 def compare_star(conn, star_name):
     """Run Rust for all planets of a given star and update DB."""
     star = conn.execute(
-        "SELECT id, x, y, z FROM stars WHERE name = ?",
+        "SELECT id, x, y_user, z FROM stars WHERE name = ?",
         (star_name,)
     ).fetchone()
     if not star:
         star = conn.execute(
-            "SELECT id, x, y, z FROM stars WHERE name LIKE ?",
+            "SELECT id, x, y_user, z FROM stars WHERE name LIKE ?",
             (f"%{star_name}%",)
         ).fetchone()
     if not star:
         print(f"Star '{star_name}' not found")
         return
-    sid, x, y, z = star
+    sid, x, y_user, z = star
 
     # Generate all Rust bodies in one planet-all run (state-shared, matches
     # the canonical fixture path). Single-body `planet -p N` runs diverge for
     # non-type-10 moons whose terminator depends on prior bodies' plx/plz.
-    rust = planet_hashes_all(x, y, z)
+    rust = planet_hashes_all(x, y_user, z)
 
     planets = conn.execute(
         "SELECT id, body_index FROM planets WHERE star_id=? AND surf_fnv IS NOT NULL",

@@ -31,10 +31,10 @@ def main():
         print(__doc__); sys.exit(2)
     star_name, path = sys.argv[1], sys.argv[2]
     conn = sqlite3.connect(DB_PATH)
-    star = conn.execute("SELECT id, x, y, z FROM stars WHERE name = ?",
+    star = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name = ?",
                         (star_name,)).fetchone()
     if not star:
-        star = conn.execute("SELECT id, x, y, z FROM stars WHERE name LIKE ?",
+        star = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name LIKE ?",
                             (f"%{star_name}%",)).fetchone()
     if not star:
         print(f"star '{star_name}' not found"); sys.exit(1)

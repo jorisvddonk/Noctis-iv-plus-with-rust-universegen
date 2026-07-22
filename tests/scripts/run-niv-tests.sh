@@ -26,7 +26,7 @@ REPO="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SRC="$REPO/source"
 HAR="$REPO/tests/harness"
 DOSBOX="$REPO/tests/dosbox"
-TOOLCHAIN="${TOOLCHAIN:-$REPO/niv-toolchain}"
+TOOLCHAIN="${TOOLCHAIN:-$REPO/niv-toolchain/BCPP31}"
 RESULTS="$REPO/tests/results"
 DUMP=0
 REBUILD=0
@@ -50,11 +50,8 @@ fi
 
 # Auto-detect toolchain layout:
 #   BCPP31 (Borland C++ 3.1): BIN/ is at toolchain root
-#   TC     (Turbo C++ 3.0):   BIN/ is inside TC/ subdir
 if [ -f "$TOOLCHAIN/BIN/BCC.EXE" ]; then
 	TC_MOUNT="$TOOLCHAIN"
-elif [ -f "$TOOLCHAIN/TC/BIN/TCC.EXE" ]; then
-	TC_MOUNT="$TOOLCHAIN/TC"
 elif [ -f "$TOOLCHAIN/TC/BIN/BCC.EXE" ]; then
 	TC_MOUNT="$TOOLCHAIN/TC"
 else
@@ -62,8 +59,6 @@ else
 	"$SCRIPT_DIR/fetch-toolchain.sh" "$TOOLCHAIN"
 	if [ -f "$TOOLCHAIN/BIN/BCC.EXE" ]; then
 		TC_MOUNT="$TOOLCHAIN"
-	elif [ -f "$TOOLCHAIN/TC/BIN/TCC.EXE" ]; then
-		TC_MOUNT="$TOOLCHAIN/TC"
 	else
 		echo "[run] toolchain still not found after fetch" >&2
 		exit 1

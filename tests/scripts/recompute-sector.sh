@@ -38,8 +38,6 @@ done
 
 if [ -f "$TOOLCHAIN/BIN/BCC.EXE" ]; then
 	TC_MOUNT="$TOOLCHAIN"
-elif [ -f "$TOOLCHAIN/TC/BIN/BCC.EXE" ]; then
-	TC_MOUNT="$TOOLCHAIN/TC"
 else
 	echo "[sector] toolchain not found at $TOOLCHAIN" >&2; exit 1
 fi

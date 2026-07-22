@@ -7,10 +7,10 @@ DB = os.path.join(HERE, "noctis.db")
 NIVGEN = os.path.join(HERE, "..", "nivgen", "target", "release", "nivgen")
 
 conn = sqlite3.connect(DB)
-stars = conn.execute("SELECT id, name, x, y, z FROM stars ORDER BY id").fetchall()
+stars = conn.execute("SELECT id, name, x, y_user, z FROM stars ORDER BY id").fetchall()
 total = len(stars)
 
-for idx, (sid, name, x, y, z) in enumerate(stars):
+for idx, (sid, name, x, y_user, z) in enumerate(stars):
     r = subprocess.run(
         [NIVGEN, "system", "--json", "-x", str(x), "-y", str(y), "-z", str(z)],
         capture_output=True, text=True, timeout=30,

@@ -21,9 +21,8 @@ rem ======================================================================
 
 set CFLAGS=-ml -2 -f287 -O -Z -IC:\INCLUDE
 
-rem auto-detect compiler: BCC.EXE (Borland C++ 3.1) or TCC.EXE (Turbo C++ 3.0)
+rem compiler: BCC.EXE (Borland C++ 3.1) only
 if exist C:\BIN\BCC.EXE set CC=C:\BIN\BCC.EXE
-if exist C:\BIN\TCC.EXE set CC=C:\BIN\TCC.EXE
 if "%CC%"=="" goto fail
 
 echo [build] compiling generation module NOCTIS-0.CPP ...

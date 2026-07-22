@@ -981,6 +981,7 @@ impl SystemGen {
                             } else {
                                 self.rockdensity = 0;
                             }
+                            self.liquid_water = 1;
                         }
                     }
 
@@ -1347,17 +1348,19 @@ impl SystemGen {
             ptr += 1;
         }
 
-        if self.waswet != 0 {
-            ptr = 0;
-            while ptr < oc_bytes {
-                if self.p_surfacemap[ptr] == 0 {
-                    self.set_obj_nr(ptr, 0);
-                }
-                ptr += 1;
+        // se c'è acqua liquida sulla superficie, non possono esserci
+    // oggetti che vi galleggiano
+    if self.liquid_water != 0 {
+        ptr = 0;
+        while ptr < oc_bytes {
+            if self.p_surfacemap[ptr] == 0 {
+                self.set_obj_nr(ptr, 0);
             }
+            ptr += 1;
         }
+    }
 
-        // ===================== INIZIO MODIFICHE STORICHE =====================
+    // ===================== INIZIO MODIFICHE STORICHE =====================
         // C: fast_srand(landing_pt_lat * landing_pt_lon); srand(landing_pt_lat * landing_pt_lon);
         let land_seed = (self.landing_pt_lat * self.landing_pt_lon) as u32;
         self.frng.srand(land_seed);

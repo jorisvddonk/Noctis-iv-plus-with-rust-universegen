@@ -1,17 +1,11 @@
 === SYSTEM ===
-STAR x=3812345 y=-4287654 z=-278951
-  identity=4559.737590
-  class=2 ray=0.301000 spin=4 rgb=63,63,63
-  nop=6 nob=6 labeled=0
-  BODY  0 type=9 owner=-1 moonid=0 ray=0.391500 orb_ray=26.174960
-          tilt=-0.00200000 orb_tilt=-0.00060000 orb_orient=4.86946861 orb_ecc=1.00000000 orb_seed=12.530000 ring=1.174500
-  BODY  1 type=1 owner=-1 moonid=0 ray=0.008676 orb_ray=49.099096
-          tilt=-0.02600000 orb_tilt=-0.00020000 orb_orient=2.53072742 orb_ecc=0.99950000 orb_seed=23.860000 ring=0.019521
-  BODY  2 type=1 owner=-1 moonid=0 ray=0.009720 orb_ray=110.779772
-          tilt=-0.06600000 orb_tilt=0.00240000 orb_orient=0.34906585 orb_ecc=0.99950000 orb_seed=47.350000 ring=0.000000
-  BODY  3 type=2 owner=-1 moonid=0 ray=0.014280 orb_ray=221.901322
-          tilt=0.06000000 orb_tilt=-0.00800000 orb_orient=1.11701072 orb_ecc=0.99950000 orb_seed=92.600000 ring=0.000000
-  BODY  4 type=1 owner=-1 moonid=0 ray=0.010152 orb_ray=392.719951
-          tilt=-0.02600000 orb_tilt=-0.00500000 orb_orient=0.40142573 orb_ecc=1.00000000 orb_seed=154.910000 ring=0.030456
-  BODY  5 type=1 owner=-1 moonid=0 ray=0.006732 orb_ray=762.898468
-          tilt=-0.12800000 orb_tilt=-0.00380000 orb_orient=0.64577182 orb_ecc=0.99900000 orb_seed=241.679999 ring=0.010098
+STAR x=3812345 y=4287654 z=-278951
+  identity=-4559.737590
+  class=5 ray=1.694000 spin=0 rgb=32,16,10
+  nop=3 nob=3 labeled=0
+  BODY  0 type=1 owner=-1 moonid=0 ray=0.008532 orb_ray=7.614530
+          tilt=0.08000000 orb_tilt=-0.00620000 orb_orient=5.79449312 orb_ecc=0.99750000 orb_seed=6.892000 ring=0.000000
+  BODY  1 type=2 owner=-1 moonid=0 ray=0.016560 orb_ray=15.505487
+          tilt=-0.00600000 orb_tilt=-0.01060000 orb_orient=3.54301838 orb_ecc=0.99850000 orb_seed=15.204000 ring=0.049680
+  BODY  2 type=1 owner=-1 moonid=0 ray=0.007632 orb_ray=32.632488
+          tilt=-0.31600000 orb_tilt=0.00020000 orb_orient=3.07177948 orb_ecc=0.98900000 orb_seed=28.770000 ring=0.000000

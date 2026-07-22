@@ -1,1 +1,67 @@
-=== PLANET TEXTURES (all 0 bodies) ===
+=== PLANET TEXTURES (all 14 bodies) ===
+PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=-172006551.219252
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=1 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-33769204.222214
+  rtperiod=638 rotation=0 term_start=218 term_end=348
+surface_map      len=46080  fnv=2559AE13 crc=14FBCDAD
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=1350C483 crc=962F200A
+PLANET body=2 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=62724158.234470
+  rtperiod=278 rotation=0 term_start=218 term_end=348
+surface_map      len=46080  fnv=1BDA3387 crc=BA5E3630
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=BF3D3CCC crc=81131542
+PLANET body=3 type=10 (companion star - not a planet) owner=-1 seedval=-58312422877.581976
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=4 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=0 seedval=78118493.935545
+  rtperiod=739 rotation=0 term_start=144 term_end=274
+surface_map      len=46080  fnv=EE1E8BCF crc=4DFCA960
+atmo_overlay     len=32400  fnv=7046644E crc=D6D5A358
+palette64        len=192    fnv=7D6D2B7C crc=386E4439
+PLANET body=5 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=0 seedval=48083279.887913
+  rtperiod=462 rotation=0 term_start=333 term_end=103
+surface_map      len=46080  fnv=A6611BDA crc=D5B9826D
+atmo_overlay     len=32400  fnv=1C768B73 crc=D5F8CEDE
+palette64        len=192    fnv=59D5CF20 crc=990EFF4F
+PLANET body=6 type=5 (small, solid, thin atmosphere.) owner=2 seedval=126605834.998987
+  rtperiod=581 rotation=0 term_start=278 term_end=48
+surface_map      len=46080  fnv=F2DE29F2 crc=7064D0E4
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=5E7D5636 crc=602886AA
+PLANET body=7 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=2 seedval=28014908.169989
+  rtperiod=625 rotation=0 term_start=278 term_end=48
+surface_map      len=46080  fnv=21734E9F crc=DE66C9DD
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=F19CA5E6 crc=0D688F29
+PLANET body=8 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=3 seedval=103035599.759814
+  rtperiod=302 rotation=0 term_start=109 term_end=239
+surface_map      len=46080  fnv=E0581394 crc=25348FF5
+atmo_overlay     len=32400  fnv=243CF5D8 crc=385FE8D0
+palette64        len=192    fnv=511FE57D crc=B4A223F7
+PLANET body=9 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=8889345.861631
+  rtperiod=542 rotation=0 term_start=280 term_end=50
+surface_map      len=46080  fnv=C2913FCE crc=B6560E30
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=13DDFE54 crc=FE81879C
+PLANET body=10 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=3 seedval=193949364.253767
+  rtperiod=261 rotation=0 term_start=34 term_end=164
+surface_map      len=46080  fnv=BC2D5B56 crc=2A189194
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=903B91CB crc=CFB4153E
+PLANET body=11 type=9 (very large, substellar object, not consistent.) owner=3 seedval=386686544.980948
+  rtperiod=737 rotation=0 term_start=173 term_end=303
+surface_map      len=46080  fnv=5D630713 crc=57A7D961
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=9FFF9090 crc=9BEC9C57
+PLANET body=12 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=3 seedval=1118441333.863390
+  rtperiod=309 rotation=0 term_start=200 term_end=330
+surface_map      len=46080  fnv=0CA1CB57 crc=B43756C7
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=AAFC8786 crc=2A1CFEB0
+PLANET body=13 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=3 seedval=80004112.754679
+  rtperiod=677 rotation=0 term_start=52 term_end=182
+surface_map      len=46080  fnv=E5F7E856 crc=AA041A86
+atmo_overlay     len=32400  fnv=799855EF crc=5D500E0C
+palette64        len=192    fnv=A6E6E3DD crc=3A613EB8

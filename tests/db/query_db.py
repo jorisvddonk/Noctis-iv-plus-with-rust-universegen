@@ -11,7 +11,7 @@ def query(conn, sql, params=()):
     return cols, rows
 
 def show_stars(conn):
-    _, rows = query(conn, "SELECT id, name, class, x, y, z FROM stars ORDER BY name")
+    _, rows = query(conn, "SELECT id, name, class, x, y_user, z FROM stars ORDER BY name")
     print(f"{'ID':<4} {'Name':<25} {'Cls':<4} {'Coords'}")
     print("-" * 70)
     for r in rows:

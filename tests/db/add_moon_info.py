@@ -13,7 +13,7 @@ def add_columns(conn):
             conn.execute(f"ALTER TABLE planets ADD COLUMN {col} INTEGER")
     conn.commit()
 
-def get_system_bodies(x, y, z):
+def get_system_bodies(x, y_user, z):
     """Run nivgen system --json and return list of body dicts."""
     binary = os.path.join(NIVGEN_DIR, "target/debug/nivgen")
     r = subprocess.run(
@@ -36,9 +36,9 @@ def get_system_bodies(x, y, z):
 
 def populate(conn):
     """For each star, run system gen and populate is_moon/p_owner/p_moonid."""
-    stars = conn.execute("SELECT id, x, y, z FROM stars ORDER BY id").fetchall()
-    for sid, x, y, z in stars:
-        bodies = get_system_bodies(x, y, z)
+    stars = conn.execute("SELECT id, x, y_user, z FROM stars ORDER BY id").fetchall()
+    for sid, x, y_user, z in stars:
+        bodies = get_system_bodies(x, y_user, z)
         if not bodies:
             print(f"  SKIP star {sid}: no system output", file=sys.stderr)
             continue

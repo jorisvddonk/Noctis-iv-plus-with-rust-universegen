@@ -1,1 +1,11 @@
-=== PLANET TEXTURES (all 0 bodies) ===
+=== PLANET TEXTURES (all 2 bodies) ===
+PLANET body=0 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=17010592.181829
+  rtperiod=802 rotation=0 term_start=8 term_end=138
+surface_map      len=46080  fnv=A41B0980 crc=97A8F4C9
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=BBB3C502 crc=18011ED3
+PLANET body=1 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=48962248.042096
+  rtperiod=208 rotation=0 term_start=8 term_end=138
+surface_map      len=46080  fnv=DB7D7D53 crc=56DB3005
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=B8D3DAD3 crc=9B48B499

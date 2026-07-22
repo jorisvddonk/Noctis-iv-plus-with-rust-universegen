@@ -133,10 +133,9 @@ Match rate by planet type (planet / moon):
 - **588/589 palette hashes match** (was 575/589 before the 0xFF far-heap fix
   — see `docs/src/type7-palette-investigation.md`). The single `pal` mismatch
   is TWENDZ body 13, a type-7 planet data artifact (not a port bug).
-- None for sector (heightmap + objectchart, planets). All 11 CHOALUUS plus
-  all 11 AWELER planets match byte-exact across both default and seedval
-  pseudo landings. 3 CHOALUUS moons diverge only on seedval pseudo landings
-  — these are coordinate-sensitive porting bugs (see below), NOT §19.
+- Sector heightmaps: all 108 verified bodies (CHOALUUS + AWELER) match
+  byte-exact for planets; 3 CHOALUUS moons diverge ±1 on rand landing due
+  to x87 f80 vs IEEE f64 cos/sqrt differences in `round_hill`. See §31.
 
 ### Surface SECTOR verification (heightmap + objectchart)
 - Stored in `planets.sect_{def,rand}_{hm,oc}` (canonical, BCPP 3.1 /
@@ -162,18 +161,50 @@ Match rate by planet type (planet / moon):
   - `bulk_sectors.py db-report` prints the per-type/per-moon match/diff
     table with summary statistics — **always use this for reporting status**.
 
-### Fixed (sector)
-- **`round_hill` unsigned-`r` loop underflow (2026-07-20).** `round_hill`
-  (NOCTIS-1.CPP:1494) declares `r` as `unsigned`. The loop bounds
-  `for (x = cx-r; x < cx+r; x++)` are therefore evaluated in **unsigned**
-  arithmetic: when `cx < r` (true for essentially every hill, since
-  `r` ∈ [1,250] and `cx` ∈ [0,200]) `cx - r` underflows to a huge unsigned,
-  so `x < cx + r` is immediately false and the loop body **never executes**.
-  The Rust port used signed `cx - r` (-76), so its loop ran and
-  over-accumulated hills → byte0 ≈ 96 vs C's post-`rockyground` 1. Fixed by
-  computing `x0 = (cx as u32).wrapping_sub(r)`, `x1 = (cx as u32) + r` and
-  comparing `x < x1` as unsigned. This took the type-2 planet (AWELER body 3)
-  to byte-exact and closed most of the type-2/3/4/8 planet gap. See §25.
+### Verified (sector)
+- AWELER (28 bodies): 28/28 byte-exact (both def and rand landings).
+- CHOALUUS (80 bodies): 77/80 byte-exact — 3 moons diverge ONLY on seedval
+  pseudo landing (coordinate-sensitive, not §19 far-heap).
+
+### Known (sector — root cause confirmed not in round_hill loop)
+- `round_hill` (NOCTIS-1.CPP:1494): The C loop uses `int x, z` with
+  **unsigned**-mix loop bounds. `cx - r` (int − unsigned) converts cx to
+  unsigned, subtracts, assigns to `int x` as a potentially negative value.
+  However, the loop condition `x < cx + r` then compares `int` with
+  `unsigned`, promoting `x` to unsigned — so a negative `x` becomes a huge
+  unsigned (> `cx + r`) and the loop **never executes** when `cx < r`.
+  The Rust correctly emulates this with `(cx as u32).wrapping_sub(r)` and
+  an unsigned `x < x1` comparison. The `int` declaration is a red herring
+  — the unsigned-mix comparison is what matters. See §31.
+  Full investigation: `docs/src/sector-float-precision.md` (2026-07-22).
+
+### Remaining sector differences (x87 vs IEEE float precision)
+All sector heightmap/Objectschart mismatches (~19880/40000 pixel diffs of
+±1) are caused by **x87 80-bit vs IEEE 754 64-bit cos/sqrt differences**
+in `round_hill`. The key computation `cos(d/v) * h` occasionally differs
+by 1 ULP in the f32 result, which truncates to a ±1 integer difference.
+
+The `round_hill` function is used ONLY by the sector code (NOCTIS-1.CPP
+`build_surface`), not by the surface map code (NOCTIS-0.CPP
+`gen_planet_surface`). The surface code uses `kfract`/`crater`, which
+were separately fixed for f32 per-step rounding. This explains why all
+surface maps match (838/838) while sectors can drift by 1 per pixel.
+
+Additionally, the `asterism` inner loop's `ang` accumulation may differ
+by 1 iteration between x87 (f80 stack, no intermediate rounding) and
+Rust (f32 rounded per iteration), shifting subsequent RNG values. This
+was verified to match exactly — see `docs/src/asterism-investigation.md`.
+
+Fix options:
+1. Accept ±1 tolerance for sector height comparisons (pragmatic).
+2. Use x87-compatible cos/sqrt (extern C or inline asm) — not portable.
+3. Run sector generation via DOSBox-X only (defeats porting purpose).
+
+The `asterism` inner loop's `ang` accumulation was verified to match C x87
+exactly for all density values [6,30] — see `docs/src/asterism-investigation.md`.
+The RNG sequence through `oc_addtrees` is identical between C and Rust.
+
+Full investigation: `docs/src/sector-float-precision.md` (2026-07-22).
 - **Jitter guard (2026-07-20).** C condition `if (!waswet || (waswet &&
   !random(5)))` runs the heightmap jitter only when `random(5)==0` (1 in 5
   chance for wet worlds). The port inverted the test (`random(5) != 0`),

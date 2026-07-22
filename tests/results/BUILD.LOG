@@ -1,21 +1,22 @@
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 noctis-0.cpp:
 
-	Available memory 3435164
+	Available memory 3436236
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 noctis-1.cpp:
 
-	Available memory 3456148
+	Available memory 3456116
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 nivtest.cpp:
 
-	Available memory 3935804
+	Available memory 3935772
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 nivhash.c:
 
-	Available memory 4117756
+	Available memory 4117724
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 nivstubs.c:
 
-	Available memory 4128332
+	Available memory 4128300
 Turbo Link  Version 5.0 Copyright (c) 1992 Borland International
+Error: Undefined symbol __randseed in module noctis-0.cpp

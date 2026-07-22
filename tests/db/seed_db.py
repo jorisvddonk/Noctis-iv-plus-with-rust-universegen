@@ -13,7 +13,7 @@ def init_db(conn):
             x INTEGER NOT NULL,
             y INTEGER NOT NULL,
             z INTEGER NOT NULL,
-            UNIQUE(x, y, z)
+            UNIQUE(x, y_user, z)
         );
         CREATE TABLE IF NOT EXISTS planets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,10 +37,10 @@ def init_db(conn):
     """)
     conn.commit()
 
-def insert_star(conn, name, cls, x, y, z):
+def insert_star(conn, name, cls, x, y_user, z):
     conn.execute(
-        "INSERT OR IGNORE INTO stars (name, class, x, y, z) VALUES (?,?,?,?,?)",
-        (name, cls, x, y, z)
+        "INSERT OR IGNORE INTO stars (name, class, x, y_user, z) VALUES (?,?,?,?,?)",
+        (name, cls, x, y_user, z)
     )
     conn.commit()
     return conn.execute("SELECT id FROM stars WHERE x=? AND y=? AND z=?", (x,y,z)).fetchone()[0]
@@ -56,8 +56,8 @@ def insert_planet(conn, star_id, name, body_idx, ptype, seedval, surf, atmo, pal
 
 def seed_fenia(conn):
     """Seed FENIA (class 9, main test system)."""
-    x, y, z = 3612345, -4487654, -858973
-    sid = insert_star(conn, "FENIA", 9, x, y, z)
+    x, y_user, z = 3612345, -4487654, -858973
+    sid = insert_star(conn, "FENIA", 9, x, y_user, z)
     print(f"FENIA: star_id={sid}")
 
     # Planet data from NT6_P.OUT (BCPP 3.1 reference)
@@ -79,8 +79,8 @@ def seed_fenia(conn):
 
 def seed_balastrackonastreya(conn):
     """Seed Balastrackonastreya (class 0, home of Felisians)."""
-    x, y, z = -18928, -29680, -67336
-    sid = insert_star(conn, "BALASTRACKONASTREYA", 0, x, y, z)
+    x, y_user, z = -18928, -29680, -67336
+    sid = insert_star(conn, "BALASTRACKONASTREYA", 0, x, y_user, z)
     print(f"BALASTRACKONASTREYA: star_id={sid}")
 
     # From BCPP 3.1 reference

@@ -1,165 +1,155 @@
 === SYSTEM ===
-STAR x=3812345 y=-4287654 z=-658973
-  identity=10771.583392
-  class=9 ray=2.719000 spin=0 rgb=48,32,63
-  nop=19 nob=80 labeled=0
-  BODY  0 type=6 owner=-1 moonid=0 ray=0.192000 orb_ray=14.057231
-          tilt=0.10800000 orb_tilt=0.01980000 orb_orient=0.83775804 orb_ecc=0.99650000 orb_seed=11.587000 ring=0.000000
-  BODY  1 type=6 owner=-1 moonid=0 ray=0.172800 orb_ray=30.085627
-          tilt=-0.03000000 orb_tilt=0.00400000 orb_orient=0.89011792 orb_ecc=0.99250000 orb_seed=21.434001 ring=0.259200
-  BODY  2 type=1 owner=-1 moonid=0 ray=0.007776 orb_ray=50.751578
-          tilt=0.77600000 orb_tilt=0.01720000 orb_orient=1.85004901 orb_ecc=0.99550000 orb_seed=42.895002 ring=0.000000
-  BODY  3 type=1 owner=-1 moonid=0 ray=0.009540 orb_ray=116.626144
-          tilt=1.44400000 orb_tilt=0.06360000 orb_orient=2.37364778 orb_ecc=0.98700000 orb_seed=85.790003 ring=0.000000
-  BODY  4 type=1 owner=-1 moonid=0 ray=0.006372 orb_ray=206.430986
-          tilt=0.77000000 orb_tilt=-0.16780000 orb_orient=4.24115008 orb_ecc=0.94300000 orb_seed=141.209005 ring=0.014337
-  BODY  5 type=9 owner=-1 moonid=0 ray=0.432000 orb_ray=450.103068
-          tilt=0.88400000 orb_tilt=0.00680000 orb_orient=6.02138592 orb_ecc=0.92100000 orb_seed=220.092008 ring=0.000000
-  BODY  6 type=6 owner=-1 moonid=0 ray=0.211200 orb_ray=915.152320
-          tilt=-4.15200000 orb_tilt=0.28980000 orb_orient=5.74213324 orb_ecc=0.99000000 orb_seed=307.899011 ring=0.000000
-  BODY  7 type=9 owner=-1 moonid=0 ray=0.219000 orb_ray=1985.466160
-          tilt=-0.64600000 orb_tilt=-0.42100000 orb_orient=5.79449312 orb_ecc=0.81250000 orb_seed=415.010015 ring=0.000000
-  BODY  8 type=1 owner=-1 moonid=0 ray=0.006840 orb_ray=3740.663165
-          tilt=3.09200000 orb_tilt=0.28420000 orb_orient=3.78736448 orb_ecc=0.94400000 orb_seed=531.445020 ring=0.000000
-  BODY  9 type=9 owner=-1 moonid=0 ray=0.343500 orb_ray=4747.975645
-          tilt=-4.98200000 orb_tilt=-0.74400000 orb_orient=0.15707963 orb_ecc=0.68100000 orb_seed=673.644025 ring=0.515250
-  BODY 10 type=1 owner=-1 moonid=0 ray=0.006192 orb_ray=5497.224899
-          tilt=3.56800000 orb_tilt=0.04040000 orb_orient=6.19591884 orb_ecc=0.74750000 orb_seed=823.977031 ring=0.000000
-  BODY 11 type=9 owner=-1 moonid=0 ray=0.261000 orb_ray=7551.933101
-          tilt=15.25600000 orb_tilt=-0.12160000 orb_orient=1.69296937 orb_ecc=0.52500000 orb_seed=999.514037 ring=0.000000
-  BODY 12 type=9 owner=-1 moonid=0 ray=0.204000 orb_ray=9415.244670
-          tilt=-3.94400000 orb_tilt=0.74440000 orb_orient=1.85004901 orb_ecc=0.45900000 orb_seed=1185.355044 ring=0.000000
-  BODY 13 type=6 owner=-1 moonid=0 ray=0.178176 orb_ray=11206.269600
-          tilt=5.16000000 orb_tilt=0.48460000 orb_orient=0.26179939 orb_ecc=0.67450000 orb_seed=1393.840052 ring=0.400896
-  BODY 14 type=6 owner=-1 moonid=0 ray=0.153600 orb_ray=13579.609214
-          tilt=-2.70000000 orb_tilt=1.72420000 orb_orient=4.41568301 orb_ecc=0.41150000 orb_seed=1609.069060 ring=0.345600
-  BODY 15 type=6 owner=-1 moonid=0 ray=0.142080 orb_ray=18740.362116
-          tilt=-26.04200000 orb_tilt=-0.95680000 orb_orient=5.60250690 orb_ecc=0.54050000 orb_seed=1845.622069 ring=0.426240
-  BODY 16 type=1 owner=-1 moonid=0 ray=0.006192 orb_ray=19461.840385
-          tilt=5.85400000 orb_tilt=-0.41100000 orb_orient=5.72467995 orb_ecc=0.94000000 orb_seed=2097.269078 ring=0.000000
-  BODY 17 type=6 owner=-1 moonid=0 ray=0.154368 orb_ray=23177.950742
-          tilt=30.07200000 orb_tilt=1.64120000 orb_orient=5.70722665 orb_ecc=0.75850000 orb_seed=2371.680088 ring=0.000000
-  BODY 18 type=1 owner=-1 moonid=0 ray=0.006804 orb_ray=30878.145185
-          tilt=23.38400000 orb_tilt=-0.42040000 orb_orient=2.25147474 orb_ecc=0.66200000 orb_seed=2652.445099 ring=0.000000
-  BODY 19 type=5 owner=2 moonid=0 ray=0.011448 orb_ray=0.091570
-          tilt=0.00000000 orb_tilt=-0.00400000 orb_orient=5.68977336 orb_ecc=1.00000000 orb_seed=0.300000 ring=0.000000
-  BODY 20 type=0 owner=3 moonid=0 ray=0.013167 orb_ray=0.118571
-          tilt=0.00000000 orb_tilt=0.00000000 orb_orient=3.61283155 orb_ecc=1.00000000 orb_seed=0.190000 ring=0.000000
-  BODY 21 type=0 owner=7 moonid=0 ray=0.013041 orb_ray=3.304973
-          tilt=0.06000000 orb_tilt=0.02400000 orb_orient=1.74532925 orb_ecc=1.00000000 orb_seed=1.806000 ring=0.000000
-  BODY 22 type=5 owner=7 moonid=1 ray=0.010800 orb_ray=6.743423
-          tilt=0.04000000 orb_tilt=-0.01600000 orb_orient=1.83259571 orb_ecc=0.99950000 orb_seed=2.280000 ring=0.000000
-  BODY 23 type=3 owner=7 moonid=2 ray=0.017523 orb_ray=12.581712
-          tilt=0.40000000 orb_tilt=-0.00800000 orb_orient=0.54105207 orb_ecc=0.99950000 orb_seed=2.372000 ring=0.000000
-  BODY 24 type=5 owner=7 moonid=3 ray=0.012384 orb_ray=13.672054
-          tilt=0.44000000 orb_tilt=-0.03200000 orb_orient=5.65486678 orb_ecc=0.99950000 orb_seed=3.212000 ring=0.000000
-  BODY 25 type=4 owner=7 moonid=4 ray=0.013320 orb_ray=16.610125
-          tilt=0.40000000 orb_tilt=0.01600000 orb_orient=4.25860337 orb_ecc=0.99900000 orb_seed=5.750000 ring=0.000000
-  BODY 26 type=7 owner=7 moonid=5 ray=0.018468 orb_ray=18.013258
-          tilt=0.84000000 orb_tilt=0.06600000 orb_orient=4.10152374 orb_ecc=0.99700000 orb_seed=8.996000 ring=0.000000
-  BODY 27 type=3 owner=7 moonid=6 ray=0.025839 orb_ray=20.136697
-          tilt=0.84000000 orb_tilt=-0.09400000 orb_orient=3.21140582 orb_ecc=0.99600000 orb_seed=11.750000 ring=0.000000
-  BODY 28 type=2 owner=7 moonid=7 ray=0.021780 orb_ray=15.394961
-          tilt=-1.70000000 orb_tilt=-0.02800000 orb_orient=1.62315620 orb_ecc=0.99750000 orb_seed=15.652000 ring=0.000000
-  BODY 29 type=1 owner=7 moonid=8 ray=0.007722 orb_ray=28.889632
-          tilt=2.32000000 orb_tilt=0.06000000 orb_orient=3.83972435 orb_ecc=0.99500000 orb_seed=20.162000 ring=0.000000
-  BODY 30 type=6 owner=7 moonid=9 ray=0.146304 orb_ray=22.930319
-          tilt=2.10000000 orb_tilt=-0.25400000 orb_orient=2.11184839 orb_ecc=0.98850000 orb_seed=25.590000 ring=0.000000
-  BODY 31 type=8 owner=7 moonid=10 ray=0.025056 orb_ray=28.184902
-          tilt=0.28000000 orb_tilt=0.42800000 orb_orient=5.96902604 orb_ecc=0.99800000 orb_seed=31.906000 ring=0.000000
-  BODY 32 type=1 owner=7 moonid=11 ray=0.005589 orb_ray=24.703423
-          tilt=6.80000000 orb_tilt=0.29600000 orb_orient=1.43116999 orb_ecc=0.99050000 orb_seed=37.790000 ring=0.000000
-  BODY 33 type=5 owner=7 moonid=12 ray=0.015264 orb_ray=29.309581
-          tilt=6.10000000 orb_tilt=-0.08200000 orb_orient=3.71755131 orb_ecc=0.99700000 orb_seed=44.472000 ring=0.000000
-  BODY 34 type=1 owner=7 moonid=13 ray=0.005076 orb_ray=27.632243
-          tilt=-1.74000000 orb_tilt=-0.18400000 orb_orient=4.08407045 orb_ecc=0.98700000 orb_seed=52.692000 ring=0.000000
-  BODY 35 type=1 owner=7 moonid=14 ray=0.004212 orb_ray=25.245710
-          tilt=1.84000000 orb_tilt=-0.26200000 orb_orient=5.06145483 orb_ecc=0.97400000 orb_seed=61.500000 ring=0.000000
-  BODY 36 type=2 owner=7 moonid=15 ray=0.019440 orb_ray=36.831798
-          tilt=7.68000000 orb_tilt=0.39200000 orb_orient=3.78736448 orb_ecc=0.97350000 orb_seed=69.546000 ring=0.000000
-  BODY 37 type=5 owner=8 moonid=0 ray=0.013032 orb_ray=0.085451
-          tilt=-0.02000000 orb_tilt=-0.00200000 orb_orient=5.63741348 orb_ecc=1.00000000 orb_seed=0.436000 ring=0.000000
-  BODY 38 type=2 owner=9 moonid=0 ray=0.016110 orb_ray=4.528704
-          tilt=-0.10000000 orb_tilt=-0.04800000 orb_orient=3.17649924 orb_ecc=0.99900000 orb_seed=3.102000 ring=0.000000
-  BODY 39 type=6 owner=9 moonid=1 ray=0.114048 orb_ray=12.424302
-          tilt=-0.24000000 orb_tilt=-0.00800000 orb_orient=4.39822972 orb_ecc=0.99950000 orb_seed=2.695000 ring=0.000000
-  BODY 40 type=8 owner=9 moonid=2 ray=0.024300 orb_ray=20.410414
-          tilt=0.46000000 orb_tilt=-0.04800000 orb_orient=3.24631241 orb_ecc=1.00000000 orb_seed=6.054000 ring=0.000000
-  BODY 41 type=7 owner=9 moonid=3 ray=0.014256 orb_ray=22.204519
-          tilt=-0.76000000 orb_tilt=0.08400000 orb_orient=5.63741348 orb_ecc=0.99950000 orb_seed=8.009000 ring=0.000000
-  BODY 42 type=7 owner=9 moonid=4 ray=0.016605 orb_ray=20.879778
-          tilt=1.16000000 orb_tilt=0.04200000 orb_orient=0.69813170 orb_ecc=0.99850000 orb_seed=11.810000 ring=0.000000
-  BODY 43 type=7 owner=9 moonid=5 ray=0.013203 orb_ray=25.405963
-          tilt=-2.82000000 orb_tilt=0.26000000 orb_orient=5.86430629 orb_ecc=0.99950000 orb_seed=15.767000 ring=0.000000
-  BODY 44 type=2 owner=9 moonid=6 ray=0.022680 orb_ray=40.278501
-          tilt=-2.14000000 orb_tilt=-0.03000000 orb_orient=1.65806279 orb_ecc=0.99450000 orb_seed=23.180000 ring=0.000000
-  BODY 45 type=7 owner=9 moonid=7 ray=0.011664 orb_ray=38.067400
-          tilt=0.94000000 orb_tilt=-0.33200000 orb_orient=5.68977336 orb_ecc=0.99850000 orb_seed=31.519000 ring=0.000000
-  BODY 46 type=7 owner=9 moonid=8 ray=0.018630 orb_ray=40.963781
-          tilt=1.84000000 orb_tilt=-0.05000000 orb_orient=1.04719755 orb_ecc=0.98700000 orb_seed=39.834000 ring=0.000000
-  BODY 47 type=7 owner=9 moonid=9 ray=0.012717 orb_ray=36.204296
-          tilt=0.94000000 orb_tilt=0.14000000 orb_orient=4.45058959 orb_ecc=0.99400000 orb_seed=49.225000 ring=0.000000
-  BODY 48 type=8 owner=11 moonid=0 ray=0.023652 orb_ray=2.672640
-          tilt=-0.26000000 orb_tilt=0.04200000 orb_orient=5.07890812 orb_ecc=1.00000000 orb_seed=3.498000 ring=0.000000
-  BODY 49 type=4 owner=11 moonid=1 ray=0.023220 orb_ray=4.582241
-          tilt=-0.02000000 orb_tilt=-0.01600000 orb_orient=3.99680399 orb_ecc=0.99950000 orb_seed=3.720000 ring=0.000000
-  BODY 50 type=7 owner=11 moonid=2 ray=0.012393 orb_ray=10.606277
-          tilt=-0.38000000 orb_tilt=-0.05800000 orb_orient=3.94444411 orb_ecc=1.00000000 orb_seed=4.096000 ring=0.000000
-  BODY 51 type=7 owner=11 moonid=3 ray=0.010692 orb_ray=11.263144
-          tilt=0.42000000 orb_tilt=-0.08000000 orb_orient=5.56760031 orb_ecc=0.99950000 orb_seed=6.386000 ring=0.000000
-  BODY 52 type=7 owner=11 moonid=4 ray=0.016929 orb_ray=12.440031
-          tilt=0.60000000 orb_tilt=0.08000000 orb_orient=2.67035376 orb_ecc=0.99700000 orb_seed=11.990000 ring=0.000000
-  BODY 53 type=7 owner=11 moonid=5 ray=0.021141 orb_ray=11.902668
-          tilt=-1.86000000 orb_tilt=0.04600000 orb_orient=2.42600766 orb_ecc=1.00000000 orb_seed=16.658000 ring=0.000000
-  BODY 54 type=7 owner=11 moonid=6 ray=0.020412 orb_ray=17.061180
-          tilt=2.10000000 orb_tilt=-0.14200000 orb_orient=1.22173048 orb_ecc=0.99900000 orb_seed=25.250000 ring=0.000000
-  BODY 55 type=7 owner=11 moonid=7 ray=0.018954 orb_ray=16.897095
-          tilt=-3.10000000 orb_tilt=0.10000000 orb_orient=1.90240888 orb_ecc=0.99750000 orb_seed=32.646000 ring=0.000000
-  BODY 56 type=7 owner=11 moonid=8 ray=0.017334 orb_ray=16.597442
-          tilt=3.00000000 orb_tilt=0.09200000 orb_orient=4.22369679 orb_ecc=0.98250000 orb_seed=40.136000 ring=0.000000
-  BODY 57 type=7 owner=11 moonid=9 ray=0.017415 orb_ray=18.341017
-          tilt=6.24000000 orb_tilt=-0.04600000 orb_orient=4.24115008 orb_ecc=0.98650000 orb_seed=49.870000 ring=0.000000
-  BODY 58 type=7 owner=11 moonid=10 ray=0.019521 orb_ray=17.567629
-          tilt=-5.94000000 orb_tilt=-0.23200000 orb_orient=3.24631241 orb_ecc=0.97750000 orb_seed=60.848000 ring=0.000000
-  BODY 59 type=7 owner=11 moonid=11 ray=0.020655 orb_ray=27.492253
-          tilt=5.92000000 orb_tilt=0.19800000 orb_orient=5.74213324 orb_ecc=0.98300000 orb_seed=72.450000 ring=0.000000
-  BODY 60 type=7 owner=11 moonid=12 ray=0.014661 orb_ray=25.170827
-          tilt=-1.90000000 orb_tilt=-0.04200000 orb_orient=0.66322512 orb_ecc=0.96250000 orb_seed=89.116000 ring=0.000000
-  BODY 61 type=7 owner=11 moonid=13 ray=0.012717 orb_ray=25.152739
-          tilt=12.76000000 orb_tilt=-1.22200000 orb_orient=5.70722665 orb_ecc=0.98300000 orb_seed=102.116000 ring=0.000000
-  BODY 62 type=0 owner=12 moonid=0 ray=0.013860 orb_ray=3.360614
-          tilt=-0.02000000 orb_tilt=0.00000000 orb_orient=4.43313630 orb_ecc=1.00000000 orb_seed=0.376000 ring=0.000000
-  BODY 63 type=2 owner=12 moonid=1 ray=0.016740 orb_ray=5.912096
-          tilt=0.00000000 orb_tilt=0.00600000 orb_orient=0.92502450 orb_ecc=1.00000000 orb_seed=0.560000 ring=0.000000
-  BODY 64 type=2 owner=12 moonid=2 ray=0.015480 orb_ray=8.675255
-          tilt=-0.06000000 orb_tilt=0.00000000 orb_orient=4.32841654 orb_ecc=1.00000000 orb_seed=0.612000 ring=0.000000
-  BODY 65 type=2 owner=12 moonid=3 ray=0.021600 orb_ray=12.743992
-          tilt=-0.18000000 orb_tilt=0.00800000 orb_orient=0.29670597 orb_ecc=1.00000000 orb_seed=1.332000 ring=0.000000
-  BODY 66 type=7 owner=12 moonid=4 ray=0.017820 orb_ray=17.706420
-          tilt=0.06000000 orb_tilt=-0.00800000 orb_orient=4.79965544 orb_ecc=1.00000000 orb_seed=1.980000 ring=0.000000
-  BODY 67 type=7 owner=12 moonid=5 ray=0.021141 orb_ray=22.630322
-          tilt=0.34000000 orb_tilt=-0.01400000 orb_orient=3.63028484 orb_ecc=1.00000000 orb_seed=2.826000 ring=0.000000
-  BODY 68 type=7 owner=12 moonid=6 ray=0.016362 orb_ray=15.840891
-          tilt=0.58000000 orb_tilt=-0.02200000 orb_orient=4.17133691 orb_ecc=0.99900000 orb_seed=3.820000 ring=0.000000
-  BODY 69 type=7 owner=12 moonid=7 ray=0.015714 orb_ray=18.249357
-          tilt=-0.28000000 orb_tilt=0.06000000 orb_orient=2.51327412 orb_ecc=0.99900000 orb_seed=5.022000 ring=0.000000
-  BODY 70 type=7 owner=12 moonid=8 ray=0.012636 orb_ray=26.028016
-          tilt=0.14000000 orb_tilt=0.04000000 orb_orient=0.45378561 orb_ecc=0.99950000 orb_seed=6.302000 ring=0.000000
-  BODY 71 type=7 owner=12 moonid=9 ray=0.017091 orb_ray=24.637063
-          tilt=-1.24000000 orb_tilt=-0.02200000 orb_orient=1.23918377 orb_ecc=0.99950000 orb_seed=8.000000 ring=0.000000
-  BODY 72 type=7 owner=12 moonid=10 ray=0.016038 orb_ray=19.154671
-          tilt=-1.30000000 orb_tilt=0.00000000 orb_orient=5.07890812 orb_ecc=0.99900000 orb_seed=9.776000 ring=0.000000
-  BODY 73 type=7 owner=12 moonid=11 ray=0.021546 orb_ray=31.991703
-          tilt=-0.94000000 orb_tilt=0.02600000 orb_orient=2.79252680 orb_ecc=0.99950000 orb_seed=11.730000 ring=0.000000
-  BODY 74 type=7 owner=12 moonid=12 ray=0.014175 orb_ray=22.533818
-          tilt=-0.24000000 orb_tilt=0.13800000 orb_orient=0.94247780 orb_ecc=0.99900000 orb_seed=13.892000 ring=0.000000
-  BODY 75 type=7 owner=12 moonid=13 ray=0.017334 orb_ray=23.341294
-          tilt=0.18000000 orb_tilt=-0.11400000 orb_orient=1.69296937 orb_ecc=0.99200000 orb_seed=16.272000 ring=0.000000
-  BODY 76 type=7 owner=12 moonid=14 ray=0.011502 orb_ray=19.739587
-          tilt=-2.18000000 orb_tilt=0.21200000 orb_orient=1.71042267 orb_ecc=0.99800000 orb_seed=18.570000 ring=0.000000
-  BODY 77 type=7 owner=12 moonid=15 ray=0.014175 orb_ray=21.533039
-          tilt=-0.16000000 orb_tilt=-0.01800000 orb_orient=2.93215314 orb_ecc=0.99100000 orb_seed=21.556000 ring=0.000000
-  BODY 78 type=7 owner=12 moonid=16 ray=0.017091 orb_ray=36.233067
-          tilt=2.32000000 orb_tilt=0.07800000 orb_orient=5.06145483 orb_ecc=0.99150000 orb_seed=24.300000 ring=0.000000
-  BODY 79 type=7 owner=12 moonid=17 ray=0.011664 orb_ray=22.312739
-          tilt=-1.66000000 orb_tilt=-0.18400000 orb_orient=3.90953752 orb_ecc=0.99950000 orb_seed=27.602000 ring=0.000000
+STAR x=3812345 y=4287654 z=-658973
+  identity=-10771.583392
+  class=9 ray=7.285000 spin=0 rgb=48,32,63
+  nop=14 nob=75 labeled=0
+  BODY  0 type=6 owner=-1 moonid=0 ray=0.183552 orb_ray=32.491099
+          tilt=0.00600000 orb_tilt=0.02580000 orb_orient=3.54301838 orb_ecc=0.98700000 orb_seed=29.135000 ring=0.275328
+  BODY  1 type=9 owner=-1 moonid=0 ray=0.253500 orb_ray=77.668443
+          tilt=0.44800000 orb_tilt=0.04260000 orb_orient=5.18362788 orb_ecc=0.98950000 orb_seed=44.069999 ring=0.000000
+  BODY  2 type=6 owner=-1 moonid=0 ray=0.149760 orb_ray=140.134822
+          tilt=-0.41800000 orb_tilt=0.01580000 orb_orient=1.57079633 orb_ecc=0.94100000 orb_seed=123.424998 ring=0.224640
+  BODY  3 type=1 owner=-1 moonid=0 ray=0.007812 orb_ray=319.118651
+          tilt=-0.68200000 orb_tilt=0.30000000 orb_orient=2.14675498 orb_ecc=0.99850000 orb_seed=221.439995 ring=0.000000
+  BODY  4 type=1 owner=-1 moonid=0 ray=0.009540 orb_ray=587.057036
+          tilt=3.67800000 orb_tilt=0.09040000 orb_orient=4.92182849 orb_ecc=0.94100000 orb_seed=373.574992 ring=0.000000
+  BODY  5 type=6 owner=-1 moonid=0 ray=0.107520 orb_ray=1324.113507
+          tilt=1.66600000 orb_tilt=0.04140000 orb_orient=5.44542727 orb_ecc=0.72650000 orb_seed=587.919988 ring=0.000000
+  BODY  6 type=1 owner=-1 moonid=0 ray=0.007200 orb_ray=2192.314454
+          tilt=2.38800000 orb_tilt=0.35060000 orb_orient=0.83775804 orb_ecc=0.62500000 orb_seed=826.324983 ring=0.000000
+  BODY  7 type=6 owner=-1 moonid=0 ray=0.181248 orb_ray=5330.953650
+          tilt=-12.60000000 orb_tilt=1.13380000 orb_orient=4.17133691 orb_ecc=0.65900000 orb_seed=1108.889977 ring=0.543744
+  BODY  8 type=6 owner=-1 moonid=0 ray=0.098304 orb_ray=9819.390577
+          tilt=1.35000000 orb_tilt=0.77200000 orb_orient=5.70722665 orb_ecc=0.99000000 orb_seed=1436.514970 ring=0.000000
+  BODY  9 type=1 owner=-1 moonid=0 ray=0.007704 orb_ray=12261.545303
+          tilt=-18.78000000 orb_tilt=0.26840000 orb_orient=2.84488668 orb_ecc=0.48900000 orb_seed=1805.319962 ring=0.000000
+  BODY 10 type=6 owner=-1 moonid=0 ray=0.201216 orb_ray=14778.897896
+          tilt=-14.13400000 orb_tilt=-0.92880000 orb_orient=4.08407045 orb_ecc=0.11700000 orb_seed=2226.254954 ring=0.000000
+  BODY 11 type=1 owner=-1 moonid=0 ray=0.006516 orb_ray=21615.983152
+          tilt=-19.29400000 orb_tilt=-1.64720000 orb_orient=3.14159265 orb_ecc=0.57750000 orb_seed=2674.039944 ring=0.000000
+  BODY 12 type=1 owner=-1 moonid=0 ray=0.005940 orb_ray=21416.134222
+          tilt=23.26800000 orb_tilt=3.73140000 orb_orient=4.46804289 orb_ecc=0.31450000 orb_seed=3184.674934 ring=0.000000
+  BODY 13 type=9 owner=-1 moonid=0 ray=0.280500 orb_ray=29466.811813
+          tilt=44.65400000 orb_tilt=1.04340000 orb_orient=2.00712864 orb_ecc=-0.60750000 orb_seed=3719.859922 ring=0.000000
+  BODY 14 type=1 owner=2 moonid=0 ray=0.007236 orb_ray=1.776992
+          tilt=0.00000000 orb_tilt=0.00000000 orb_orient=1.16937060 orb_ecc=1.00000000 orb_seed=0.114000 ring=0.000000
+  BODY 15 type=2 owner=2 moonid=1 ray=0.009900 orb_ray=2.977300
+          tilt=0.00000000 orb_tilt=0.00000000 orb_orient=2.94960644 orb_ecc=1.00000000 orb_seed=0.205000 ring=0.000000
+  BODY 16 type=2 owner=2 moonid=2 ray=0.011700 orb_ray=6.391029
+          tilt=-0.02000000 orb_tilt=0.00000000 orb_orient=1.67551608 orb_ecc=1.00000000 orb_seed=0.268000 ring=0.000000
+  BODY 17 type=2 owner=2 moonid=3 ray=0.017370 orb_ray=8.553865
+          tilt=-0.04000000 orb_tilt=0.00200000 orb_orient=5.96902604 orb_ecc=1.00000000 orb_seed=0.433000 ring=0.000000
+  BODY 18 type=5 owner=2 moonid=4 ray=0.011088 orb_ray=9.040201
+          tilt=0.06000000 orb_tilt=0.00600000 orb_orient=0.99483767 orb_ecc=1.00000000 orb_seed=0.620000 ring=0.000000
+  BODY 19 type=5 owner=2 moonid=5 ray=0.010008 orb_ray=9.664024
+          tilt=-0.08000000 orb_tilt=-0.00200000 orb_orient=5.39306739 orb_ecc=1.00000000 orb_seed=0.899000 ring=0.000000
+  BODY 20 type=1 owner=2 moonid=6 ray=0.004077 orb_ray=10.998260
+          tilt=0.10000000 orb_tilt=-0.00800000 orb_orient=4.60766923 orb_ecc=1.00000000 orb_seed=1.230000 ring=0.000000
+  BODY 21 type=0 owner=2 moonid=7 ray=0.015372 orb_ray=12.546148
+          tilt=0.14000000 orb_tilt=-0.01400000 orb_orient=2.98451302 orb_ecc=1.00000000 orb_seed=1.633000 ring=0.000000
+  BODY 22 type=5 owner=2 moonid=8 ray=0.018072 orb_ray=14.508923
+          tilt=-0.18000000 orb_tilt=0.00200000 orb_orient=4.83456203 orb_ecc=1.00000000 orb_seed=2.098000 ring=0.000000
+  BODY 23 type=1 owner=2 moonid=9 ray=0.005211 orb_ray=13.494149
+          tilt=-0.32000000 orb_tilt=-0.02200000 orb_orient=0.52359878 orb_ecc=1.00000000 orb_seed=2.675000 ring=0.000000
+  BODY 24 type=2 owner=2 moonid=10 ray=0.015750 orb_ray=17.736212
+          tilt=-0.42000000 orb_tilt=-0.01000000 orb_orient=4.79965544 orb_ecc=0.99950000 orb_seed=3.174000 ring=0.000000
+  BODY 25 type=2 owner=2 moonid=11 ray=0.026190 orb_ray=13.356912
+          tilt=0.44000000 orb_tilt=-0.02000000 orb_orient=4.46804289 orb_ecc=0.99850000 orb_seed=3.875000 ring=0.000000
+  BODY 26 type=0 owner=2 moonid=12 ray=0.015057 orb_ray=16.077689
+          tilt=0.40000000 orb_tilt=0.01800000 orb_orient=2.79252680 orb_ecc=1.00000000 orb_seed=4.558000 ring=0.000000
+  BODY 27 type=2 owner=2 moonid=13 ray=0.014310 orb_ray=12.916756
+          tilt=0.50000000 orb_tilt=0.02600000 orb_orient=5.07890812 orb_ecc=0.99950000 orb_seed=5.343000 ring=0.000000
+  BODY 28 type=8 owner=2 moonid=14 ray=0.024084 orb_ray=21.087190
+          tilt=-0.46000000 orb_tilt=-0.03600000 orb_orient=3.63028484 orb_ecc=1.00000000 orb_seed=6.270000 ring=0.000000
+  BODY 29 type=4 owner=2 moonid=15 ray=0.014940 orb_ray=11.872639
+          tilt=-0.20000000 orb_tilt=-0.02200000 orb_orient=1.76278254 orb_ecc=0.99750000 orb_seed=7.069000 ring=0.000000
+  BODY 30 type=1 owner=3 moonid=0 ray=0.005049 orb_ray=0.088694
+          tilt=-0.04000000 orb_tilt=-0.00200000 orb_orient=2.96705973 orb_ecc=1.00000000 orb_seed=0.516000 ring=0.000000
+  BODY 31 type=1 owner=4 moonid=0 ray=0.006129 orb_ray=0.154227
+          tilt=0.00000000 orb_tilt=-0.00200000 orb_orient=1.34390352 orb_ecc=1.00000000 orb_seed=0.492000 ring=0.000000
+  BODY 32 type=3 owner=5 moonid=0 ray=0.023067 orb_ray=1.204224
+          tilt=0.24000000 orb_tilt=0.00400000 orb_orient=4.29350996 orb_ecc=1.00000000 orb_seed=1.956000 ring=0.000000
+  BODY 33 type=5 owner=5 moonid=1 ray=0.009576 orb_ray=1.909555
+          tilt=-0.32000000 orb_tilt=-0.04400000 orb_orient=5.02654825 orb_ecc=0.99900000 orb_seed=2.985000 ring=0.000000
+  BODY 34 type=5 owner=5 moonid=2 ray=0.015696 orb_ray=4.849238
+          tilt=0.08000000 orb_tilt=0.02800000 orb_orient=2.65290046 orb_ecc=0.99950000 orb_seed=3.162000 ring=0.000000
+  BODY 35 type=2 owner=5 moonid=3 ray=0.022410 orb_ray=6.745685
+          tilt=0.46000000 orb_tilt=0.01000000 orb_orient=4.25860337 orb_ecc=0.99800000 orb_seed=6.507000 ring=0.000000
+  BODY 36 type=2 owner=5 moonid=4 ray=0.019620 orb_ray=6.010817
+          tilt=-1.12000000 orb_tilt=-0.00200000 orb_orient=5.27089434 orb_ecc=0.99650000 orb_seed=9.360000 ring=0.000000
+  BODY 37 type=2 owner=5 moonid=5 ray=0.021960 orb_ray=5.638726
+          tilt=1.94000000 orb_tilt=0.14200000 orb_orient=5.23598776 orb_ecc=0.99550000 orb_seed=14.351000 ring=0.000000
+  BODY 38 type=0 owner=5 moonid=6 ray=0.009135 orb_ray=7.883559
+          tilt=-1.02000000 orb_tilt=-0.09600000 orb_orient=5.77703982 orb_ecc=0.99500000 orb_seed=17.980000 ring=0.000000
+  BODY 39 type=8 owner=5 moonid=7 ray=0.020088 orb_ray=8.521513
+          tilt=0.28000000 orb_tilt=0.29200000 orb_orient=4.46804289 orb_ecc=0.98750000 orb_seed=25.767000 ring=0.000000
+  BODY 40 type=5 owner=5 moonid=8 ray=0.015120 orb_ray=7.065457
+          tilt=1.60000000 orb_tilt=-0.01000000 orb_orient=4.79965544 orb_ecc=0.98550000 orb_seed=32.512000 ring=0.000000
+  BODY 41 type=0 owner=5 moonid=9 ray=0.011340 orb_ray=7.756459
+          tilt=0.70000000 orb_tilt=-0.14000000 orb_orient=2.53072742 orb_ecc=0.99450000 orb_seed=40.445000 ring=0.000000
+  BODY 42 type=8 owner=5 moonid=10 ray=0.025164 orb_ray=10.234114
+          tilt=1.48000000 orb_tilt=0.24600000 orb_orient=1.16937060 orb_ecc=0.98700000 orb_seed=48.856000 ring=0.000000
+  BODY 43 type=4 owner=5 moonid=11 ray=0.014040 orb_ray=11.197548
+          tilt=-0.26000000 orb_tilt=0.16200000 orb_orient=5.68977336 orb_ecc=0.97850000 orb_seed=58.365000 ring=0.000000
+  BODY 44 type=5 owner=5 moonid=12 ray=0.015264 orb_ray=11.047899
+          tilt=-2.96000000 orb_tilt=-0.91400000 orb_orient=3.31612558 orb_ecc=0.99750000 orb_seed=68.852000 ring=0.000000
+  BODY 45 type=2 owner=5 moonid=13 ray=0.018810 orb_ray=13.413645
+          tilt=6.90000000 orb_tilt=0.05200000 orb_orient=3.57792497 orb_ecc=0.97600000 orb_seed=81.797000 ring=0.000000
+  BODY 46 type=2 owner=5 moonid=14 ray=0.021240 orb_ray=13.758766
+          tilt=-0.04000000 orb_tilt=-0.06400000 orb_orient=2.96705973 orb_ecc=0.96700000 orb_seed=94.110000 ring=0.000000
+  BODY 47 type=1 owner=6 moonid=0 ray=0.004995 orb_ray=0.125245
+          tilt=0.02000000 orb_tilt=-0.00800000 orb_orient=2.63544717 orb_ecc=1.00000000 orb_seed=0.820000 ring=0.000000
+  BODY 48 type=2 owner=7 moonid=0 ray=0.013410 orb_ray=1.842060
+          tilt=-0.56000000 orb_tilt=0.03400000 orb_orient=3.97935069 orb_ecc=0.99950000 orb_seed=4.636000 ring=0.000000
+  BODY 49 type=8 owner=7 moonid=1 ray=0.024732 orb_ray=4.644830
+          tilt=-0.02000000 orb_tilt=-0.03200000 orb_orient=4.15388362 orb_ecc=0.99950000 orb_seed=4.905000 ring=0.000000
+  BODY 50 type=5 owner=8 moonid=0 ray=0.018792 orb_ray=1.404253
+          tilt=-0.40000000 orb_tilt=0.01600000 orb_orient=0.64577182 orb_ecc=0.99900000 orb_seed=4.206000 ring=0.000000
+  BODY 51 type=1 owner=8 moonid=1 ray=0.004347 orb_ray=2.681182
+          tilt=-0.14000000 orb_tilt=0.01200000 orb_orient=1.81514242 orb_ecc=0.99900000 orb_seed=3.290000 ring=0.000000
+  BODY 52 type=1 owner=9 moonid=0 ray=0.005859 orb_ray=0.106007
+          tilt=0.06000000 orb_tilt=-0.01200000 orb_orient=0.01745329 orb_ecc=1.00000000 orb_seed=1.002000 ring=0.000000
+  BODY 53 type=8 owner=10 moonid=0 ray=0.024408 orb_ray=2.184079
+          tilt=0.04000000 orb_tilt=-0.01400000 orb_orient=2.91469985 orb_ecc=1.00000000 orb_seed=1.106000 ring=0.000000
+  BODY 54 type=0 owner=10 moonid=1 ray=0.013041 orb_ray=5.992391
+          tilt=0.42000000 orb_tilt=0.03600000 orb_orient=3.49065850 orb_ecc=0.99950000 orb_seed=3.145000 ring=0.000000
+  BODY 55 type=5 owner=11 moonid=0 ray=0.020016 orb_ray=0.094081
+          tilt=-0.06000000 orb_tilt=0.02600000 orb_orient=2.28638132 orb_ecc=1.00000000 orb_seed=4.090000 ring=0.000000
+  BODY 56 type=8 owner=13 moonid=0 ray=0.025164 orb_ray=3.518592
+          tilt=-0.68000000 orb_tilt=-0.02000000 orb_orient=2.74016693 orb_ecc=0.99850000 orb_seed=8.934000 ring=0.000000
+  BODY 57 type=3 owner=13 moonid=1 ray=0.021483 orb_ray=6.305676
+          tilt=-0.28000000 orb_tilt=-0.08600000 orb_orient=2.98451302 orb_ecc=0.99750000 orb_seed=10.460000 ring=0.000000
+  BODY 58 type=2 owner=13 moonid=2 ray=0.019710 orb_ray=14.890281
+          tilt=-2.38000000 orb_tilt=-0.11600000 orb_orient=5.60250690 orb_ecc=0.99500000 orb_seed=19.228000 ring=0.000000
+  BODY 59 type=7 owner=13 moonid=3 ray=0.015147 orb_ray=10.777865
+          tilt=0.56000000 orb_tilt=0.01000000 orb_orient=4.31096325 orb_ecc=0.98800000 orb_seed=29.168000 ring=0.000000
+  BODY 60 type=7 owner=13 moonid=4 ray=0.022923 orb_ray=11.562887
+          tilt=-1.22000000 orb_tilt=-0.12200000 orb_orient=4.36332313 orb_ecc=0.98700000 orb_seed=42.350000 ring=0.000000
+  BODY 61 type=7 owner=13 moonid=5 ray=0.016362 orb_ray=16.040505
+          tilt=-10.10000000 orb_tilt=0.31600000 orb_orient=2.04203522 orb_ecc=0.96800000 orb_seed=72.334000 ring=0.000000
+  BODY 62 type=7 owner=13 moonid=6 ray=0.019602 orb_ray=19.193228
+          tilt=1.30000000 orb_tilt=0.78000000 orb_orient=4.60766923 orb_ecc=0.96700000 orb_seed=90.070000 ring=0.000000
+  BODY 63 type=7 owner=13 moonid=7 ray=0.012150 orb_ray=20.452157
+          tilt=-18.98000000 orb_tilt=0.19800000 orb_orient=2.96705973 orb_ecc=0.95850000 orb_seed=128.558000 ring=0.000000
+  BODY 64 type=7 owner=13 moonid=8 ray=0.014499 orb_ray=26.849216
+          tilt=-0.16000000 orb_tilt=0.27000000 orb_orient=1.18682389 orb_ecc=0.97750000 orb_seed=160.378000 ring=0.000000
+  BODY 65 type=7 owner=13 moonid=9 ray=0.017658 orb_ray=20.012092
+          tilt=-0.18000000 orb_tilt=-0.34600000 orb_orient=2.12930169 orb_ecc=0.95900000 orb_seed=195.310000 ring=0.000000
+  BODY 66 type=7 owner=13 moonid=10 ray=0.013041 orb_ray=26.997307
+          tilt=0.62000000 orb_tilt=3.12000000 orb_orient=3.14159265 orb_ecc=0.90150000 orb_seed=246.944000 ring=0.000000
+  BODY 67 type=7 owner=13 moonid=11 ray=0.015309 orb_ray=23.690814
+          tilt=0.14000000 orb_tilt=-0.99200000 orb_orient=1.86750230 orb_ecc=0.93600000 orb_seed=293.710000 ring=0.000000
+  BODY 68 type=7 owner=13 moonid=12 ray=0.016038 orb_ray=26.814410
+          tilt=-5.74000000 orb_tilt=-5.61600000 orb_orient=2.86233997 orb_ecc=0.85750000 orb_seed=345.168000 ring=0.000000
+  BODY 69 type=7 owner=13 moonid=13 ray=0.014580 orb_ray=26.483821
+          tilt=-0.78000000 orb_tilt=-3.30000000 orb_orient=0.29670597 orb_ecc=0.90600000 orb_seed=409.828000 ring=0.000000
+  BODY 70 type=7 owner=13 moonid=14 ray=0.021303 orb_ray=24.963919
+          tilt=-56.22000000 orb_tilt=6.93200000 orb_orient=2.65290046 orb_ecc=0.79050000 orb_seed=461.690000 ring=0.000000
+  BODY 71 type=7 owner=13 moonid=15 ray=0.018711 orb_ray=32.000787
+          tilt=12.24000000 orb_tilt=-0.17600000 orb_orient=5.63741348 orb_ecc=0.77000000 orb_seed=537.384000 ring=0.000000
+  BODY 72 type=7 owner=13 moonid=16 ray=0.011664 orb_ray=31.575368
+          tilt=-0.82000000 orb_tilt=4.03000000 orb_orient=4.36332313 orb_ecc=0.94400000 orb_seed=606.370000 ring=0.000000
+  BODY 73 type=7 owner=13 moonid=17 ray=0.011502 orb_ray=37.300808
+          tilt=-40.62000000 orb_tilt=-5.06200000 orb_orient=1.15191731 orb_ecc=0.78950000 orb_seed=689.028000 ring=0.000000
+  BODY 74 type=7 owner=13 moonid=18 ray=0.014256 orb_ray=34.409730
+          tilt=98.08000000 orb_tilt=8.44600000 orb_orient=6.03883921 orb_ecc=0.82800000 orb_seed=766.898000 ring=0.000000
