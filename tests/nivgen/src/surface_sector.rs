@@ -890,10 +890,10 @@ impl SystemGen {
                     n -= 1;
                 }
                 match self.rng.random(2) {
-                    0 => {
-                        // C evaluates right-to-left: random(100) first, then random(200)
-                        let _r100 = self.rng.random(100);
+                        0 => {
+                        // C evaluates arithmetic left-to-right: random(200) first, then random(100)
                         let _r200 = self.rng.random(200);
+                        let _r100 = self.rng.random(100);
                         n = self.albedo + _r200 - _r100;
                         hf = f(self.rng.random(10) as f64 * 0.02);
                         if n < 0 {
@@ -1189,8 +1189,8 @@ impl SystemGen {
                     self.srf_darkline(0, r, -1, -1, 200);
                     n -= 1;
                 }
-                let _n_r = self.rng.random(100);
                 let _n_l = self.rng.random(200);
+                let _n_r = self.rng.random(100);
                 n = self.albedo + _n_l - _n_r;
                 if n < 0 {
                     n = 0;
@@ -1202,9 +1202,9 @@ impl SystemGen {
                     self.std_crater(1, cx, cz, -cr, 31, 0.15, 1.0, 256);
                     n -= 1;
                 }
-                // C evaluates right-to-left: random(50) first, then random(100)
-                let _n50 = self.rng.random(50);
+                // C evaluates left-to-right: random(100) first, then random(50)
                 let _n100 = self.rng.random(100);
+                let _n50 = self.rng.random(50);
                 n = self.albedo + _n100 - _n50;
                 if n < 0 {
                     n = 0;
@@ -1514,9 +1514,14 @@ impl SystemGen {
             n -= 1;
         }
         // C: `if (!waswet || (waswet && !random(5)))`
+        // C short-circuit: random(5) only called when waswet != 0
         let w = self.waswet;
-        let _r5 = self.rng.random(5);
-        if w == 0 || (w != 0 && _r5 == 0) {
+        let run_jitter = if w == 0 {
+            true
+        } else {
+            self.rng.random(5) == 0
+        };
+        if run_jitter {
             ptr = 0;
             while ptr < oc_bytes {
                 self.p_surfacemap[ptr] = (self.p_surfacemap[ptr] as i32 + self.frng.fast_random(3) as i32) as u8;

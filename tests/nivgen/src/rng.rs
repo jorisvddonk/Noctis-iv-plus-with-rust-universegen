@@ -39,8 +39,9 @@ impl BorlandRng {
 
     /// Borland `rand()` (15-bit result in [0, 0x7FFF]).
     pub fn rand(&mut self) -> i32 {
-        // 32-bit multiply; keep low 31 bits.
-        self.seed = (self.seed.wrapping_mul(0x15A4_E35) + 1) & 0x7FFF_FFFF;
+        // 32-bit multiply with natural overflow. Borland's _randseed is
+        // signed long, so bit 31 CAN be set — no masking.
+        self.seed = self.seed.wrapping_mul(0x15A4_E35).wrapping_add(1);
         ((self.seed >> 16) & 0x7FFF) as i32
     }
 
