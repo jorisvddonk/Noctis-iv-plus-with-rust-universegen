@@ -333,35 +333,34 @@ def load_star(conn, star):
         "SELECT body_index, seedval FROM planets WHERE star_id=? ORDER BY body_index",
         (sid,)).fetchall()
     for body, seedval in bodies:
-        lon_d, lat_d = 0, 60
-        lon_r, lat_r = coords_from_seedval(seedval)
-        up = {}
-        for (kind, lon, lat, hm_col, oc_col) in (
-            ("def", lon_d, lat_d, "sect_def_hm", "sect_def_oc"),
-            ("rand", lon_r, lat_r, "sect_rand_hm", "sect_rand_oc"),
-        ):
-            out = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
-            if not os.path.exists(out):
-                continue
-            t = open(out).read()
-            hm = HM_RE.findall(t)
-            oc = OC_RE.findall(t)
-            if hm:
-                if len(hm) > 1:
-                    print(f"  WARN {star} body {body} {kind}: {len(hm)} heightmap blocks in file, using first")
-                up[hm_col] = hm[0]
-            if oc:
-                if len(oc) > 1:
-                    print(f"  WARN {star} body {body} {kind}: {len(oc)} objectchart blocks in file, using first")
-                up[oc_col] = oc[0]
-        if up:
-            # also capture gap from def landing (same for both landings)
-            def_out = os.path.join(SECT_DIR, fname(star, body, "def", lon_d, lat_d))
-            if os.path.exists(def_out):
-                m = GAP_RE.findall(open(def_out).read())
-                if m: up["sect_gap"] = m[0]
-        if up:
-            update_planet(conn, sid, body, up)
+            lon_d, lat_d = 0, 60
+            lon_r, lat_r = coords_from_seedval(seedval)
+            up = {}
+            for (kind, lon, lat, hm_col, oc_col) in (
+                ("def", lon_d, lat_d, "sect_def_hm", "sect_def_oc"),
+                ("rand", lon_r, lat_r, "sect_rand_hm", "sect_rand_oc"),
+            ):
+                out = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
+                if not os.path.exists(out):
+                    continue
+                t = open(out).read()
+                hm = HM_RE.findall(t)
+                oc = OC_RE.findall(t)
+                if hm:
+                    if len(hm) > 1:
+                        print(f"  WARN {star} body {body} {kind}: {len(hm)} heightmap blocks in file, using first")
+                    up[hm_col] = hm[0]
+                if oc:
+                    if len(oc) > 1:
+                        print(f"  WARN {star} body {body} {kind}: {len(oc)} objectchart blocks in file, using first")
+                    up[oc_col] = oc[0]
+                # Capture gap from this landing's fixture (DEF and RAND may differ)
+                m = GAP_RE.findall(t)
+                if m:
+                    gap_kind = f"sect_{kind}_gap"
+                    up[gap_kind] = m[0]
+    if up:
+        update_planet(conn, sid, body, up)
 
 
 NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "release", "nivgen")
@@ -393,9 +392,9 @@ def rust_star(conn, star):
         print(f"star '{star}' not found"); sys.exit(1)
     _, x, y_usr, z = sid
     bodies = conn.execute(
-        "SELECT body_index, seedval, sect_gap FROM planets WHERE star_id=? "
+        "SELECT body_index, seedval FROM planets WHERE star_id=? "
         "ORDER BY body_index", (sid[0],)).fetchall()
-    for body, seedval, gap in bodies:
+    for body, seedval in bodies:
         lon_d, lat_d = 0, 60
         lon_r, lat_r = coords_from_seedval(seedval)
         up = {}
@@ -403,6 +402,13 @@ def rust_star(conn, star):
             ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc"),
             ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc"),
         ):
+            # Read gap from this landing's fixture file (DEF/RAND may differ)
+            fpath = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
+            gap = None
+            if os.path.exists(fpath):
+                m = GAP_RE.search(open(fpath).read())
+                if m:
+                    gap = m.group(1)
             hm, oc = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
             if hm:
                 up[hm_col] = hm
