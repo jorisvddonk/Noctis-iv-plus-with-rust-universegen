@@ -793,9 +793,10 @@ impl SystemGen {
         }
 
         // veniamo all'ambiente di superficie...
-        // esso dipende strettamente dalle coordinate di sbarco.
-        self.frng.srand((self.landing_pt_lat * self.landing_pt_lon) as u32);
-        self.rng.srand((self.landing_pt_lat * self.landing_pt_lon) as u32);
+        // regolazione dei parametri generali: coerente con il layout
+        // del pianeta, e indipendente dalla superficie.
+        self.frng.srand(self.global_surface_seed as u32);
+        self.rng.srand(self.global_surface_seed as u32);
 
         let ptype = self.p_type[n_idx] as i32;
         match ptype {
@@ -1356,8 +1357,8 @@ impl SystemGen {
         }
 
         // ===================== INIZIO MODIFICHE STORICHE =====================
-        self.frng.srand((self.landing_pt_lat * self.landing_pt_lon) as u32);
-        self.rng.srand((self.landing_pt_lat * self.landing_pt_lon) as u32);
+        self.frng.srand(self.global_surface_seed as u32);
+        self.rng.srand(self.global_surface_seed as u32);
 
         // PORT-NOTE: nearstar_identity is f64; multiply by 1E6/1E5/1E8 then
         // (long) truncation toward zero.
