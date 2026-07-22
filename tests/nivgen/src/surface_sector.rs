@@ -792,10 +792,10 @@ impl SystemGen {
             }
         }
 
-        // veniamo all'ambiente di superficie...
-        // esso dipende strettamente dalle coordinate di sbarco.
-        // C: fast_srand(landing_pt_lat * landing_pt_lon); srand(landing_pt_lat * landing_pt_lon);
-        let land_seed = (self.landing_pt_lat * self.landing_pt_lon) as u32;
+        // C computes landing_pt_lat * landing_pt_lon as 16-bit int
+        // (Borland int is 16 bits). 100 * 359 = 35900 overflows signed
+        // 16-bit to -29636, which is sign-extended to 32-bit 0xFFFF8C3C.
+        let land_seed = ((self.landing_pt_lat as i16).wrapping_mul(self.landing_pt_lon as i16)) as i32 as u32;
         self.frng.srand(land_seed);
         self.rng.srand(land_seed);
 
@@ -1360,9 +1360,8 @@ impl SystemGen {
         }
     }
 
-    // ===================== INIZIO MODIFICHE STORICHE =====================
-        // C: fast_srand(landing_pt_lat * landing_pt_lon); srand(landing_pt_lat * landing_pt_lon);
-        let land_seed = (self.landing_pt_lat * self.landing_pt_lon) as u32;
+        // INIZIO MODIFICHE STORICHE: reimpostazione seeds con wrapping 16-bit
+        let land_seed = ((self.landing_pt_lat as i16).wrapping_mul(self.landing_pt_lon as i16)) as i32 as u32;
         self.frng.srand(land_seed);
         self.rng.srand(land_seed);
 

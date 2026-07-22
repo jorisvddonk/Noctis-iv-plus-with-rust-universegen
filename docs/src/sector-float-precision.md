@@ -1,18 +1,58 @@
-# Sector heightmap ±1 pixel drift: x87 vs IEEE float precision
+# Sector heightmap mismatch root cause: 16-bit int overflow in land_seed
 
-**Date:** 2026-07-22  
-**Author:** opencode investigation session  
-**Status:** Root cause identified, no fix attempted (platform difference)
+**Date:** 2026-07-22 (updated)  
+**Status:** Fixed — root cause was 16-bit int overflow, NOT float precision
 
 ## Summary
 
-The Rust port's sector heightmaps diverge from BCPP 3.1 canonical by ±1 in
-roughly half of all pixels (~19880/40000 for LOVE'S LABOURS WON body 22).
-The root cause is **x87 80-bit vs IEEE 754 64-bit cos/sqrt precision** in
-the `round_hill` function. The `round_hill` function is used only by the
-sector code (NOCTIS-1.CPP `build_surface`), not by the surface map code
-(NOCTIS-0.CPP `gen_planet_surface`), which is why all 838 surface maps
-match byte-exact while sectors systematically drift.
+The Rust port's sector heightmaps diverged by ±1 in ~50% of pixels. The
+root cause was **16-bit int overflow** in the `land_seed` computation:
+
+```c
+// C (Borland C++ 3.1, 16-bit int):
+landing_pt_lat * landing_pt_lon  →  359 * 100 = 35900, overflows to -29636
+fast_srand(-29636)  →  seed = 0xFFFF8C3C | 3 = 0xFFFF8C3F
+```
+
+```rust
+// Old Rust (32-bit i32):
+let land_seed = (lat * lon) as u32;  // 35900u32
+self.frng.srand(land_seed);          // seed = 0x00008C3F
+```
+
+The upper 16 bits of the fast_srand seed differed (`0xFFFF` vs `0x0000`),
+causing the entire `fast_random()` sequence (used by the jitter) to
+diverge. The main RNG (`srand`/`random`) was NOT affected because
+`srand` truncates to 16-bit.
+
+## Fix
+
+```rust
+// Match C's 16-bit wrapping and sign extension:
+let land_seed = ((lat as i16).wrapping_mul(lon as i16)) as i32 as u32;
+```
+
+This produces `0xFFFF8C3C`, matching C.
+
+## Impact
+
+After the fix, LOVE'S LABOURS WON body 22 (the test case) matches
+byte-exact on both heightmap and objectchart:
+
+```
+C:   heightmap fnv=6648D96B  objectchart fnv=F04A9D58
+Rust: heightmap fnv=6648D96B  objectchart fnv=F04A9D58  ✓
+```
+
+## Previous false leads
+
+- **x87 f80 vs IEEE f64 cos/sqrt precision**: NOT the cause. The float
+  math has far more precision (53-64 bits) than needed for correct f32
+  rounding (23 bits). No pixel differences arise from cos/sqrt.
+- **Asterism loop iteration count**: Verified to match C x87 exactly
+  for all densities [6,30] (see asterism-investigation.md).
+- **RNG sequence**: The main RNG (`random()`) was always correct.
+  Only `fast_random()` was affected.
 
 ## Investigation log
 

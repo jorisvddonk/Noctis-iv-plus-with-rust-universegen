@@ -180,31 +180,23 @@ Match rate by planet type (planet / moon):
 
 ### Remaining sector differences (x87 vs IEEE float precision)
 All sector heightmap/Objectschart mismatches (~19880/40000 pixel diffs of
-±1) are caused by **x87 80-bit vs IEEE 754 64-bit cos/sqrt differences**
-in `round_hill`. The key computation `cos(d/v) * h` occasionally differs
-by 1 ULP in the f32 result, which truncates to a ±1 integer difference.
+±1) were caused by **16-bit int overflow in the land_seed computation**
+for `fast_srand`. The product `landing_pt_lat * landing_pt_lon` uses
+16-bit `int` in C: 100 × 359 = 35900 overflows to -29636, which
+sign-extends to `0xFFFF8C3C`. Rust computed 35900 → `0x00008C3C`,
+giving a different `fast_srand` seed and diverging the `fast_random()`
+sequence used by the jitter.
 
-The `round_hill` function is used ONLY by the sector code (NOCTIS-1.CPP
-`build_surface`), not by the surface map code (NOCTIS-0.CPP
-`gen_planet_surface`). The surface code uses `kfract`/`crater`, which
-were separately fixed for f32 per-step rounding. This explains why all
-surface maps match (838/838) while sectors can drift by 1 per pixel.
+Fixed by wrapping i16 multiplication: `((lat as i16).wrapping_mul(lon as i16)) as i32 as u32`.
 
-Additionally, the `asterism` inner loop's `ang` accumulation may differ
-by 1 iteration between x87 (f80 stack, no intermediate rounding) and
-Rust (f32 rounded per iteration), shifting subsequent RNG values. This
-was verified to match exactly — see `docs/src/asterism-investigation.md`.
+This resolved ALL ±1 pixel differences for LOVE'S LABOURS WON body 22
+(heightmap + objectchart both byte-exact). The remaining unfixed issues
+are the 6-byte object chart diffs in CHOALUUS/VOIDAL LAMP moons and
+43 r-o* mismatches (rand-only object chart).
 
-Fix options:
-1. Accept ±1 tolerance for sector height comparisons (pragmatic).
-2. Use x87-compatible cos/sqrt (extern C or inline asm) — not portable.
-3. Run sector generation via DOSBox-X only (defeats porting purpose).
-
-The `asterism` inner loop's `ang` accumulation was verified to match C x87
-exactly for all density values [6,30] — see `docs/src/asterism-investigation.md`.
-The RNG sequence through `oc_addtrees` is identical between C and Rust.
-
-Full investigation: `docs/src/sector-float-precision.md` (2026-07-22).
+The `round_hill` float precision (f80 vs f64) is NOT a source of
+divergence — the math has sufficient precision for byte-exact f32
+results. See `docs/src/sector-float-precision.md` (2026-07-22).
 - **Jitter guard (2026-07-20).** C condition `if (!waswet || (waswet &&
   !random(5)))` runs the heightmap jitter only when `random(5)==0` (1 in 5
   chance for wet worlds). The port inverted the test (`random(5) != 0`),
