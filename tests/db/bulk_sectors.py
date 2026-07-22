@@ -359,8 +359,8 @@ def load_star(conn, star):
                 if m:
                     gap_kind = f"sect_{kind}_gap"
                     up[gap_kind] = m[0]
-    if up:
-        update_planet(conn, sid, body, up)
+            if up:
+                update_planet(conn, sid, body, up)
 
 
 NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "release", "nivgen")
@@ -712,6 +712,7 @@ def main():
             for s in batch:
                 if not skip_sectors:
                     load_star(conn, s)
+                    conn.commit()
                     rust_star(conn, s)
                 if not skip_surf:
                     surf_star(conn, s)
