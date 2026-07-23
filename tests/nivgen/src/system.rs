@@ -437,11 +437,13 @@ impl SystemGen {
         // binary stores |y|, so sign-cancelling to fabs(y) makes the seed
         // match regardless of input convention and reproduces the starmap
         // class for all named stars. The identity formula keeps the raw y.
+        // Borland C++ 3.1: srand((unsigned int)(x/100000*y/100000*z/100000))
+        // where `unsigned int` is 16-bit. The double → 16-bit unsigned
+        // conversion truncates toward zero then wraps modulo 65536.
         let seed = (self.ap_target_x / 100000.0)
             * (self.ap_target_y / 100000.0)
             * (self.ap_target_z / 100000.0);
-        let seed_i = seed as i32;
-        self.rng.srand(seed_i as u32);
+        self.rng.srand((seed.trunc() as i64).rem_euclid(65536) as u32);
         self.ap_target_class = self.rng.random(STAR_CLASSES as i32);
         self.ap_target_ray =
             ((self.rng.random(i16(CLASS_RAYVAR[self.ap_target_class as usize] as f64)) as f64)
