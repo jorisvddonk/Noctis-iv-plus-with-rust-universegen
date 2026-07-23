@@ -7,7 +7,7 @@
 //! terminator) is reproduced with explicit **16-bit**/`32-bit` wrap semantics,
 //! since Borland `int`/`unsigned` are 16-bit and Rust's `as i16` saturates.
 
-use crate::system::SystemGen;
+use crate::system::{SystemGen, BG_SURFACE};
 use crate::f80::F80;
 use std::f64::consts::PI;
 
@@ -332,6 +332,7 @@ impl SystemGen {
         loop {
             a = (a as f64 + (self.rng.random(self.s_g) - self.rng.random(self.s_g)) as f64 * DEG)
                 as f32;
+
             self.s_a = a as f64;
             px = (px as f64 + kfract as f64 * (a as f64).cos()) as f32;
             if px > 359.0 {
@@ -751,6 +752,8 @@ impl SystemGen {
         self.rng.srand(seed as u32);
         self.quadwords = 16200;
 
+
+
         // scratch globals used by helpers
         self.s_c = 0;
         self.s_gr = 0;
@@ -766,6 +769,20 @@ impl SystemGen {
         self.s_cray = 0;
         self.s_px = 0;
         self.s_py = 0;
+
+        // C's far-heap layout has s_background immediately after p_background.
+        // lssmooth reads a few bytes OOB (past row 179) which land in
+        // s_background for PLANETS (lssmooth target = p_background). For
+        // MOONS the target is s_background (via swap) and OOB reads go to
+        // whatever follows s_backbackground in BSS — which the 0xFF tail fill
+        // in make_bg empirically matches. Only override for planets.
+        if self.p_owner[logical_id as usize] == -1 {
+            let copy_len = self.s_background.len().min(80);
+            let end = BG_SURFACE + copy_len;
+            if end <= self.p_background.len() {
+                self.p_background[BG_SURFACE..end].copy_from_slice(&self.s_background[..copy_len]);
+            }
+        }
 
         match ptype {
             0 => self.surf_case0(),
@@ -892,6 +909,7 @@ impl SystemGen {
         for v in rr.iter_mut() {
             *v = self.rng.random(pc);
         }
+
         let r1 = (r + rr[0] - rr[1]) as f64 * 0.25;
         let g1 = (g + rr[2] - rr[3]) as f64 * 0.25;
         let b1 = (b + rr[4] - rr[5]) as f64 * 0.25;
@@ -907,7 +925,6 @@ impl SystemGen {
         self.shade(colorbase + 32, 16, r2, g2, b2, r3, g3, b3);
         self.shade(colorbase + 48, 16, r3, g3, b3, 64.0, 64.0, 64.0);
 
-
         let mut brt = self.p_owner[logical_id as usize];
         if brt == -1 {
             brt = logical_id;
@@ -919,6 +936,7 @@ impl SystemGen {
         }
 
         self.tavola_colori(colorbase, brt, brt, brt);
+
         self.quadwords = qw;
     }
 
@@ -1248,12 +1266,13 @@ impl SystemGen {
             self.s_gr = self.frng.ranged(300);
             self.fracture(180.0);
         }
-        if self.frng.ranged(2) != 0 {
-            self.lssmooth();
-        }
-        let rface = 1 + self.frng.ranged(10);
+            if self.frng.ranged(2) != 0 {
+                self.lssmooth();
+            }
+            let rface = 1 + self.frng.ranged(10);
         self.randoface(rface, 1);
-        if self.frng.ranged(2) != 0 {
+        let neg = self.frng.ranged(2);
+        if neg != 0 {
             self.negate();
         }
     }

@@ -844,12 +844,17 @@ def main():
     # If no star name given, pick the next star without C canonical data.
     star = args.star
     if not star and args.cmd != "db-report":
-        row = conn.execute(
-            "SELECT name FROM stars WHERE id IN "
-            "(SELECT star_id FROM planets GROUP BY star_id "
-            "HAVING COUNT(sect_def_hm) = 0) "
-            "ORDER BY id LIMIT 1"
-        ).fetchone()
+        if args.cmd == "rust" and args.force:
+            row = conn.execute(
+                "SELECT name FROM stars ORDER BY id LIMIT 1"
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT name FROM stars WHERE id IN "
+                "(SELECT star_id FROM planets GROUP BY star_id "
+                "HAVING COUNT(sect_def_hm) = 0) "
+                "ORDER BY id LIMIT 1"
+            ).fetchone()
         if not row:
             print("no star without canonical data")
             return
@@ -863,7 +868,16 @@ def main():
         load_star(conn, star)
         conn.commit()
     if args.cmd == "rust":
-        rust_star(conn, star)
+        if args.force:
+            rows = conn.execute("SELECT name FROM stars ORDER BY id").fetchall()
+            n = len(rows)
+            for i, (sname,) in enumerate(rows):
+                print(f"[{i+1}/{n}] {sname}")
+                rust_star(conn, sname)
+                surf_star(conn, sname)
+                conn.commit()
+        else:
+            rust_star(conn, star)
     if args.cmd == "cmp":
         cmp_star(conn, star)
     if args.cmd == "db-report":

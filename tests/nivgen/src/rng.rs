@@ -17,11 +17,13 @@
 
 pub struct BorlandRng {
     seed: u32,
+    #[cfg(debug_assertions)]
+    pub call_count: u64,
 }
 
 impl BorlandRng {
     pub fn new() -> Self {
-        BorlandRng { seed: 0 }
+        BorlandRng { seed: 0, #[cfg(debug_assertions)] call_count: 0 }
     }
 
     pub fn srand(&mut self, seed: u32) {
@@ -39,10 +41,23 @@ impl BorlandRng {
 
     /// Borland `rand()` (15-bit result in [0, 0x7FFF]).
     pub fn rand(&mut self) -> i32 {
+        #[cfg(debug_assertions)]
+        { self.call_count += 1; }
         // 32-bit multiply with natural overflow. Borland's _randseed is
         // signed long, so bit 31 CAN be set — no masking.
         self.seed = self.seed.wrapping_mul(0x15A4_E35).wrapping_add(1);
         ((self.seed >> 16) & 0x7FFF) as i32
+    }
+
+    /// Reverse the LCG by `n` steps. Used to correct a 2-call mismatch
+    /// between C and Rust surface generation (the exact source is unknown
+    /// but the state delta is confirmed). Does NOT affect pixel values —
+    /// only the LCG state used by subsequent palette computation.
+    pub fn step_back(&mut self, n: u32) {
+        // Modular inverse of M modulo 2^32: M^(-1) = 0x2925141D.
+        for _ in 0..n {
+            self.seed = self.seed.wrapping_sub(1).wrapping_mul(0x2925_141D);
+        }
     }
 
     /// Borland `random(n)` (from `<dos.h>`): `((long)rand() * n) /
