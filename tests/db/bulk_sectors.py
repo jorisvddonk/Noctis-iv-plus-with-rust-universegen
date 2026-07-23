@@ -630,10 +630,197 @@ def update_planet(conn, star_id, body_index, cols):
         (*cols.values(), star_id, body_index))
 
 
+# ---------- system gen hashing ----------
+
+FNV_OFFSET = 0x811C_9DC5
+FNV_PRIME = 0x0100_0193
+
+def fnv1a(data: bytes) -> str:
+    h = FNV_OFFSET
+    for b in data:
+        h ^= b
+        h = (h * FNV_PRIME) & 0xFFFF_FFFF
+    return f"{h:08X}"
+
+def system_output_hash(text: str) -> str:
+    """FNV-1a of the canonical system output (trimmed, normalized)."""
+    lines = [l.rstrip() for l in text.strip().splitlines() if l.strip()]
+    return fnv1a("\n".join(lines).encode("ascii", errors="replace"))
+
+def ensure_syshash_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS system_hashes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            star_id INTEGER NOT NULL UNIQUE,
+            canon_sys TEXT,
+            canon_fn TEXT,
+            rust_sys TEXT,
+            rust_fn TEXT,
+            FOREIGN KEY (star_id) REFERENCES stars(id)
+        )
+    """)
+    conn.commit()
+
+
+def syshash_star_rust(conn, star):
+    """Run nivgen system and store Rust system gen hash."""
+    sid_row = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?", (star,)).fetchone()
+    if not sid_row:
+        print(f"star '{star}' not found"); return
+    sid, x, y_usr, z = sid_row
+    r = subprocess.run(
+        [NIVGEN, "system", "-x", str(x), "-y", str(y_usr), "-z", str(z)],
+        capture_output=True, text=True, timeout=30)
+    if r.returncode != 0:
+        print(f"  {star}: nivgen system FAILED")
+        return
+    sys_text = r.stdout + r.stderr
+    sys_hash = system_output_hash(sys_text)
+    ensure_syshash_table(conn)
+    existing = conn.execute("SELECT id FROM system_hashes WHERE star_id=?", (sid,)).fetchone()
+    if existing:
+        conn.execute("UPDATE system_hashes SET rust_sys=?, rust_fn=? WHERE star_id=?",
+                     (sys_text[:1000], sys_hash, sid))
+    else:
+        conn.execute(
+            "INSERT INTO system_hashes (star_id, rust_sys, rust_fn) VALUES (?,?,?)",
+            (sid, sys_text[:1000], sys_hash))
+    conn.commit()
+    print(f"  {star}: Rust sys_hash={sys_hash}")
+
+
+def syshash_star_canon(conn, star, build_flag=False):
+    """Run nivtest.exe system under DOSBox and store C canonical system hash."""
+    sid_row = conn.execute("SELECT id, x, y_user, z FROM stars WHERE name=?", (star,)).fetchone()
+    if not sid_row:
+        print(f"star '{star}' not found"); return
+    sid, x, y_usr, z = sid_row
+
+    import tempfile, glob
+
+    tc_mount = os.environ.get("TOOLCHAIN", os.path.join(REPO, "niv-toolchain", "BCPP31"))
+    if os.path.isfile(os.path.join(tc_mount, "BIN", "BCC.EXE")):
+        pass
+    elif os.path.isfile(os.path.join(tc_mount, "TC", "BIN", "BCC.EXE")):
+        tc_mount = os.path.join(tc_mount, "TC")
+    else:
+        print("[syshash] toolchain not found"); return
+
+    dosbox_x = os.environ.get("DOSBOX_X") or shutil.which("dosbox-x")
+    if not dosbox_x:
+        print("[syshash] dosbox-x not found"); return
+
+    work = tempfile.mkdtemp(prefix="syshash_")
+    try:
+        run_lines = [
+            "@echo off",
+            f"NIVTEST.EXE system -x {x} -y {y_usr} -z {z} -o D:\\sys.out",
+            "exit"
+        ]
+        with open(os.path.join(work, "RUN.BAT"), "w") as f:
+            f.write("\r\n".join(run_lines) + "\r\n")
+
+        need_build = build_flag or not os.path.exists(EXE_PATH) or sources_changed()
+        build_section = "call BUILD.BAT\r\n" if need_build else f"copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL\r\n"
+
+        conf = (
+            "[cpu]\r\ncputype=486\r\ncycles=max\r\ncore=dynamic\r\n"
+            "[dos]\r\nxms=true\r\nems=true\r\n"
+            "[sdl]\r\nstartup_verbosity=quiet\r\n"
+            "[autoexec]\r\n"
+            f"mount c {tc_mount}\r\n"
+            f"mount d {work}\r\n"
+            f"mount e {EXE_DIR}\r\n"
+            "path C:\\BIN;E:\\\r\n"
+            "d:\r\n"
+            + build_section
+            + "if exist BUILD.FAIL goto end\r\n"
+            "call RUN.BAT\r\n"
+            ":end\r\n"
+            "exit\r\n"
+        )
+        with open(os.path.join(work, "sys.conf"), "w") as f:
+            f.write(conf)
+
+        if need_build:
+            os.makedirs(EXE_DIR, exist_ok=True)
+            for f in ["NOCTIS-0.CPP", "NOCTIS-1.CPP"]:
+                shutil.copy2(os.path.join(SRC, f), work)
+            for pat in ("*.h", "*.H"):
+                for f in glob.glob(os.path.join(SRC, pat)):
+                    shutil.copy2(f, work)
+            for f in ["NIVTEST.CPP", "NIVHASH.C", "NIVHASH.H", "NIVSTUBS.C"]:
+                shutil.copy2(os.path.join(HAR, f), work)
+            for f in ["BUILD.BAT", "LINK.RSP"]:
+                shutil.copy2(os.path.join(DOSBOX, f), work)
+            # remove -o from recompilation (it conflicts with -o in RUN.BAT)
+            # Actually the build process doesn't use -o
+
+        env = os.environ.copy()
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["SDL_AUDIODRIVER"] = "dummy"
+        subprocess.run(
+            [dosbox_x, "-conf", os.path.join(work, "sys.conf"), "-exit"],
+            capture_output=True, text=True, env=env)
+
+        fail_flag = os.path.join(work, "BUILD.FAIL")
+        if os.path.exists(fail_flag):
+            log = os.path.join(work, "BUILD.LOG")
+            if os.path.exists(log):
+                with open(log) as lf:
+                    print(f"  [!] BUILD FAILED:\n{lf.read()[-500:]}")
+            return
+
+        out_path = os.path.join(work, "sys.out")
+        if not os.path.exists(out_path) or os.path.getsize(out_path) < 20:
+            print(f"  {star}: no canonical system output (empty/failed)")
+            return
+
+        text = open(out_path).read()
+        canon_hash = system_output_hash(text)
+        ensure_syshash_table(conn)
+        existing = conn.execute("SELECT id FROM system_hashes WHERE star_id=?", (sid,)).fetchone()
+        if existing:
+            conn.execute("UPDATE system_hashes SET canon_sys=?, canon_fn=? WHERE star_id=?",
+                         (text[:1000], canon_hash, sid))
+        else:
+            conn.execute(
+                "INSERT INTO system_hashes (star_id, canon_sys, canon_fn) VALUES (?,?,?)",
+                (sid, text[:1000], canon_hash))
+        conn.commit()
+        print(f"  {star}: C canon sys_hash={canon_hash}")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def syshash_cmp(conn, star):
+    """Compare Rust vs C canonical system hashes."""
+    sid = conn.execute("SELECT id FROM stars WHERE name=?", (star,)).fetchone()
+    if not sid:
+        print(f"star '{star}' not found"); return
+    sid = sid[0]
+    row = conn.execute(
+        "SELECT canon_fn, rust_fn, canon_sys, rust_sys FROM system_hashes WHERE star_id=?",
+        (sid,)).fetchone()
+    if not row:
+        print(f"  {star}: no system hash data"); return
+    canon_fn, rust_fn, canon_sys, rust_sys = row
+    if canon_fn and rust_fn:
+        if canon_fn == rust_fn:
+            print(f"  {star}: MATCH ({canon_fn})")
+        else:
+            print(f"  {star}: DIFF canon={canon_fn} rust={rust_fn}")
+    elif canon_fn:
+        print(f"  {star}: C canonical only ({canon_fn})")
+    elif rust_fn:
+        print(f"  {star}: Rust only ({rust_fn})")
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("gen", "load", "run", "rust", "cmp", "one_iter", "db-report"):
+    for name in ("gen", "load", "run", "rust", "cmp", "one_iter", "db-report",
+                 "syshash", "syscmp", "syshash-canon"):
         p = sub.add_parser(name)
         p.add_argument("star", nargs="?")
         p.add_argument("--force", action="store_true")
@@ -681,6 +868,41 @@ def main():
         cmp_star(conn, star)
     if args.cmd == "db-report":
         report_all(conn, short=args.short)
+    if args.cmd == "syshash":
+        ensure_syshash_table(conn)
+        if args.star:
+            syshash_star_rust(conn, args.star)
+        else:
+            rows = conn.execute("SELECT name FROM stars ORDER BY id").fetchall()
+            for (name,) in rows:
+                syshash_star_rust(conn, name)
+    if args.cmd == "syshash-canon":
+        ensure_syshash_table(conn)
+        if args.star:
+            syshash_star_canon(conn, args.star, getattr(args, 'build', False))
+        else:
+            rows = conn.execute("SELECT name FROM stars ORDER BY id").fetchall()
+            for (name,) in rows:
+                syshash_star_canon(conn, name)
+    if args.cmd == "syscmp":
+        if args.star:
+            syshash_cmp(conn, args.star)
+        else:
+            rows = conn.execute(
+                "SELECT s.name FROM stars s JOIN system_hashes h ON h.star_id = s.id "
+                "WHERE h.canon_fn IS NOT NULL AND h.rust_fn IS NOT NULL ORDER BY s.id"
+            ).fetchall()
+            ok = diff = 0
+            for (name,) in rows:
+                sid = conn.execute("SELECT id FROM stars WHERE name=?", (name,)).fetchone()[0]
+                row = conn.execute(
+                    "SELECT canon_fn, rust_fn FROM system_hashes WHERE star_id=?", (sid,)).fetchone()
+                if row[0] == row[1]:
+                    ok += 1
+                else:
+                    diff += 1
+                    print(f"  {name}: DIFF canon={row[0]} rust={row[1]}")
+            print(f"syshash: {ok} match, {diff} differ")
     if args.cmd == "one_iter":
         batch_size = getattr(args, 'batch', 1)
         skip_sectors = getattr(args, 'skip_sectors', False)
