@@ -15,7 +15,7 @@
 //! makes sign errors a compile-time type error.
 
 use crate::rng::BorlandRng;
-use crate::f80::F80;
+
 
 /// Engine-facing y coordinate (starmap convention, always positive in the binary).
 /// Construct via `EngineY::from_user_y()` at the CLI boundary, or directly
@@ -483,13 +483,9 @@ impl SystemGen {
             * (self.nearstar_ray as f64)
             * 0.01e-7;
 
-        self.nearstar_identity = F80::from_f64(self.nearstar_x)
-            .div(&F80::from_f64(100000.0))
-            .mul(&F80::from_f64(self.nearstar_y))
-            .div(&F80::from_f64(100000.0))
-            .mul(&F80::from_f64(self.nearstar_z))
-            .div(&F80::from_f64(100000.0))
-            .to_f64();
+        self.nearstar_identity = self.nearstar_x / 100000.0
+            * self.nearstar_y / 100000.0
+            * self.nearstar_z / 100000.0;
 
         // NB: Borland `long` is 32-bit. The multiplication chain
         // `((long)x%10000 * (long)y % 10000 * (long)z % 10000)` can overflow
