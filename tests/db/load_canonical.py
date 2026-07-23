@@ -42,8 +42,8 @@ def main():
 
     updated = inserted = 0
     for body, ptype, seed, surf, atmo, pal in parse(path):
-        if surf is None:  # type 10 companion star (no surface)
-            continue
+        if surf is None:
+            surf = atmo = pal = None  # type 10 companion star — no surface data
         row = conn.execute(
             "SELECT id FROM planets WHERE star_id=? AND body_index=?",
             (sid, body)).fetchone()
