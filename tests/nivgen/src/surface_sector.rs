@@ -1365,11 +1365,12 @@ impl SystemGen {
         self.frng.srand(land_seed);
         self.rng.srand(land_seed);
 
-        // PORT-NOTE: nearstar_identity is f64; multiply by 1E6/1E5/1E8 then
+        // PORT-NOTE: nearstar_identity is F80; multiply by 1E6/1E5/1E8 then
         // (long) truncation toward zero.
-        let id6 = (self.nearstar_identity * 1e6) as i64;
-        let id5 = (self.nearstar_identity * 1e5) as i64;
-        let id8 = (self.nearstar_identity * 1e8) as i64;
+        use crate::f80::F80;
+        let id6 = self.nearstar_identity.mul(&F80::from_f64(1e6)).trunc_i64();
+        let id5 = self.nearstar_identity.mul(&F80::from_f64(1e5)).trunc_i64();
+        let id8 = self.nearstar_identity.mul(&F80::from_f64(1e8)).trunc_i64();
 
         if id6 == -37828 {
             // Balastrackonastreya

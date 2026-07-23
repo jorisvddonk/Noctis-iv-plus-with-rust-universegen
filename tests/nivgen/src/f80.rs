@@ -364,6 +364,74 @@ impl F80 {
             v
         }
     }
+
+    /// Build from an i64 (exact for |value| < 2^63).
+    /// Normalised so the integer bit sits at bit 63.
+    pub fn from_i64(x: i64) -> F80 {
+        let neg = x < 0;
+        let abs = x.unsigned_abs();
+        if abs == 0 {
+            return F80 { neg: false, exp: 0, mant: 0 };
+        }
+        let leading = 63 - abs.leading_zeros();
+        let mant = abs << (63 - leading);
+        let exp = BIAS + leading as i32;
+        F80 { neg, exp, mant }
+    }
+
+    /// Subtract by adding the negated operand.
+    pub fn sub(&self, other: &F80) -> F80 {
+        self.add(other, true)
+    }
+
+    /// Truncate toward zero to i64 (Borland `(long)(double)` behavior).
+    pub fn trunc_i64(&self) -> i64 {
+        if self.exp < BIAS {
+            return 0i64;
+        }
+        let shift = 64 - (self.exp - BIAS) as u32 - 1;
+        if shift >= 64 { return 0i64; }
+        let int_bits = self.mant >> shift;
+        if self.neg { -(int_bits as i64) } else { int_bits as i64 }
+    }
+
+    /// Round to nearest, ties away from zero. Add 0.5 and truncate.
+    fn round_half_away(&self) -> F80 {
+        // Represent 0.5 as an F80 (exponent bias - 1, mantissa = 1<<63)
+        let half = F80 { neg: false, exp: BIAS - 1, mant: 1u64 << 63 };
+        let added = if self.neg {
+            self.add(&half, true)  // subtract 0.5 for negative
+        } else {
+            self.add(&half, false)  // add 0.5 for positive
+        };
+        // Truncate toward zero (F80 truncation: clear low mantissa bits after the integer)
+        if added.exp < BIAS {
+            return F80::from_f64(0.0);
+        }
+        let shift = 64 - (added.exp - BIAS) as u32 - 1;
+        if shift >= 64 { return *self; }
+        let masked = added.mant & !((1u64 << shift) - 1);
+        F80 { mant: masked, ..added }
+    }
+
+    /// Format to 6 decimal places using F80 arithmetic (matches C printf "%.6f").
+    /// No f64 conversion — the 80-bit value is rounded and decomposed directly.
+    pub fn format_6f(&self) -> String {
+        let one_million = F80::from_f64(1_000_000.0);
+        // Integer part (truncated toward zero)
+        let int_part = self.trunc_i64();
+        // Fractional part: 6 decimal digits
+        let int_f80 = F80::from_i64(int_part);
+        let frac_scaled = self.sub(&int_f80).mul(&one_million);
+        let frac_rounded = frac_scaled.round_half_away();
+        let frac_int = frac_rounded.trunc_i64().unsigned_abs();
+        let sign = if self.neg && (int_part != 0 || frac_int != 0) { "-" } else { "" };
+        if self.neg && int_part == 0 && frac_int == 0 {
+            format!("-0.{:06}", 0u64)
+        } else {
+            format!("{}{}.{:06}", sign, int_part.unsigned_abs(), frac_int.min(999999))
+        }
+    }
 }
 
 #[cfg(test)]

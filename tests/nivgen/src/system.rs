@@ -14,6 +14,7 @@
 //! boundary (`main.rs`) the user-supplied y is negated and wrapped. This
 //! makes sign errors a compile-time type error.
 
+use crate::f80::F80;
 use crate::rng::BorlandRng;
 
 
@@ -168,7 +169,7 @@ pub struct SystemGen {
     pub nearstar_r: i32,
     pub nearstar_g: i32,
     pub nearstar_b: i32,
-    pub nearstar_identity: f64,
+    pub nearstar_identity: F80,
     pub nearstar_nop: i32,
     pub nearstar_nob: i32,
     pub nearstar_labeled: i32,
@@ -317,7 +318,7 @@ impl SystemGen {
             nearstar_r: 0,
             nearstar_g: 0,
             nearstar_b: 0,
-            nearstar_identity: 0.0,
+            nearstar_identity: F80::from_f64(0.0),
             nearstar_nop: 0,
             nearstar_nob: 0,
             nearstar_labeled: 0,
@@ -483,9 +484,13 @@ impl SystemGen {
             * (self.nearstar_ray as f64)
             * 0.01e-7;
 
-        self.nearstar_identity = self.nearstar_x / 100000.0
-            * self.nearstar_y / 100000.0
-            * self.nearstar_z / 100000.0;
+        let d = F80::from_f64(100000.0);
+        self.nearstar_identity = F80::from_f64(self.nearstar_x)
+            .div(&d)
+            .mul(&F80::from_f64(self.nearstar_y))
+            .div(&d)
+            .mul(&F80::from_f64(self.nearstar_z))
+            .div(&d);
 
         // NB: Borland `long` is 32-bit. The multiplication chain
         // `((long)x%10000 * (long)y % 10000 * (long)z % 10000)` can overflow

@@ -140,7 +140,7 @@ fn cmd_system(args: &[String]) {
     } else {
         emit!(f, "=== SYSTEM ===\n");
         emit!(f, "STAR x={:.0} y={:.0} z={:.0}\n", g.ap_target_x, g.ap_target_y, g.ap_target_z);
-        emit!(f, "  identity={:.6}\n", g.nearstar_identity);
+        emit!(f, "  identity={}\n", g.nearstar_identity.format_6f());
         emit!(f, "  class={} ray={:.6} spin={} rgb={},{},{}\n",
             g.nearstar_class, g.nearstar_ray, g.nearstar_spin, g.nearstar_r, g.nearstar_g, g.nearstar_b);
         emit!(f, "  nop={} nob={} labeled={}\n", g.nearstar_nop, g.nearstar_nob, g.nearstar_labeled);
