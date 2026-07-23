@@ -1,54 +1,11 @@
-=== PLANET TEXTURES (all 11 bodies) ===
-PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=6193400343.693467
-  rtperiod=0 rotation=0 term_start=0 term_end=0
-  (companion star - surface() is a no-op)
-PLANET body=1 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-10818113.620484
-  rtperiod=226 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=60791169 crc=85DB28A2
-atmo_overlay     len=32400  fnv=128E7883 crc=CBF876D3
-palette64        len=192    fnv=709C3261 crc=8F23476F
-PLANET body=2 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-118923239.401834
-  rtperiod=593 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=909B2A56 crc=A27A59E9
-atmo_overlay     len=32400  fnv=74A51F43 crc=C2B8D3DD
-palette64        len=192    fnv=2E202329 crc=ECD06A45
-PLANET body=3 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-2574114.715209
-  rtperiod=505 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=8C1BA4BE crc=2E92D099
-atmo_overlay     len=32400  fnv=0039CBF2 crc=0A523DFB
-palette64        len=192    fnv=37F7B821 crc=2EC76A2C
-PLANET body=4 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=-402326063.209426
-  rtperiod=496 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=71B46D64 crc=E2288040
+=== PLANET TEXTURES (all 2 bodies) ===
+PLANET body=0 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=480908726.180691
+  rtperiod=300 rotation=0 term_start=53 term_end=183
+surface_map      len=46080  fnv=647BEB4B crc=1C4B9977
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=DD9EA99D crc=4A86E3D1
-PLANET body=5 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=2 seedval=55498117.426765
-  rtperiod=434 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=F6F56822 crc=C0E4104F
-atmo_overlay     len=32400  fnv=2B948FD9 crc=5F12C474
-palette64        len=192    fnv=3CEC6F0A crc=0451B8EC
-PLANET body=6 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=2 seedval=587734161.601482
-  rtperiod=667 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=51521E29 crc=803C1BA3
+palette64        len=192    fnv=887186C4 crc=9B89DCC0
+PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-95009733.188666
+  rtperiod=783 rotation=0 term_start=53 term_end=183
+surface_map      len=46080  fnv=E376792F crc=C1AAC841
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=04BF91AE crc=0AF228FC
-PLANET body=7 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=7884978.432218
-  rtperiod=658 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=1ED3EEBA crc=93477C95
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=EF1A1B88 crc=F22E71CC
-PLANET body=8 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=26384350.907806
-  rtperiod=617 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=E158D7DA crc=20F8DF04
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=30E292DD crc=5C7BC731
-PLANET body=9 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=26687619.309046
-  rtperiod=495 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=648D0591 crc=16046AF4
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=791DF673 crc=820F3323
-PLANET body=10 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=5610465.422924
-  rtperiod=804 rotation=0 term_start=53 term_end=183
-surface_map      len=46080  fnv=2F491106 crc=8D27B0B4
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=046EB060 crc=0E728D1A
+palette64        len=192    fnv=44496E1C crc=8760CAA9

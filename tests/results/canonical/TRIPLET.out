@@ -1,1 +1,30 @@
-=== PLANET TEXTURES (all 0 bodies) ===
+=== PLANET TEXTURES (all 7 bodies) ===
+PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=-1184910462.719408
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=1 type=10 (companion star - not a planet) owner=-1 seedval=722183389.465541
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=2 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-568907.505506
+  rtperiod=330 rotation=0 term_start=150 term_end=280
+surface_map      len=46080  fnv=05B72835 crc=979AF2F5
+atmo_overlay     len=32400  fnv=63341685 crc=2B98C2CA
+palette64        len=192    fnv=A3769107 crc=240A8308
+PLANET body=3 type=10 (companion star - not a planet) owner=-1 seedval=-4412238727.546248
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)
+PLANET body=4 type=4 (medium size, rocky, creased, no atmosphere.) owner=0 seedval=43263709.076626
+  rtperiod=294 rotation=0 term_start=303 term_end=73
+surface_map      len=46080  fnv=0D8A65C8 crc=2F6A374A
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=F1BDA375 crc=9488A73A
+PLANET body=5 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=0 seedval=119947418.142218
+  rtperiod=651 rotation=0 term_start=183 term_end=313
+surface_map      len=46080  fnv=3F2F154B crc=50B5FD61
+atmo_overlay     len=32400  fnv=D8EEDBAA crc=A78172DA
+palette64        len=192    fnv=F0D02DDC crc=99F050D8
+PLANET body=6 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=1 seedval=37551927.260330
+  rtperiod=667 rotation=0 term_start=163 term_end=293
+surface_map      len=46080  fnv=4A4E7724 crc=624E2CBD
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=325E6B53 crc=38C77363

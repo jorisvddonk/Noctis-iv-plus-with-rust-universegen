@@ -1,21 +1,16 @@
-=== PLANET TEXTURES (all 4 bodies) ===
-PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=1151.219181
-  rtperiod=354 rotation=0 term_start=45 term_end=175
-surface_map      len=46080  fnv=FF0A5ABD crc=112BC15F
+=== PLANET TEXTURES (all 3 bodies) ===
+PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=87778678.318315
+  rtperiod=502 rotation=0 term_start=45 term_end=175
+surface_map      len=46080  fnv=53E27EBB crc=35F87FF2
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=1E76B87C crc=BE3DF99D
-PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-87999.322613
-  rtperiod=461 rotation=0 term_start=45 term_end=175
-surface_map      len=46080  fnv=511B39BA crc=6C48F4FC
+palette64        len=192    fnv=9E9C6C15 crc=EA05D3C3
+PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=50208446.571509
+  rtperiod=676 rotation=0 term_start=45 term_end=175
+surface_map      len=46080  fnv=FA1C553E crc=F85447AB
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=AACD4601 crc=CF18BB4F
-PLANET body=2 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=-1 seedval=-882652.329441
-  rtperiod=546 rotation=0 term_start=45 term_end=175
-surface_map      len=46080  fnv=A9E67BDE crc=D97D6AE3
+palette64        len=192    fnv=FE80AED6 crc=26B47B9A
+PLANET body=2 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=298845050.433059
+  rtperiod=275 rotation=0 term_start=45 term_end=175
+surface_map      len=46080  fnv=F8B64E6A crc=0FB5506F
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=87C67E1F crc=DEB03A73
-PLANET body=3 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=3393839.014946
-  rtperiod=620 rotation=0 term_start=45 term_end=175
-surface_map      len=46080  fnv=84479EA0 crc=5B6645DC
-atmo_overlay     len=32400  fnv=B176A68E crc=7FDB8D9B
-palette64        len=192    fnv=BA05CF35 crc=F836424F
+palette64        len=192    fnv=DA886664 crc=4A4EF2BA

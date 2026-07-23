@@ -1,51 +1,16 @@
-=== PLANET TEXTURES (all 10 bodies) ===
-PLANET body=0 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-62960044.022442
-  rtperiod=581 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=1BEF413B crc=128DA20C
-atmo_overlay     len=32400  fnv=D2560461 crc=CD73794D
-palette64        len=192    fnv=FCF13F66 crc=51EBA61E
-PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-102878888.440987
-  rtperiod=338 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=637FB363 crc=3C50E51E
+=== PLANET TEXTURES (all 3 bodies) ===
+PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-45102.275180
+  rtperiod=654 rotation=0 term_start=132 term_end=262
+surface_map      len=46080  fnv=E287E1C0 crc=791D475D
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=B309876D crc=9BCABE27
-PLANET body=2 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-87403183.968144
-  rtperiod=524 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=9BBABFF5 crc=69DA664C
-atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
-palette64        len=192    fnv=5416E28C crc=5C81773C
-PLANET body=3 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=1454726675.104506
-  rtperiod=830 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=EE113106 crc=775D15B0
+palette64        len=192    fnv=47DCF5E2 crc=69B79D70
+PLANET body=1 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=57521.014157
+  rtperiod=832 rotation=0 term_start=132 term_end=262
+surface_map      len=46080  fnv=C408AC20 crc=E3C36855
+atmo_overlay     len=32400  fnv=FB6A7FA1 crc=12BE0452
+palette64        len=192    fnv=5F5138AC crc=32EB096E
+PLANET body=2 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=950751.251325
+  rtperiod=629 rotation=0 term_start=132 term_end=262
+surface_map      len=46080  fnv=D0C4F3C8 crc=D01221BF
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=329981D0 crc=189F6AC6
-PLANET body=4 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=28413881313.604536
-  rtperiod=306 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=480E6AB2 crc=2FAC292C
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=69A87E26 crc=EF8B9E9C
-PLANET body=5 type=6 (large, not consistent, covered with dense clouds.) owner=2 seedval=672578016.598690
-  rtperiod=885 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=800F763F crc=9F9D3E63
-atmo_overlay     len=32400  fnv=1A86E099 crc=4F519A43
-palette64        len=192    fnv=7BA6D09A crc=9F4EBC82
-PLANET body=6 type=6 (large, not consistent, covered with dense clouds.) owner=2 seedval=350742690.604474
-  rtperiod=428 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=336C4210 crc=D9021C62
-atmo_overlay     len=32400  fnv=9FA0DCCA crc=39E2BFF1
-palette64        len=192    fnv=7567CD0B crc=B7E3F2D9
-PLANET body=7 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=107599634.938186
-  rtperiod=777 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=E4B29A51 crc=AF76E91F
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=2158551E crc=30771314
-PLANET body=8 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=10599367.023762
-  rtperiod=793 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=8E625557 crc=998A4842
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=0937847C crc=51DEB452
-PLANET body=9 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=4 seedval=271729227.336434
-  rtperiod=597 rotation=0 term_start=132 term_end=262
-surface_map      len=46080  fnv=5AEA9AE1 crc=31FB4B95
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=CABFB4FC crc=FB605101
+palette64        len=192    fnv=DE3AEF73 crc=8F022E6A

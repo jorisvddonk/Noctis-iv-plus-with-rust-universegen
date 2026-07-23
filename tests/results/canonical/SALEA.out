@@ -1,6 +1,4 @@
 === PLANET TEXTURES (all 1 bodies) ===
-PLANET body=0 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=49421991.467975
-  rtperiod=579 rotation=0 term_start=174 term_end=304
-surface_map      len=46080  fnv=2CA0A823 crc=13F4004B
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=A60494A7 crc=D60F05F4
+PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=522763791.947192
+  rtperiod=0 rotation=0 term_start=0 term_end=0
+  (companion star - surface() is a no-op)

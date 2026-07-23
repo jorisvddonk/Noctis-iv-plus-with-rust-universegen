@@ -1,11 +1,6 @@
-=== PLANET TEXTURES (all 2 bodies) ===
-PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=263663.123017
-  rtperiod=540 rotation=0 term_start=150 term_end=280
-surface_map      len=46080  fnv=4125927A crc=70EACAEC
+=== PLANET TEXTURES (all 1 bodies) ===
+PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=91778940.164809
+  rtperiod=564 rotation=0 term_start=150 term_end=280
+surface_map      len=46080  fnv=317092DF crc=9694D831
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=AC9864C5 crc=4C578212
-PLANET body=1 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=39066.044582
-  rtperiod=868 rotation=0 term_start=150 term_end=280
-surface_map      len=46080  fnv=26121AB3 crc=BEE5E064
-atmo_overlay     len=32400  fnv=5CE23676 crc=F256C320
-palette64        len=192    fnv=6198CEDC crc=5D303431
+palette64        len=192    fnv=A4EE382C crc=5A1A1B52

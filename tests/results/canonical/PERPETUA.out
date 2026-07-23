@@ -1,251 +1,201 @@
-=== PLANET TEXTURES (all 50 bodies) ===
-PLANET body=0 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=-87875659.140135
-  rtperiod=520 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=A8140B60 crc=6EF205A1
+=== PLANET TEXTURES (all 40 bodies) ===
+PLANET body=0 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-31260135.966554
+  rtperiod=639 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=77E8D465 crc=E2000E21
+atmo_overlay     len=32400  fnv=49A70D5D crc=808D6F02
+palette64        len=192    fnv=0ADB62FB crc=56A9866B
+PLANET body=1 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=562048504.717623
+  rtperiod=547 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=26EF7A15 crc=C5560AEE
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=D2DDEDA6 crc=60A82965
-PLANET body=1 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-13122393.498692
-  rtperiod=266 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=D36FBAD3 crc=50476E21
-atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
-palette64        len=192    fnv=801D7E4F crc=9B604829
-PLANET body=2 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=719376838.857971
-  rtperiod=445 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=7CF31BA7 crc=92A5AFEF
-atmo_overlay     len=32400  fnv=F5D9409E crc=8C0608A6
-palette64        len=192    fnv=83B1950E crc=C1626937
-PLANET body=3 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=14638789847.877070
-  rtperiod=375 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=6782B2B1 crc=041B697D
+palette64        len=192    fnv=E3A696DB crc=70E59FF5
+PLANET body=2 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=760956701.190932
+  rtperiod=317 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=01F01047 crc=BEDCC213
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=6419199A crc=41CB8D14
-PLANET body=4 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-124899056.332736
-  rtperiod=507 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=E79BB6D0 crc=D5C77B84
-atmo_overlay     len=32400  fnv=21E61B9D crc=4915C8B4
-palette64        len=192    fnv=74245B81 crc=227414C3
-PLANET body=5 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-912780308.965988
-  rtperiod=591 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=D36FBAD3 crc=50476E21
-atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
-palette64        len=192    fnv=54CB9492 crc=8A2788C4
-PLANET body=6 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-3169270559.427748
-  rtperiod=135 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=D15DC636 crc=2A9704E5
+palette64        len=192    fnv=5D56680E crc=B5CA9D55
+PLANET body=3 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=26809718738.565948
+  rtperiod=596 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=FA7873F7 crc=8209673A
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=C96ACF8B crc=5398CE94
-PLANET body=7 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-1289080901.135229
-  rtperiod=860 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=E60B535B crc=C0C40965
+palette64        len=192    fnv=E752CA81 crc=E3A7692C
+PLANET body=4 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=-1 seedval=-14747495767.511332
+  rtperiod=414 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=38A578DD crc=D2246450
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=73E338DC crc=32964024
-PLANET body=8 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=-6072486477.282830
-  rtperiod=907 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=D36FBAD3 crc=50476E21
-atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
-palette64        len=192    fnv=BE507669 crc=916252BD
-PLANET body=9 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-2789778783.312146
-  rtperiod=777 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=B696E140 crc=2EA7040E
-atmo_overlay     len=32400  fnv=C4C86D44 crc=632D84AC
-palette64        len=192    fnv=B1D91315 crc=0FD536BA
-PLANET body=10 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=590079612.787832
-  rtperiod=444 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=008BA612 crc=1D028CCF
+palette64        len=192    fnv=EF08E0CF crc=4E998816
+PLANET body=5 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=-1283084716.896186
+  rtperiod=585 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=E7A16F2E crc=0A13AF2D
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=9FAF35AB crc=220BAB2D
-PLANET body=11 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=72715027913.898848
-  rtperiod=461 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=7585AD29 crc=573C2659
-atmo_overlay     len=32400  fnv=22FBBD2D crc=6FC20DBC
-palette64        len=192    fnv=83C624DF crc=468C94CF
-PLANET body=12 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-922236797266.918528
-  rtperiod=642 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=31692E92 crc=0073FFD7
-atmo_overlay     len=32400  fnv=88558B11 crc=CE916BF0
-palette64        len=192    fnv=6E3CCDB6 crc=313B38BA
-PLANET body=13 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=2 seedval=64345854.758605
-  rtperiod=425 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=B61F34B9 crc=C586CB91
+palette64        len=192    fnv=164FAA42 crc=AA4ABABE
+PLANET body=6 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-31588133764.952032
+  rtperiod=195 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=9E2CCE4E crc=CA7138F2
+atmo_overlay     len=32400  fnv=A4C3BAA8 crc=61A4A489
+palette64        len=192    fnv=561FD5F4 crc=4E8C7A1A
+PLANET body=7 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=71065538.624473
+  rtperiod=372 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=6243A703 crc=2E1C8926
+atmo_overlay     len=32400  fnv=EC4F40E6 crc=0B7180BB
+palette64        len=192    fnv=015F1268 crc=5BE32356
+PLANET body=8 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=1786512720.490488
+  rtperiod=552 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=29563B8B crc=1FBF6161
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=0FC805AE crc=47BBD7D8
-PLANET body=14 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=12234775.200580
-  rtperiod=673 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=6818D6A9 crc=9ABF3E55
+palette64        len=192    fnv=334D3C46 crc=5FFFB360
+PLANET body=9 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=-39097476394.276224
+  rtperiod=696 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=11F2E0AC crc=3D1C23DA
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=524ACB53 crc=D27FA45E
-PLANET body=15 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=73408651.203479
-  rtperiod=403 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=61CE5004 crc=1CF2A7BD
+palette64        len=192    fnv=1FAFFE1C crc=198F9555
+PLANET body=10 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=7232511775.935715
+  rtperiod=659 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=13363EB0 crc=3FA1BCA2
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=D86DA62D crc=0F034328
-PLANET body=16 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=51204799.913538
-  rtperiod=306 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=264DA4D5 crc=5372BD02
+palette64        len=192    fnv=A15E25C4 crc=2F604415
+PLANET body=11 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=173499574281.059808
+  rtperiod=599 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=83D36632 crc=153F6E3D
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=4A85FE70 crc=EE633106
-PLANET body=17 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=35344906.135008
-  rtperiod=238 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=2ACA8682 crc=C976736D
+palette64        len=192    fnv=D7469C9D crc=566A017C
+PLANET body=12 type=5 (small, solid, thin atmosphere.) owner=2 seedval=94246034.571390
+  rtperiod=333 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=0DE976E4 crc=BA409C00
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=B9AB757B crc=10622022
-PLANET body=18 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=5 seedval=982407134.624331
-  rtperiod=178 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=3BF08172 crc=244C2389
+palette64        len=192    fnv=8A3B835B crc=719EE83B
+PLANET body=13 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=3 seedval=31700938.901286
+  rtperiod=364 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=853A5DB0 crc=0C5581C7
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=75192C67 crc=4A5E0931
-PLANET body=19 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=5 seedval=1025908557.559726
-  rtperiod=315 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=52885265 crc=B1721440
+palette64        len=192    fnv=C564F18A crc=7E736A9D
+PLANET body=14 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=149936873.181756
+  rtperiod=170 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=8EA11B25 crc=AECD9935
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=D42C0740 crc=37DD0040
-PLANET body=20 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=5 seedval=41688863.646420
-  rtperiod=614 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=E9311DBF crc=D71D0211
+palette64        len=192    fnv=10DDE322 crc=3BD97F98
+PLANET body=15 type=5 (small, solid, thin atmosphere.) owner=4 seedval=661864197.330895
+  rtperiod=584 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=BF1A208F crc=0BA1D7EF
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=C44B2C30 crc=C7A9E31B
-PLANET body=21 type=6 (large, not consistent, covered with dense clouds.) owner=5 seedval=532892430.958585
-  rtperiod=472 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=657893D3 crc=CE0C5D06
-atmo_overlay     len=32400  fnv=3EBAADB8 crc=ABD8C81A
-palette64        len=192    fnv=559A0159 crc=B4F13C48
-PLANET body=22 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=5 seedval=645271106.875022
-  rtperiod=735 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=67D1EB38 crc=910EB3D6
+palette64        len=192    fnv=0D6C0DC9 crc=E2CBCA5E
+PLANET body=16 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=4 seedval=151222046.380457
+  rtperiod=431 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=E509A6E8 crc=37D8F32C
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=12CD38A1 crc=622A5C70
-PLANET body=23 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=5 seedval=391512806.418553
-  rtperiod=609 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=FCE78254 crc=56C20A23
-atmo_overlay     len=32400  fnv=06E7EC52 crc=9DB68C82
-palette64        len=192    fnv=EB413481 crc=01984C1E
-PLANET body=24 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=5 seedval=4531398.222437
-  rtperiod=837 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=1A694C61 crc=78E40618
-atmo_overlay     len=32400  fnv=BC33C5CF crc=04ABC159
-palette64        len=192    fnv=4EF323DB crc=B697BB39
-PLANET body=25 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=5 seedval=56189337.958218
-  rtperiod=267 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=7A885373 crc=9BEBD31F
+palette64        len=192    fnv=410C2CE8 crc=3AC39ADE
+PLANET body=17 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=5 seedval=11994949.854540
+  rtperiod=364 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=06A7EA2D crc=264BC5DF
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=106ACC6C crc=4B1E0850
-PLANET body=26 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=567784197.271350
-  rtperiod=332 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=06069715 crc=62D43952
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=C97EC72C crc=6E0E6768
-PLANET body=27 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=8 seedval=69783532.625529
-  rtperiod=517 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=A27F751D crc=B265528F
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=DF1C7819 crc=CE85DE6C
-PLANET body=28 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=8 seedval=406466420.552595
-  rtperiod=709 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=F0535553 crc=9664B39A
-atmo_overlay     len=32400  fnv=DE5A7177 crc=EBDF6230
-palette64        len=192    fnv=BD62202F crc=D3D876B5
-PLANET body=29 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=624879814.874056
-  rtperiod=381 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=40CAA882 crc=4A4786A5
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=0E005F1A crc=916A35E0
-PLANET body=30 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=1005517265.558760
-  rtperiod=691 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=CCF39C5A crc=F7B76583
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=881C1A6E crc=BF536A4A
-PLANET body=31 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=742243028.835172
-  rtperiod=591 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=7CAF98E8 crc=4DA158CF
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=22115A93 crc=395807FD
-PLANET body=32 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=329885790.593410
-  rtperiod=769 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=E400E5B2 crc=C9EF6ADB
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=11E2392D crc=3B49648F
-PLANET body=33 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=1040409031.871524
-  rtperiod=396 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=5405C3D5 crc=515DCB75
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=D5B68345 crc=0C4164E5
-PLANET body=34 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=583644091.049879
-  rtperiod=913 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=A9ED3217 crc=C9E30A55
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=903CDB06 crc=9E8C973B
-PLANET body=35 type=4 (medium size, rocky, creased, no atmosphere.) owner=8 seedval=612645039.673476
-  rtperiod=792 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=8203E2DA crc=231AB269
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=E4381E34 crc=420FB896
-PLANET body=36 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=9515936.267118
-  rtperiod=601 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=DAF394C3 crc=984AB40A
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=8E33D18B crc=1DD64F0F
-PLANET body=37 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=234726427.922234
+palette64        len=192    fnv=864FC372 crc=5A5D9BAD
+PLANET body=18 type=7 (small, solid, icy surface, no atmosphere.) owner=6 seedval=1022569475.099576
   rtperiod=230 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=7B92ABBF crc=6A91C25F
+surface_map      len=46080  fnv=53727F2A crc=27FA3F64
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=BB032DE1 crc=9512BDEA
-PLANET body=38 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=650255644.919702
-  rtperiod=522 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=6761E6BB crc=E100134A
+palette64        len=192    fnv=6335C87E crc=2A9C67B8
+PLANET body=19 type=5 (small, solid, thin atmosphere.) owner=6 seedval=691851571.967246
+  rtperiod=307 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=6A7E4909 crc=32DB3B0D
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=B860DC73 crc=FB32A137
-PLANET body=39 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=875466136.574819
-  rtperiod=525 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=2E94994C crc=66B4E578
+palette64        len=192    fnv=B553C180 crc=FEB221D6
+PLANET body=20 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=6 seedval=215052315.249262
+  rtperiod=422 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=124E0CF8 crc=31C4803F
+atmo_overlay     len=32400  fnv=CA6CA243 crc=232435B5
+palette64        len=192    fnv=D29F4ADC crc=75D290ED
+PLANET body=21 type=5 (small, solid, thin atmosphere.) owner=6 seedval=565476207.428337
+  rtperiod=466 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=9B9787F8 crc=58A17049
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=1022E721 crc=53567D98
-PLANET body=40 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=675631474.965349
+palette64        len=192    fnv=F651C1A7 crc=A74EFBAB
+PLANET body=22 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=6 seedval=400974037.994639
+  rtperiod=549 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=0ECE6F44 crc=6E422031
+atmo_overlay     len=32400  fnv=9389E0E9 crc=207AA5DB
+palette64        len=192    fnv=6B978121 crc=9C2D65BA
+PLANET body=23 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=6 seedval=294733053.568709
+  rtperiod=629 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=35CFB299 crc=AA26507A
+atmo_overlay     len=32400  fnv=1F009F1F crc=8C8537F4
+palette64        len=192    fnv=3CA84D2F crc=4E425485
+PLANET body=24 type=5 (small, solid, thin atmosphere.) owner=6 seedval=428391066.233589
+  rtperiod=714 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=2AE6DC20 crc=04C892CB
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=BC08DC03 crc=16C5A769
+PLANET body=25 type=5 (small, solid, thin atmosphere.) owner=6 seedval=638302688.688047
   rtperiod=648 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=490514FD crc=F9E27E7C
+surface_map      len=46080  fnv=E0E333A4 crc=CA85C0C5
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=C8A0F8B6 crc=1F4101A2
-PLANET body=41 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=536064409.714291
-  rtperiod=587 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=25115CDF crc=7B37FB32
+palette64        len=192    fnv=24BD73E0 crc=04BC062D
+PLANET body=26 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=6 seedval=110953286.154499
+  rtperiod=474 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=2525D52A crc=C51E82A0
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=CA8F539D crc=4D32158D
-PLANET body=42 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=897669987.864760
-  rtperiod=404 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=B35BB2FA crc=A9435E47
+palette64        len=192    fnv=53FD94BB crc=236C430F
+PLANET body=27 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=6 seedval=121663062.810339
+  rtperiod=673 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=76DD7014 crc=9575716F
+atmo_overlay     len=32400  fnv=5BF24F2D crc=CF800DB2
+palette64        len=192    fnv=0DC10EBE crc=9881F7B3
+PLANET body=28 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=6 seedval=113952023.618135
+  rtperiod=217 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=7FD02499 crc=BC9E4508
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=046BFE31 crc=B771378E
-PLANET body=43 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=263274236.723587
-  rtperiod=634 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=3BADA927 crc=337AF863
+palette64        len=192    fnv=E45C2E65 crc=71A5AF97
+PLANET body=29 type=5 (small, solid, thin atmosphere.) owner=6 seedval=27845419.305183
+  rtperiod=931 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=3405C996 crc=F645C209
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=213EFF76 crc=E644A9A3
-PLANET body=44 type=7 (small, solid, icy surface, no atmosphere.) owner=8 seedval=954765605.467466
-  rtperiod=680 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=D18102F6 crc=5E3EC2D2
+palette64        len=192    fnv=12F31AB7 crc=8C558A4B
+PLANET body=30 type=5 (small, solid, thin atmosphere.) owner=6 seedval=636160733.356879
+  rtperiod=172 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=0952B695 crc=527918EC
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=182B71E0 crc=AD2EA28B
-PLANET body=45 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=9 seedval=17672453.067504
-  rtperiod=851 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=9CF72259 crc=3DAC1FDF
+palette64        len=192    fnv=CC018361 crc=872C4E6A
+PLANET body=31 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=6 seedval=125090191.340208
+  rtperiod=482 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=139B3C12 crc=4FA67B0F
+atmo_overlay     len=32400  fnv=8C93959E crc=74127569
+palette64        len=192    fnv=89E1E253 crc=CD665163
+PLANET body=32 type=8 (medium size, surface is mainly native quartz, oxygen atmosphere.) owner=6 seedval=932178960.124289
+  rtperiod=459 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=53810765 crc=A125D857
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=8E92E167 crc=6B964242
-PLANET body=46 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=10 seedval=104222159.116050
-  rtperiod=662 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=DA947672 crc=99632809
+palette64        len=192    fnv=34CBD9AA crc=34527DE3
+PLANET body=33 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=6 seedval=8510416921.796474
+  rtperiod=328 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=5B0F6464 crc=5D73E602
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=0501FCD5 crc=C9384611
-PLANET body=47 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=11 seedval=59814456.536168
-  rtperiod=788 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=2B475C1C crc=054A7B21
+palette64        len=192    fnv=C481E67F crc=8F3DFB7F
+PLANET body=34 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=7 seedval=112666850.419434
+  rtperiod=630 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=78586328 crc=531B4724
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=04691E9E crc=A1A23DBE
-PLANET body=48 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=11 seedval=19031872.534235
-  rtperiod=707 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=16995D05 crc=B3772D3F
+palette64        len=192    fnv=149FFAA3 crc=87685F11
+PLANET body=35 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=7 seedval=38983587.027257
+  rtperiod=399 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=68DA425C crc=742B9B98
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=FD751B99 crc=5DC649A0
-PLANET body=49 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=12 seedval=124613451.117016
-  rtperiod=781 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=470355FF crc=52E592CB
+palette64        len=192    fnv=1DBE102E crc=EA5A7E30
+PLANET body=36 type=7 (small, solid, icy surface, no atmosphere.) owner=9 seedval=839646489.817834
+  rtperiod=816 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=9DBCA93C crc=C10EAE32
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=C1D54F1F crc=2752D975
+palette64        len=192    fnv=31587C24 crc=F117DBB0
+PLANET body=37 type=0 (medium size, internally hot, unstable surface, no atmosphere.) owner=9 seedval=6403589658.059685
+  rtperiod=234 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=18B8B4B5 crc=40584656
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=64018611 crc=A006AF33
+PLANET body=38 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=10 seedval=6425865.993504
+  rtperiod=372 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=AD4A65E8 crc=F57EBA25
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=A0142FBB crc=E7CCF205
+PLANET body=39 type=7 (small, solid, icy surface, no atmosphere.) owner=10 seedval=392834607.736201
+  rtperiod=522 rotation=0 term_start=145 term_end=275
+surface_map      len=46080  fnv=4BC578BE crc=EE7B3115
+atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
+palette64        len=192    fnv=608FB71E crc=07EAE127

@@ -1,16 +1,21 @@
-=== PLANET TEXTURES (all 3 bodies) ===
-PLANET body=0 type=4 (medium size, rocky, creased, no atmosphere.) owner=-1 seedval=941288.126868
-  rtperiod=320 rotation=0 term_start=179 term_end=309
-surface_map      len=46080  fnv=666FA8D7 crc=CA5B8E14
+=== PLANET TEXTURES (all 4 bodies) ===
+PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=-857152.144729
+  rtperiod=493 rotation=0 term_start=179 term_end=309
+surface_map      len=46080  fnv=AA6E1E27 crc=9C2E3B91
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=C4B18FC5 crc=C4365FB0
-PLANET body=1 type=2 (medium size, solid, thick atmosphere, fully covered by clouds.) owner=-1 seedval=-89810665.254305
-  rtperiod=71 rotation=0 term_start=179 term_end=309
-surface_map      len=46080  fnv=C32EA033 crc=8E805509
-atmo_overlay     len=32400  fnv=8980263D crc=1CC7D3A3
-palette64        len=192    fnv=21921BA8 crc=F345365D
-PLANET body=2 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=56326595.609602
-  rtperiod=771 rotation=0 term_start=179 term_end=309
-surface_map      len=46080  fnv=B0D32CEB crc=2D295B30
+palette64        len=192    fnv=806D458F crc=32D4CBEC
+PLANET body=1 type=1 (small, solid, dusty, craterized, no atmosphere.) owner=-1 seedval=242766.395901
+  rtperiod=701 rotation=0 term_start=179 term_end=309
+surface_map      len=46080  fnv=94ECA8B4 crc=75ACA0FC
 atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=E28176DD crc=2B7A7418
+palette64        len=192    fnv=B3D6C8CB crc=0A956D48
+PLANET body=2 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=27143333.597001
+  rtperiod=569 rotation=0 term_start=179 term_end=309
+surface_map      len=46080  fnv=29D155D3 crc=C2F24D67
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=01825EBD crc=118801BA
+PLANET body=3 type=9 (very large, substellar object, not consistent.) owner=-1 seedval=6569140.488958
+  rtperiod=682 rotation=0 term_start=179 term_end=309
+surface_map      len=46080  fnv=29D155D3 crc=C2F24D67
+atmo_overlay     len=32400  fnv=6B15A4F5 crc=345658AC
+palette64        len=192    fnv=B542AA83 crc=11A16AB2
