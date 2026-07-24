@@ -154,8 +154,10 @@ Match rate by planet type (planet / moon):
   before the inclination loop — C's inclination loop reads the corrupted
   values, producing different `nr_of_objects` assignments. Fix: redirect
   writes to indices 40016–80015 to `self.objectschart` instead of dropping
-  them. Confirmed for type-1 bodies (HIGHWAY 22 body 0, BLINDING LIGHT
-  body 16); type-7 and other types under investigation.
+   them. Confirmed for type-1 bodies (HIGHWAY 22 body 0, BLINDING LIGHT
+   body 16) and type-7 bodies (BLINDING LIGHT body 10). The fix matches
+   current C binary output byte-for-byte; stale fixture files in the DB
+   may still show old hashes and need regeneration via `recompute-canonical.sh`.
 - **Ruins star-identity precision (2026-07-24).** C computes
   `(long)(nearstar_identity * 1E6)` in double (f64), while the Rust port
   used F80 (x87 80-bit extended precision). The extra F80 precision could
