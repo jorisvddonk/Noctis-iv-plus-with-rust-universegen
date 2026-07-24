@@ -1373,10 +1373,10 @@ impl SystemGen {
 
         // PORT-NOTE: nearstar_identity is F80; multiply by 1E6/1E5/1E8 then
         // (long) truncation toward zero.
-        // C uses double arithmetic: (long)(nearstar_identity * 1E6).
-        let id6 = (self.nearstar_identity.to_f64() * 1e6).trunc() as i64;
-        let id5 = (self.nearstar_identity.to_f64() * 1e5).trunc() as i64;
-        let id8 = (self.nearstar_identity.to_f64() * 1e8).trunc() as i64;
+        use crate::f80::F80;
+        let id6 = self.nearstar_identity.mul(&F80::from_f64(1e6)).trunc_i64();
+        let id5 = self.nearstar_identity.mul(&F80::from_f64(1e5)).trunc_i64();
+        let id8 = self.nearstar_identity.mul(&F80::from_f64(1e8)).trunc_i64();
 
         if id6 == -37828 {
             // Balastrackonastreya
