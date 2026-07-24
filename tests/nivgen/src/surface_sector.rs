@@ -308,12 +308,18 @@ impl SystemGen {
                 // locations `location-align` underflows to a huge unsigned and
                 // writes far memory that is NOT part of the hashed 80000-byte
                 // region, so we only mirror writes that land inside the
-                // heightmap (p_surfacemap[0..40000]).
+                // heightmap (p_surfacemap[0..40000]) or in the objectschart
+                // region (indices 40016..80015, which in C's heap layout is
+                // directly after p_surfacemap+header).
                 let loc_i = loc as i64;
                 let neigh = [loc_i + 1, loc_i - 1, loc_i + align, loc_i - align];
                 for &ni in &neigh {
                     if ni >= 0 && ni < 40000 {
                         self.p_surfacemap[ni as usize] = pk;
+                    } else if ni >= 40016 && ni < 80016 {
+                        // C writes past p_surfacemap land in the objectschart
+                        // region (16-byte farmalloc header + objectschart data)
+                        self.objectschart[(ni - 40016) as usize] = pk;
                     }
                 }
                 self.p_surfacemap[loc] = pk;
@@ -1367,10 +1373,10 @@ impl SystemGen {
 
         // PORT-NOTE: nearstar_identity is F80; multiply by 1E6/1E5/1E8 then
         // (long) truncation toward zero.
-        use crate::f80::F80;
-        let id6 = self.nearstar_identity.mul(&F80::from_f64(1e6)).trunc_i64();
-        let id5 = self.nearstar_identity.mul(&F80::from_f64(1e5)).trunc_i64();
-        let id8 = self.nearstar_identity.mul(&F80::from_f64(1e8)).trunc_i64();
+        // C uses double arithmetic: (long)(nearstar_identity * 1E6).
+        let id6 = (self.nearstar_identity.to_f64() * 1e6).trunc() as i64;
+        let id5 = (self.nearstar_identity.to_f64() * 1e5).trunc() as i64;
+        let id8 = (self.nearstar_identity.to_f64() * 1e8).trunc() as i64;
 
         if id6 == -37828 {
             // Balastrackonastreya

@@ -56,7 +56,7 @@ cp "$DOSBOX"/BUILD.BAT "$DOSBOX"/LINK.RSP "$WORK/"
 
 cat > "$WORK/RUN.BAT" <<REOF
 @echo off
-NIVTEST.EXE sector -x $X -y $Y -z $Z -p $P -lon $LON -lat $LAT -o D:\\SECT.OUT
+NIVTEST.EXE sector -x $X -y $Y -z $Z -p $P -lon $LON -lat $LAT -dump D:\\ -o D:\\SECT.OUT
 if exist SECT.OUT echo RUN OK > D:\\RUN.OK
 REOF
 
@@ -91,4 +91,12 @@ fi
 
 mkdir -p "$(dirname "$OUTFILE")"
 cp "$WORK/SECT.OUT" "$OUTFILE"
+# Copy binary dumps if they exist
+BINBASE="${OUTFILE%.out}"
+for bin in height.bin objects.bin; do
+  if [ -f "$WORK/$bin" ]; then
+    cp "$WORK/$bin" "${BINBASE}.${bin}"
+    echo "[sector] dumped $bin"
+  fi
+done
 echo "[sector] OK -> $OUTFILE"
