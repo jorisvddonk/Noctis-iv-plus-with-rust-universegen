@@ -170,6 +170,9 @@ fetch('/api/report').then(r=>r.json()).then(d => {
     {n:d.atmo_match+'/'+d.surf_total, l:'Atmo match'},
     {n:d.pal_match+'/'+d.surf_total, l:'Palette match'},
   ];
+  if (d.surf_unprocessed) {
+    cards.push({n:d.surf_unprocessed, l:'Unprocessed'});
+  }
   document.getElementById('report').innerHTML = cards.map(c =>
     `<div class="stat-card"><div class="num">${c.n}</div><div class="lbl">${c.l}</div></div>`
   ).join('');

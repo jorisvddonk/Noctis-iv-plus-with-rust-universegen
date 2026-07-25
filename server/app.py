@@ -52,13 +52,14 @@ def db_report():
     from report import sector_totals, surface_totals
     with db() as conn:
         ok, d, rb, ro, tot, stars = sector_totals(conn)
-        surf, atmo, pal, s_tot, _ = surface_totals(conn)
+        surf, atmo, pal, s_tot, unproc = surface_totals(conn)
     return {
         "sector_match": ok, "sector_total": tot,
         "sector_def": d, "sector_rb": rb, "sector_ro": ro,
         "stars": stars,
         "surf_match": surf, "surf_total": s_tot,
         "atmo_match": atmo, "pal_match": pal,
+        "surf_unprocessed": unproc,
     }
 
 def has_surface(ptype: int) -> bool:
