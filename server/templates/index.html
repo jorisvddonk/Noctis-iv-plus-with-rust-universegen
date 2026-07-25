@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noctis IV Visual Verifier</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #111; color: #ddd; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+  h1 { color: #8cf; }
+  a { color: #8cf; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: .4rem .6rem; text-align: left; border-bottom: 1px solid #333; }
+  th { background: #1a1a2e; color: #8cf; position: sticky; top: 0; }
+  tr:hover { background: #1a1a2e; }
+  .badge { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: .75rem; font-weight: bold; }
+  .cls-S00 { background:#4af; } .cls-S01 { background:#4a8; } .cls-S02 { background:#4a4; }
+  .cls-S03 { background:#8a4; } .cls-S04 { background:#a84; } .cls-S05 { background:#a44; }
+  .cls-S07 { background:#84a; } .cls-S08 { background:#48a; } .cls-S09 { background:#448; }
+  .cls-S10 { background:#666; } .cls-S11 { background:#888; }
+  .ok { color:#4a4; } .mismatch { color:#a44; }
+  .detail { display: none; }
+  .detail.open { display: block; }
+  .detail-inner { padding: 1rem; background: #1a1a2e; border-radius: 8px; margin: .5rem 0; }
+  .planets { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .5rem; }
+  .planet-card { background: #222; border-radius: 8px; padding: .5rem; }
+  .planet-card h4 { margin: 0 0 .25rem 0; }
+  .images { display: flex; flex-wrap: wrap; gap: 4px; margin: .5rem 0; }
+  .images img { border: 1px solid #444; border-radius: 4px; max-width: 100%; }
+  .images .label { font-size: .7rem; color: #888; text-align: center; }
+  .thumb-link { cursor: pointer; }
+  .thumb-link:hover { border-color: #8cf; }
+  input, select { background: #333; color: #ddd; border: 1px solid #555; border-radius: 4px; padding: 4px; }
+  .landing-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .85rem; }
+  .landing-form label { color: #888; }
+  .match-info { font-size: .8rem; }
+  .gap-warn { color: #a84; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Noctis IV · Visual Verifier</h1>
+<p style="color:#888">
+  {{ stars|length }} stars in DB. Click a row to expand.
+</p>
+
+<table>
+<thead><tr>
+  <th>Star</th><th>Class</th><th>Coord (x y z)</th><th>Bodies</th><th>Status</th>
+</tr></thead>
+<tbody>
+{% for s in stars %}
+<tr class="star-row" onclick="toggle('star-{{ s.id }}')">
+  <td><strong>{{ s.name }}</strong></td>
+  <td><span class="badge cls-S{{ '%02d' % s.class }}">S{{ '%02d' % s.class }}</span></td>
+  <td style="font-size:.8rem;color:#888">{{ '%.0f %.0f %.0f'|format(s.x, s.y_user, s.z) }}</td>
+  <td>{{ s.nob }}</td>
+  <td id="status-{{ s.id }}">…</td>
+</tr>
+<tr id="star-{{ s.id }}" class="detail">
+  <td colspan="5"><div class="detail-inner" id="detail-{{ s.id }}">Loading…</div></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<script>
+async function toggle(id) {
+  const el = document.getElementById(id);
+  const open = el.classList.toggle('open');
+  if (open) {
+    const starId = id.replace('star-', '');
+    const name = document.querySelector(`.star-row:nth-child(${parseInt(starId)+1}) td:first-child strong`).textContent;
+    loadStar(starId, name);
+  }
+}
+
+function selLon(name, body, idx) {
+  const base = document.getElementById(`base-${name}-${body}`);
+  const lon = document.getElementById(`lon-${name}-${body}`).value;
+  const lat = document.getElementById(`lat-${name}-${body}`).value;
+  document.getElementById(`sector-img-${name}-${body}`).src =
+    `/stars/${encodeURIComponent(name)}/bodies/${body}/sector.png?lon=${lon}&lat=${lat}`;
+}
+
+async function loadStar(id, name) {
+  const res = await fetch(`/api/stars/${encodeURIComponent(name)}`);
+  const data = await res.json();
+  const star = data.star;
+  const planets = data.planets;
+
+  let html = `<div class="planets">`;
+  for (const p of planets) {
+    const ptype = p.planet_type;
+    const tname = {0:"Volc",1:"Rock",2:"Venu",3:"Felis",4:"MedR",5:"Mars",6:"GasG",7:"IceG",8:"SubG",9:"Watr",10:"Comp"}[ptype] || "?";
+    const moon = p.is_moon ? " ☾" : "";
+    const defOk = p.rust_sect_def_hm && p.rust_sect_def_hm === p.sect_def_hm ? "ok" : "mismatch";
+    const randOk = p.rust_sect_rand_hm && p.rust_sect_rand_hm === p.sect_rand_hm ? "ok" : "mismatch";
+    html += `<div class="planet-card" id="card-${name}-${p.body_index}">`;
+    html += `<h4>#${p.body_index} type ${ptype} ${tname}${moon}</h4>`;
+    html += `<div class="match-info">`;
+    if (p.surf_fnv) {
+      const surfOk = p.rust_surf_fnv === p.surf_fnv ? "ok" : "mismatch";
+      html += `<span class="${surfOk}">surf ${surfOk}</span> · `;
+      const palOk = p.rust_pal_fnv === p.pal_fnv ? "ok" : "mismatch";
+      html += `<span class="${palOk}">pal ${palOk}</span> · `;
+    }
+    html += `<span class="${defOk}">def ${defOk}</span> · <span class="${randOk}">rand ${randOk}</span>`;
+    if (p.planet_type === 3) {
+      html += ` <span class="gap-warn">(sctype=${p.sctype || "?"})</span>`;
+    }
+    html += `</div>`;
+    html += `<div class="images">`;
+    html += `<div><div class="label">Surface</div>`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surface.png?lon=0&lat=60" loading="lazy" width="180" height="90">`;
+    html += `</div>`;
+    html += `<div><div class="label">Sector</div>`;
+    html += `<img id="sector-img-${name}-${p.body_index}" src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/sector.png?lon=21&lat=87" loading="lazy" width="200" height="200">`;
+    html += `<div class="landing-form">`;
+    html += `<label>lon</label><input id="lon-${name}-${p.body_index}" type="number" value="21" size="3" onchange="selLon('${name}',${p.body_index})">`;
+    html += `<label>lat</label><input id="lat-${name}-${p.body_index}" type="number" value="87" size="3" onchange="selLon('${name}',${p.body_index})">`;
+    html += `</div></div>`;
+    html += `<div><div class="label">Palette</div>`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/palette.png?lon=0&lat=60" loading="lazy" width="256" height="32">`;
+    html += `</div>`;
+    html += `<div><div class="label">Atmo</div>`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/atmo.png?lon=0&lat=60" loading="lazy" width="180" height="90">`;
+    html += `</div>`;
+    html += `</div>`; // images
+    html += `</div>`; // card
+  }
+  html += `</div>`; // planets
+
+  document.getElementById(`detail-${id}`).innerHTML = html;
+
+  // status
+  let matched = planets.filter(p => p.rust_sect_rand_hm === p.sect_rand_hm).length;
+  document.getElementById(`status-${id}`).textContent = `${matched}/${planets.length} match`;
+}
+</script>
+</body>
+</html>

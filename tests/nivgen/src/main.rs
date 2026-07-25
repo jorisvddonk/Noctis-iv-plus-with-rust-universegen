@@ -403,4 +403,15 @@ fn report_planet(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
     hashline(f, "atmo_overlay", &g.objectschart[0..32400]);
     let base3 = (if is_moon { 128 } else { 192 }) * 3;
     hashline(f, "palette64", &g.tmppal[base3..base3 + 192]);
+
+    if let Ok(dir) = std::env::var("NIVDUMP") {
+        let (map, map_file) = if is_moon {
+            (&g.s_background[..], "moonsurf.raw")
+        } else {
+            (&g.p_background[..], "surface.raw")
+        };
+        let _ = std::fs::write(format!("{}/{}", dir, map_file), map);
+        let _ = std::fs::write(format!("{}/palette.raw", dir), &g.tmppal);
+        let _ = std::fs::write(format!("{}/atmo.raw", dir), &g.objectschart[0..32400]);
+    }
 }
