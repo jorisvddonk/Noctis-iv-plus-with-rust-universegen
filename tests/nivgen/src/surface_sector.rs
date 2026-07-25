@@ -332,6 +332,9 @@ impl SystemGen {
     }
 
     /// asterism (NOCTIS-1.CPP:1635). `map` = 1 (txtr).
+    /// NB: `ad` and `ang` are PURE f32 (like C float). Accumulating `f(ang_f64 + ad_f64)`
+    /// introduces double rounding and changes the number of loop iterations, which shifts
+    /// the RNG state for all subsequent operations, breaking surftex matching.
     fn asterism(&mut self, x: i32, y: i32, base: i32, variation: i32, density: i32, size: i32, align: i64) {
         if density <= 0 {
             return;
@@ -344,10 +347,10 @@ impl SystemGen {
             if (shift_d as f64) >= 1.0 {
                 let var: f32 = f((variation as f64) / shift_d as f64);
                 let mut color: f32 = base as f32;
-                let mut sd = shift_d as f64;
-                while sd > 0.0 {
-                    let shift_x: i64 = ((ang as f64).cos() * sd + x as f64).trunc() as i64;
-                    let shift_y: i64 = ((ang as f64).sin() * sd + y as f64).trunc() as i64;
+                let mut sd: f32 = shift_d;
+                while sd > 0.0f32 {
+                    let shift_x: i64 = ((ang as f64).cos() * sd as f64 + x as f64).trunc() as i64;
+                    let shift_y: i64 = ((ang as f64).sin() * sd as f64 + y as f64).trunc() as i64;
                     let shift_x = shift_x as i32;
                     let shift_y = shift_y as i32;
                     if shift_x > 0 && shift_y > 0 && shift_x < align as i32 && shift_y < align as i32 {
@@ -355,10 +358,10 @@ impl SystemGen {
                         self.p_background[shift_p as usize] = color as u8;
                     }
                     color = f(color as f64 + var as f64);
-                    sd -= 1.0;
+                    sd -= 1.0f32;
                 }
             }
-            ang = f(ang as f64 + ad as f64);
+            ang += ad; // pure f32 accumulation, matching C
         }
     }
 
@@ -717,9 +720,14 @@ impl SystemGen {
         self.gtx = 1; // suolo con texture, per default
 
         // _fmemset(txtr, 16, 65535): txtr aliases p_background.
+        // Borland's _fmemset fills n bytes; txtr[65535] is NOT filled by
+        // this call but lies inside the farmalloc(65552) block. In DOSBox-X
+        // that byte is 0 (zeroed heap). In Rust the Vec tail (from make_bg
+        // 0xFF fill) leaves it as 255 unless we explicitly clear it.
         for i in 0..65535 {
             self.p_background[i] = 16;
         }
+        self.p_background[65535] = 0;
         // _fmemset(p_surfacemap, 0, ps_bytes)
         for i in 0..40000 {
             self.p_surfacemap[i] = 0;
@@ -1110,19 +1118,22 @@ impl SystemGen {
                 }
                 let a_s2 = self.rng.random(2);
                 self.smoothterrain(1 + a_s2);
-                n = 64 - self.albedo;
-                if self.nightzone != 0 {
-                    hf = f(0.50);
-                } else {
-                    hf = f(0.25);
-                }
+    n = 64 - self.albedo;
+    if self.nightzone != 0 {
+        hf = f(0.50);
+    } else {
+        hf = f(0.25);
+    }
                 while n != 0 {
                     cx = self.rng.random(150) + 25;
                     cz = self.rng.random(150) + 25;
                     cr = self.rng.random(10) + 15;
-                    self.std_crater(1, cx, cz, -cr, 31, hf, 1.0, 256);
-                    n -= 1;
+                self.std_crater(1, cx, cz, -cr, 31, hf, 1.0, 256);
+                if cr % 2 != 0 {
+                    self.std_crater(1, cx + cr / 3, cz + cr / 3, -cr, 31, hf, 1.0, 256);
                 }
+                n -= 1;
+            }
                 self.rockscaling = f(100.0 + self.rng.random(200) as f64);
                 self.rockdensity = 3 + 4 * self.rng.random(2);
                 self.rockpeaking = f(100.0 + self.rng.random(200) as f64);
@@ -1599,7 +1610,8 @@ impl SystemGen {
         self.quadwords = ST_BYTES as i32 / 4;
         let mut cx = seed;
         for i in 0..ST_BYTES {
-            cx = cx.wrapping_add(i as u32);
+            let step = (ST_BYTES - i) as u32; // C decrements cx from st_bytes to 1
+            cx = cx.wrapping_add(step);
             // imul ax: signed 16-bit square → dx:ax, keep low word
             let lo = (cx as i16 as i32).wrapping_mul(cx as i16 as i32) as u16 as u32;
             cx = lo;
