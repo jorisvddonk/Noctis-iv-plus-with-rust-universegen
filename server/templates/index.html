@@ -28,7 +28,7 @@
   .planet-card { background: #222; border-radius: 8px; padding: .5rem; }
   .planet-card h4 { margin: 0 0 .25rem 0; }
   .images { display: flex; flex-wrap: wrap; gap: 4px; margin: .5rem 0; }
-  .images img { border: 1px solid #444; border-radius: 4px; max-width: 100%; }
+  .images img { border: 1px solid #444; border-radius: 4px; max-width: 100%; cursor: zoom-in; image-rendering: auto; }
   .images .label { font-size: .7rem; color: #888; text-align: center; }
   .thumb-link { cursor: pointer; }
   .thumb-link:hover { border-color: #8cf; }
@@ -37,8 +37,13 @@
   .landing-form label { color: #888; }
   .match-info { font-size: .8rem; }
   .gap-warn { color: #a84; }
+  #lightbox { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,.85); justify-content: center; align-items: center; cursor: zoom-out; }
+  #lightbox.open { display: flex; }
+  #lightbox img { width: 95vw; height: 95vh; object-fit: contain; image-rendering: pixelated; box-shadow: 0 0 40px #000; }
 </style>
 </head>
+<body>
+<div id="lightbox" onclick="this.classList.remove('open')"><img id="lb-img"></div>
 <body>
 <div class="wrap">
 <h1>Noctis IV · Visual Verifier</h1>
@@ -52,7 +57,7 @@
 </tr></thead>
 <tbody>
 {% for s in stars %}
-<tr class="star-row" onclick="toggle('star-{{ s.id }}')">
+<tr class="star-row" onclick="toggle('{{ s.id }}', '{{ s.name|e }}')">
   <td><strong>{{ s.name }}</strong></td>
   <td><span class="badge cls-S{{ '%02d' % s.class }}">S{{ '%02d' % s.class }}</span></td>
   <td style="font-size:.8rem;color:#888">{{ '%.0f %.0f %.0f'|format(s.x, s.y_user, s.z) }}</td>
@@ -68,13 +73,13 @@
 </div>
 
 <script>
-async function toggle(id) {
-  const el = document.getElementById(id);
+function zoom(el) { document.getElementById('lb-img').src = el.src; document.getElementById('lightbox').classList.add('open'); }
+
+async function toggle(id, name) {
+  const el = document.getElementById('star-' + id);
   const open = el.classList.toggle('open');
   if (open) {
-    const starId = id.replace('star-', '');
-    const name = document.querySelector(`.star-row:nth-child(${parseInt(starId)+1}) td:first-child strong`).textContent;
-    loadStar(starId, name);
+    loadStar(id, name);
   }
 }
 
@@ -95,12 +100,12 @@ async function loadStar(id, name) {
   let html = `<div class="planets">`;
   for (const p of planets) {
     const ptype = p.planet_type;
-    const tname = {0:"Volc",1:"Rock",2:"Venu",3:"Felis",4:"MedR",5:"Mars",6:"GasG",7:"IceG",8:"SubG",9:"Watr",10:"Comp"}[ptype] || "?";
+    const desc = {0:"Internally hot",1:"Dusty",2:"Thick atmosphere",3:"Felisian",4:"Rocky creased",5:"Thin atmosphere",6:"Gas giant",7:"Icy",8:"Quartz",9:"Substellar object",10:"Companion star"}[ptype] || "?";
     const moon = p.is_moon ? " ☾" : "";
     const defOk = p.rust_sect_def_hm && p.rust_sect_def_hm === p.sect_def_hm ? "ok" : "mismatch";
     const randOk = p.rust_sect_rand_hm && p.rust_sect_rand_hm === p.sect_rand_hm ? "ok" : "mismatch";
     html += `<div class="planet-card" id="card-${name}-${p.body_index}">`;
-    html += `<h4>#${p.body_index} type ${ptype} ${tname}${moon}</h4>`;
+    html += `<h4>#${p.body_index}${p.name ? ' ' + p.name : ''}  (${desc})${moon}</h4>`;
     html += `<div class="match-info">`;
     if (p.surf_fnv) {
       const surfOk = p.rust_surf_fnv === p.surf_fnv ? "ok" : "mismatch";
@@ -115,19 +120,19 @@ async function loadStar(id, name) {
     html += `</div>`;
     html += `<div class="images">`;
     html += `<div><div class="label">Surface</div>`;
-    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surface.png?lon=0&lat=60" loading="lazy" width="180" height="90">`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surface.png?lon=0&lat=60" loading="lazy" width="180" height="90" onclick="zoom(this)">`;
     html += `</div>`;
     html += `<div><div class="label">Sector</div>`;
-    html += `<img id="sector-img-${name}-${p.body_index}" src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/sector.png?lon=21&lat=87" loading="lazy" width="200" height="200">`;
+    html += `<img id="sector-img-${name}-${p.body_index}" src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/sector.png?lon=21&lat=87" loading="lazy" width="200" height="200" onclick="zoom(this)">`;
     html += `<div class="landing-form">`;
     html += `<label>lon</label><input id="lon-${name}-${p.body_index}" type="number" value="21" size="3" onchange="selLon('${name}',${p.body_index})">`;
     html += `<label>lat</label><input id="lat-${name}-${p.body_index}" type="number" value="87" size="3" onchange="selLon('${name}',${p.body_index})">`;
     html += `</div></div>`;
     html += `<div><div class="label">Palette</div>`;
-    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/palette.png?lon=0&lat=60" loading="lazy" width="256" height="32">`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/palette.png?lon=0&lat=60" loading="lazy" width="256" height="32" onclick="zoom(this)">`;
     html += `</div>`;
     html += `<div><div class="label">Atmo</div>`;
-    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/atmo.png?lon=0&lat=60" loading="lazy" width="180" height="90">`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/atmo.png?lon=0&lat=60" loading="lazy" width="180" height="90" onclick="zoom(this)">`;
     html += `</div>`;
     html += `</div>`; // images
     html += `</div>`; // card

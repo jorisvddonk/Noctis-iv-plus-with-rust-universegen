@@ -40,10 +40,23 @@ def nivgen_run(*args):
         raise HTTPException(500, "nivgen timed out")
 
 PLANET_TYPES = {
-    0: "Volcanic", 1: "Rocky", 2: "Venusian", 3: "Felisian/Habitable",
-    4: "Medium rocky", 5: "Mars-like", 6: "Gas giant", 7: "Ice giant",
-    8: "Sub-giant", 9: "Water world", 10: "Companion star",
+    0: "Internally hot", 1: "Dusty", 2: "Thick atmosphere",
+    3: "Felisian", 4: "Rocky creased", 5: "Thin atmosphere",
+    6: "Gas giant", 7: "Icy", 8: "Quartz",
+    9: "Substellar object", 10: "Companion star",
 }
+
+def has_surface(ptype: int) -> bool:
+    return ptype != 10
+
+def no_data_png(text="no data"):
+    img = Image.new("RGB", (200, 100), (32, 32, 32))
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(img)
+    d.text((10, 40), text, fill=(100, 100, 100))
+    buf = BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()
 
 SCTYPE_NAMES = {1: "Ocean", 2: "Plains", 3: "Desert", 4: "Icy"}
 
@@ -62,22 +75,27 @@ def render_surface(raw: bytes, palette=None):
             v = raw[y * w + x]
             if palette:
                 i = v * 3
-                r, g, b = palette[i], palette[i+1], palette[i+2]
+                r = min(palette[i] * 4, 255)
+                g = min(palette[i+1] * 4, 255)
+                b = min(palette[i+2] * 4, 255)
             else:
                 r = g = b = v
             px[x, y] = (r, g, b)
     return img
 
 def render_heightmap(raw: bytes, w=200, h=200):
-    colors = [(0,0,0),(0,40,0),(0,80,20),(40,120,40),(80,160,60),
-              (140,200,80),(200,210,100),(220,200,140),(240,220,180),(255,255,220)]
+    vals = [raw[y * w + x] for y in range(h) for x in range(w)]
+    lo, hi = min(vals), max(vals)
+    rng = max(hi - lo, 1)
+    colors = [(0,0,0),(50,120,50),(90,180,80),(140,220,110),(180,240,140),
+              (210,250,170),(230,250,200),(240,240,210),(250,245,220),(255,255,240)]
     img = Image.new("RGB", (w, h))
     px = img.load()
     for y in range(h):
         for x in range(w):
             v = raw[y * w + x]
-            ci = min(v // 28, len(colors)-1)
-            px[x, y] = colors[ci]
+            idx = (v - lo) * (len(colors) - 1) // rng
+            px[x, y] = colors[min(idx, len(colors) - 1)]
     return img
 
 def render_palette(raw: bytes):
@@ -85,9 +103,9 @@ def render_palette(raw: bytes):
     img = Image.new("RGB", (n * 8, 32))
     px = img.load()
     for i in range(n):
-        r = raw[i * 3]
-        g = raw[i * 3 + 1] if i * 3 + 1 < len(raw) else 0
-        b = raw[i * 3 + 2] if i * 3 + 2 < len(raw) else 0
+        r = min(raw[i * 3] * 4, 255)
+        g = min(raw[i * 3 + 1] * 4, 255) if i * 3 + 1 < len(raw) else 0
+        b = min(raw[i * 3 + 2] * 4, 255) if i * 3 + 2 < len(raw) else 0
         for x in range(8):
             for y in range(32):
                 px[i * 8 + x, y] = (r, g, b)
@@ -159,6 +177,8 @@ def surface_png(name: str, body: int,
                          (star["id"], body)).fetchone()
     if not p:
         raise HTTPException(404)
+    if not has_surface(p["planet_type"]):
+        return Response(no_data_png("companion star - no surface"), media_type="image/png")
     dump = nivgen_run("planet", "-x", str(star["x"]), "-y", str(star["y_user"]),
                       "-z", str(star["z"]), "-p", str(body))
     try:
@@ -168,7 +188,7 @@ def surface_png(name: str, body: int,
         pal = open(os.path.join(dump, "palette.raw"), "rb").read()
     except FileNotFoundError:
         import shutil; shutil.rmtree(dump, ignore_errors=True)
-        raise HTTPException(500, "surface data not generated")
+        return Response(no_data_png("no surface data"), media_type="image/png")
     import shutil; shutil.rmtree(dump, ignore_errors=True)
 
     base3 = (128 if is_moon else 192) * 3
@@ -184,8 +204,14 @@ def sector_png(name: str, body: int,
                albedo: int = Query(32), sc: int = Query(-1)):
     with db() as conn:
         star = conn.execute("SELECT * FROM stars WHERE name=?", (name,)).fetchone()
-    if not star:
+        if not star:
+            raise HTTPException(404)
+        p = conn.execute("SELECT * FROM planets WHERE star_id=? AND body_index=?",
+                         (star["id"], body)).fetchone()
+    if not p:
         raise HTTPException(404)
+    if not has_surface(p["planet_type"]):
+        return Response(no_data_png("companion star - no surface"), media_type="image/png")
     dump = nivgen_run("sector", "-x", str(star["x"]), "-y", str(star["y_user"]),
                       "-z", str(star["z"]), "-p", str(body),
                       "-lon", str(lon), "-lat", str(lat),
@@ -194,7 +220,7 @@ def sector_png(name: str, body: int,
         raw = open(os.path.join(dump, "HEIGHT.bin"), "rb").read(40000)
     except FileNotFoundError:
         import shutil; shutil.rmtree(dump, ignore_errors=True)
-        raise HTTPException(500, "sector data not generated")
+        return Response(no_data_png("no sector data"), media_type="image/png")
     import shutil; shutil.rmtree(dump, ignore_errors=True)
 
     img = render_heightmap(raw)
@@ -214,13 +240,15 @@ def palette_png(name: str, body: int,
                          (star["id"], body)).fetchone()
     if not p:
         raise HTTPException(404)
+    if not has_surface(p["planet_type"]):
+        return Response(no_data_png("companion star - no surface"), media_type="image/png")
     dump = nivgen_run("planet", "-x", str(star["x"]), "-y", str(star["y_user"]),
                       "-z", str(star["z"]), "-p", str(body))
     try:
         pal = open(os.path.join(dump, "palette.raw"), "rb").read()
     except FileNotFoundError:
         import shutil; shutil.rmtree(dump, ignore_errors=True)
-        raise HTTPException(500)
+        return Response(no_data_png("no palette"), media_type="image/png")
     import shutil; shutil.rmtree(dump, ignore_errors=True)
 
     is_moon = bool(p["is_moon"]) or (p["p_owner"] > -1)
@@ -243,6 +271,8 @@ def atmo_png(name: str, body: int,
                          (star["id"], body)).fetchone()
     if not p:
         raise HTTPException(404)
+    if not has_surface(p["planet_type"]):
+        return Response(no_data_png("companion star - no surface"), media_type="image/png")
     dump = nivgen_run("planet", "-x", str(star["x"]), "-y", str(star["y_user"]),
                       "-z", str(star["z"]), "-p", str(body))
     try:
