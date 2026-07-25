@@ -402,13 +402,21 @@ def rust_star(conn, star):
             ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc"),
             ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc"),
         ):
-            # Read gap from this landing's fixture file (DEF/RAND may differ)
+            # Read gap from this landing's fixture file, or fall back to DB
             fpath = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
             gap = None
             if os.path.exists(fpath):
                 m = GAP_RE.search(open(fpath).read())
                 if m:
                     gap = m.group(1)
+            if not gap:
+                gap_col = f"sect_{kind}_gap"
+                row = conn.execute(
+                    f"SELECT {gap_col} FROM planets WHERE star_id=? AND body_index=?",
+                    (sid[0], body),
+                ).fetchone()
+                if row and row[0]:
+                    gap = row[0]
             hm, oc = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
             if hm:
                 up[hm_col] = hm
