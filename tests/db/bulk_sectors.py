@@ -934,7 +934,6 @@ def main():
             batch = [args.star]
         else:
             if skip_sectors:
-                # Pick stars with canonical surface data but no Rust surf hashes
                 rows = conn.execute(
                     "SELECT name FROM stars WHERE id IN "
                     "(SELECT star_id FROM planets WHERE surf_fnv IS NOT NULL "
@@ -947,8 +946,36 @@ def main():
                     "HAVING COUNT(sect_def_hm) = 0) "
                     "ORDER BY id LIMIT ?", (batch_size,)).fetchall()
             if not rows:
-                print("no star needs processing")
-                return
+                print("no pending stars — looking up starmap2.bin ...")
+                # Find a star in starmap2.bin whose name is not yet in the DB
+                import struct
+                starmap_path = os.path.join(REPO, "data", "starmap2.bin")
+                existing_names = {r[0] for r in conn.execute("SELECT name FROM stars")}
+                candidate = None
+                with open(starmap_path, "rb") as fh:
+                    data = fh.read()
+                ENTRY = 44
+                for i in range(0, len(data) - ENTRY, ENTRY):
+                    ent = data[i:i+ENTRY]
+                    idx = struct.unpack("<i", ent[12:16])[0]
+                    bt = struct.unpack("<i", ent[16:20])[0]
+                    name = ent[20:40].rstrip(b" ").decode("ascii", errors="replace")
+                    if idx == 0 and bt == 0 and name and name not in existing_names:
+                        candidate = name
+                        break
+                if not candidate:
+                    print("no new star in starmap2.bin")
+                    return
+                print(f"importing {candidate} ...")
+                imp = subprocess.run(
+                    [sys.executable, os.path.join(HERE, "bulk_atlas.py"),
+                     "run", "--only", candidate, "--no-compare"],
+                    capture_output=True, text=True, timeout=600)
+                if imp.returncode != 0:
+                    print(imp.stderr[-300:])
+                    print("starmap import failed")
+                    return
+                batch = [candidate]
             batch = [r[0] for r in rows]
         if not skip_sectors:
             gen_stars_batch(conn, batch, args.force, args.build, args.keep_fixtures, args.dry_run)
