@@ -16,3 +16,4 @@ __pycache__/
 *.pyc
 niv-toolchain/
 tests/nivgen/starmap2.bin
+tests/results/canonical/*.out
