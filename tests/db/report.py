@@ -29,18 +29,22 @@ def sector_totals(conn):
 
 
 def texture_totals(conn):
-    """Return (sky_match, surf_tex_match, total, unprocessed)."""
+    """Return (sky_match, stex_match, total, unprocessed)."""
     tot = conn.execute(
-        "SELECT COUNT(*) FROM planets WHERE sky_texture IS NOT NULL"
+        "SELECT COUNT(*) FROM planets WHERE sect_def_sky IS NOT NULL"
     ).fetchone()[0]
     if not tot:
         return 0, 0, 0, 0
-    sky = conn.execute(
-        "SELECT COUNT(*) FROM planets WHERE sky_texture = rust_sky_texture AND sky_texture IS NOT NULL"
-    ).fetchone()[0]
-    stex = conn.execute(
-        "SELECT COUNT(*) FROM planets WHERE surf_texture = rust_surf_texture AND surf_texture IS NOT NULL"
-    ).fetchone()[0]
+    sky = conn.execute("""
+        SELECT COUNT(*) FROM planets WHERE sect_def_sky IS NOT NULL
+          AND sect_def_sky = rust_sect_def_sky
+          AND sect_rand_sky = rust_sect_rand_sky
+    """).fetchone()[0]
+    stex = conn.execute("""
+        SELECT COUNT(*) FROM planets WHERE sect_def_stex IS NOT NULL
+          AND sect_def_stex = rust_sect_def_stex
+          AND sect_rand_stex = rust_sect_rand_stex
+    """).fetchone()[0]
     return sky, stex, tot, tot - sky
 
 def surface_totals(conn):

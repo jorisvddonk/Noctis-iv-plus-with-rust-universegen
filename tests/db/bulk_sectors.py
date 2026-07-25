@@ -130,7 +130,10 @@ def _star_cmds(conn, star, force, star_idx=0):
             if force and os.path.exists(out):
                 os.remove(out)  # Delete so gen produces a fresh file (no append)
             suf = "D" if kind == "def" else "R"
-            cmds.append((body, lon, lat, f"s{star_idx}_{body}{suf}.out", out, x, y_usr, z))
+            cmds.append((body, lon, lat, f"s{star_idx}_{body}{suf}.out", out, x, y_usr, z, "sector"))
+            stex_out = os.path.join(SECT_DIR, fname(star, body, f"{kind}_stex", lon, lat))
+            stex_dosname = f"t{star_idx}_{body}{suf}.out"
+            cmds.append((body, lon, lat, stex_dosname, stex_out, x, y_usr, z, "surftex"))
     return cmds, x, y_usr, z, star
 
 def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=False, dry_run=False):
@@ -141,16 +144,16 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
         cmds, _, _, _, _ = _star_cmds(conn, s, force, star_idx=si)
         for c in cmds:
             all_cmds.append((s,) + c)  # prepend star name
-            info[(s, c[0], c[3])] = s  # (star, body, dosname) -> star
+            info[(s, c[0], c[3])] = (s, c[8])  # (star, body, dosname) -> (star, type)
 
     if not all_cmds:
         print(f"{', '.join(stars[:3])}{'...' if len(stars)>3 else ''}: nothing to generate")
         return
 
     if dry_run:
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
-            sn = info.get((star_name, body, dosname), "?")
-            print(f"  {sn} body {body:3d}: lon={lon} lat={lat} dosname={dosname}")
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+            snm = info.get((star_name, body, dosname), ("?", ""))
+            print(f"  {snm[0]} body {body:3d}: {cmd_type} lon={lon} lat={lat} dosname={dosname}")
         print(f"[dry-run] {len(all_cmds)} commands for {len(stars)} stars")
         return
 
@@ -221,7 +224,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
         # RUN.BAT: planet-all for each star, then all sector landings
         run_lines = ["@echo off"]
         seen_stars = []
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
             if star_name not in seen_stars:
                 seen_stars.append(star_name)
                 canon_idx = len(seen_stars) - 1
@@ -230,10 +233,16 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
                     f"NIVTEST.EXE planet-all -x {cx} -y {cy} -z {cz}"
                     f" -o D:\\{canon_name}"
                 )
-            run_lines.append(
-                f"NIVTEST.EXE sector -x {cx} -y {cy} -z {cz} -p {body}"
-                f" -lon {lon} -lat {lat} -o D:\\{dosname}"
-            )
+            if cmd_type == "sector":
+                run_lines.append(
+                    f"NIVTEST.EXE sector -x {cx} -y {cy} -z {cz} -p {body}"
+                    f" -lon {lon} -lat {lat} -o D:\\{dosname}"
+                )
+            else:
+                run_lines.append(
+                    f"NIVTEST.EXE surftex -x {cx} -y {cy} -z {cz} -p {body}"
+                    f" -lon {lon} -lat {lat} -o D:\\{dosname}"
+                )
         run_lines.append("exit")
         with open(os.path.join(work, "RUN.BAT"), "w") as f:
             f.write("\r\n".join(run_lines) + "\r\n")
@@ -259,9 +268,9 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
             f.write(conf)
 
         # Print progress
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
-            sn = info.get((star_name, body, dosname), "?")
-            print(f"  {sn} body {body:3d}: lon={lon} lat={lat} ...", flush=True)
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+            snm = info.get((star_name, body, dosname), ("?", ""))
+            print(f"  {snm[0]} body {body:3d}: {cmd_type} lon={lon} lat={lat} ...", flush=True)
 
         env = os.environ.copy()
         env["SDL_VIDEODRIVER"] = "dummy"
@@ -281,8 +290,8 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
 
         # Copy outputs, grouped by star
         star_ok = {}
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz in all_cmds:
-            sn = info.get((star_name, body, dosname), "?")
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+            snm = info.get((star_name, body, dosname), ("?", ""))
             src = os.path.join(work, dosname)
             if os.path.exists(src):
                 shutil.copy2(src, outpath)
@@ -339,8 +348,8 @@ def load_star(conn, star):
             lon_r, lat_r = coords_from_seedval(seedval)
             up = {}
             for (kind, lon, lat, hm_col, oc_col, sky_col, stex_col) in (
-                ("def", lon_d, lat_d, "sect_def_hm", "sect_def_oc", "sky_texture", "surf_texture"),
-                ("rand", lon_r, lat_r, "sect_rand_hm", "sect_rand_oc", "sky_texture", "surf_texture"),
+                ("def", lon_d, lat_d, "sect_def_hm", "sect_def_oc", "sect_def_sky", "sect_def_stex"),
+                ("rand", lon_r, lat_r, "sect_rand_hm", "sect_rand_oc", "sect_rand_sky", "sect_rand_stex"),
             ):
                 out = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
                 if not os.path.exists(out):
@@ -348,8 +357,6 @@ def load_star(conn, star):
                 t = open(out).read()
                 hm = HM_RE.findall(t)
                 oc = OC_RE.findall(t)
-                sk = SKY_RE.findall(t)
-                st = STEX_RE.findall(t)
                 if hm:
                     if len(hm) > 1:
                         print(f"  WARN {star} body {body} {kind}: {len(hm)} heightmap blocks in file, using first")
@@ -358,15 +365,19 @@ def load_star(conn, star):
                     if len(oc) > 1:
                         print(f"  WARN {star} body {body} {kind}: {len(oc)} objectchart blocks in file, using first")
                     up[oc_col] = oc[0]
-                if sk:
-                    up[sky_col] = sk[0]
-                if st:
-                    up[stex_col] = st[0]
                 # Capture gap from this landing's fixture (DEF and RAND may differ)
                 m = GAP_RE.findall(t)
                 if m:
                     gap_kind = f"sect_{kind}_gap"
                     up[gap_kind] = m[0]
+                # Surftex fixture (separate file)
+                stex_out = os.path.join(SECT_DIR, fname(star, body, f"{kind}_stex", lon, lat))
+                if os.path.exists(stex_out):
+                    tt = open(stex_out).read()
+                    sk = SKY_RE.findall(tt)
+                    st = STEX_RE.findall(tt)
+                    if sk: up[sky_col] = sk[0]
+                    if st: up[stex_col] = st[0]
             if up:
                 update_planet(conn, sid, body, up)
 
@@ -410,34 +421,43 @@ def rust_star(conn, star):
         lon_d, lat_d = 0, 60
         lon_r, lat_r = coords_from_seedval(seedval)
         up = {}
-        for (kind, lon, lat, hm_col, oc_col) in (
-            ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc"),
-            ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc"),
-        ):
-            # Read gap from this landing's fixture file, or fall back to DB
-            fpath = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
-            gap = None
-            if os.path.exists(fpath):
-                m = GAP_RE.search(open(fpath).read())
-                if m:
-                    gap = m.group(1)
-            if not gap:
-                gap_col = f"sect_{kind}_gap"
-                row = conn.execute(
-                    f"SELECT {gap_col} FROM planets WHERE star_id=? AND body_index=?",
-                    (sid[0], body),
-                ).fetchone()
-                if row and row[0]:
-                    gap = row[0]
-            hm, oc, sky, stex = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
-            if hm:
-                up[hm_col] = hm
-            if oc:
-                up[oc_col] = oc
-            if sky:
-                up[f"rust_sky_texture"] = sky
-            if stex:
-                up[f"rust_surf_texture"] = stex
+            for (kind, lon, lat, hm_col, oc_col, sky_col, stex_col) in (
+                ("def", lon_d, lat_d, "rust_sect_def_hm", "rust_sect_def_oc",
+                 "rust_sect_def_sky", "rust_sect_def_stex"),
+                ("rand", lon_r, lat_r, "rust_sect_rand_hm", "rust_sect_rand_oc",
+                 "rust_sect_rand_sky", "rust_sect_rand_stex"),
+            ):
+                # Read gap from this landing's fixture file, or fall back to DB
+                fpath = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
+                gap = None
+                if os.path.exists(fpath):
+                    m = GAP_RE.search(open(fpath).read())
+                    if m:
+                        gap = m.group(1)
+                if not gap:
+                    gap_col = f"sect_{kind}_gap"
+                    row = conn.execute(
+                        f"SELECT {gap_col} FROM planets WHERE star_id=? AND body_index=?",
+                        (sid[0], body),
+                    ).fetchone()
+                    if row and row[0]:
+                        gap = row[0]
+                hm, oc, _, _ = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
+                if hm:
+                    up[hm_col] = hm
+                if oc:
+                    up[oc_col] = oc
+                # Run surftex for sky + surface texture hashes
+                stex_cmd = [NIVGEN, "surftex", "-x", str(x), "-y", str(y_usr), "-z", str(z),
+                            "-p", str(body), "-lon", str(lon), "-lat", str(lat)]
+                if gap:
+                    stex_cmd += ["-gap", gap]
+                r2 = subprocess.run(stex_cmd, capture_output=True, text=True)
+                if r2.returncode == 0:
+                    sk = SKY_RE.search(r2.stdout)
+                    st = STEX_RE.search(r2.stdout)
+                    if sk: up[sky_col] = sk.group(1)
+                    if st: up[stex_col] = st.group(1)
         if up:
             update_planet(conn, sid[0], body, up)
     conn.commit()
