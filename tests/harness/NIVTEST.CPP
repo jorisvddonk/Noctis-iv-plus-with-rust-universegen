@@ -591,7 +591,9 @@ static void report_surface_texture(int n)
 	/* txtr is aliased onto p_background (pl_bytes = 65552). The surface
 	   texture occupies a 256x256 = 65536 byte region. */
 	hashline("surf_texture", txtr, 65536UL);
+	hashline("sky_texture", s_background, 64800UL);
 	dump_far("surftex.bin", txtr, 65536UL);
+	dump_far("sky.bin", s_background, 64800UL);
 }
 
 static int cmd_sector(int argc, char **argv)
@@ -632,6 +634,7 @@ static int cmd_surftex(int argc, char **argv)
 	setup_landing(argc, argv, p);
 	out("=== SURFACE SECTOR (texture) ===\n");
 	build_surface();
+	create_sky(1);
 	report_surface_texture(p);
 	return 0;
 }

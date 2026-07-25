@@ -313,10 +313,12 @@ fn cmd_surftex(args: &[String]) {
     g.setup_landing(p, lon, lat, albedo, sc);
     emit!(f, "=== SURFACE SECTOR (texture) ===\n");
     g.build_surface_with_gap(&gap_hex);
+    g.create_sky(1);
     report_surftex(&mut f, &g, p);
 
     if let Ok(dir) = std::env::var("NIVDUMP") {
         let _ = std::fs::write(format!("{}/SURFTEX.bin", dir), &g.p_background[..65536]);
+        let _ = std::fs::write(format!("{}/SKY.bin", dir), &g.s_background[..64800]);
     }
 }
 
@@ -329,6 +331,7 @@ fn report_surftex(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
     emit!(f, "  rockscaling={:.3} rockpeaking={:.3} rockdensity={} treescaling={:.3}\n",
         g.rockscaling, g.rockpeaking, g.rockdensity, g.treescaling);
     hashline(f, "surf_texture", &g.p_background[..65536]);
+    hashline(f, "sky_texture", &g.s_background[..64800]);
 }
 
 fn cmd_fill_db(args: &[String]) {

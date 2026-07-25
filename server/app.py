@@ -163,8 +163,10 @@ def api_mismatches():
                    p.surf_fnv, p.rust_surf_fnv,
                    p.atmo_fnv, p.rust_atmo_fnv,
                    p.pal_fnv, p.rust_pal_fnv,
-                   p.sky_texture, p.rust_sky_texture,
-                   p.canon_surftex, p.rust_surftex
+                   p.sect_def_sky, p.rust_sect_def_sky,
+                   p.sect_rand_sky, p.rust_sect_rand_sky,
+                   p.sect_def_stex, p.rust_sect_def_stex,
+                   p.sect_rand_stex, p.rust_sect_rand_stex
             FROM planets p JOIN stars s ON s.id=p.star_id
             WHERE (p.sect_def_hm IS NOT NULL
               AND NOT (p.sect_def_hm = p.rust_sect_def_hm
@@ -175,10 +177,12 @@ def api_mismatches():
                    AND (p.surf_fnv != p.rust_surf_fnv
                         OR p.atmo_fnv != p.rust_atmo_fnv
                         OR p.pal_fnv != p.rust_pal_fnv))
-               OR (p.sky_texture IS NOT NULL
-                   AND p.sky_texture != p.rust_sky_texture)
-               OR (p.surf_texture IS NOT NULL
-                   AND p.surf_texture != p.rust_surf_texture)
+               OR (p.sect_def_sky IS NOT NULL
+                   AND (p.sect_def_sky != p.rust_sect_def_sky
+                        OR p.sect_rand_sky != p.rust_sect_rand_sky))
+               OR (p.sect_def_stex IS NOT NULL
+                   AND (p.sect_def_stex != p.rust_sect_def_stex
+                        OR p.sect_rand_stex != p.rust_sect_rand_stex))
             ORDER BY s.name, p.body_index
         """).fetchall()
     ms = []
@@ -192,8 +196,10 @@ def api_mismatches():
         if r[11] is not None and r[11] != r[12]: diffs.append(f"surf {r[11][:8]} vs {r[12][:8]}")
         if r[13] is not None and r[13] != r[14]: diffs.append(f"atmo {r[13][:8]} vs {r[14][:8]}")
         if r[15] is not None and r[15] != r[16]: diffs.append(f"pal {r[15][:8]} vs {r[16][:8]}")
-        if r[17] is not None and r[17] != r[18]: diffs.append(f"sky_tex {r[17][:8]} vs {r[18][:8]}")
-        if r[19] is not None and r[19] != r[20]: diffs.append(f"surftex {r[19][:8]} vs {r[20][:8]}")
+        if r[17] is not None and r[17] != r[18]: diffs.append(f"def-sky {r[17][:8]} vs {r[18][:8]}")
+        if r[19] is not None and r[19] != r[20]: diffs.append(f"rand-sky {r[19][:8]} vs {r[20][:8]}")
+        if r[21] is not None and r[21] != r[22]: diffs.append(f"def-stex {r[21][:8]} vs {r[22][:8]}")
+        if r[23] is not None and r[23] != r[24]: diffs.append(f"rand-stex {r[23][:8]} vs {r[24][:8]}")
         ms.append({"star": sname, "body": bi, "type": pt, "diffs": diffs})
     return ms
 
