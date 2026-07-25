@@ -275,10 +275,6 @@ fn cmd_sector(args: &[String]) {
     emit!(f, "=== SURFACE SECTOR (heightmap) ===\n");
     g.build_surface_with_gap(&gap_hex);
 
-    // Generate sky texture
-    let atmosphere = 1i32; // always has atmosphere for sector context
-    g.create_sky(atmosphere);
-
     let pt = p as usize;
     let ptype = g.p_type[pt] as i32;
     emit!(f, "SECTOR body={} type={} lon={} lat={} sctype={} albedo={} night={}\n",
@@ -286,18 +282,54 @@ fn cmd_sector(args: &[String]) {
     emit!(f, "  global_surface_seed={}\n", g.global_surface_seed);
     hashline(&mut f, "heightmap", &g.p_surfacemap[0..40000]);
     hashline(&mut f, "objectchart", &g.objectschart[0..40000]);
-    hashline(&mut f, "sky_texture", &g.s_background[..ST_BYTES]);
-    hashline(&mut f, "surf_texture", &g.p_background[..ST_BYTES]);
 
     if let Ok(dir) = std::env::var("NIVDUMP") {
         let _ = std::fs::write(format!("{}/HEIGHT.bin", dir), &g.p_surfacemap[0..40000]);
         let _ = std::fs::write(format!("{}/OBJECTS.bin", dir), &g.objectschart[0..40000]);
-        let _ = std::fs::write(format!("{}/SKY.raw", dir), &g.s_background[..ST_BYTES]);
-        let _ = std::fs::write(format!("{}/SURF_TEX.raw", dir), &g.p_background[..ST_BYTES]);
     }
 }
 
-fn cmd_surftex(_args: &[String]) { eprintln!("surftex: not yet implemented"); }
+fn cmd_surftex(args: &[String]) {
+    let mut f = out_file(args);
+    let x = argd(args, "-x", 0.0);
+    let y = argd(args, "-y", 0.0);
+    let z = argd(args, "-z", 0.0);
+    let p = argl(args, "-p", 0) as i32;
+    let lon = argl(args, "-lon", 0) as i32;
+    let lat = argl(args, "-lat", 60) as i32;
+    let albedo = argl(args, "-albedo", 32) as i32;
+    let sc = argl(args, "-sc", -1) as i32;
+    let gap_hex = if let Some(pos) = args.iter().position(|a| a == "-gap") {
+        args.get(pos + 1).cloned().unwrap_or_default()
+    } else { String::new() };
+
+    let mut g = SystemGen::new();
+    g.generate(x, EngineY::from_user_y(y), z);
+    if p < 0 || p as usize >= g.nearstar_nob as usize {
+        emit!(f, "; ERROR body index {} out of range (nob={})\n", p, g.nearstar_nob);
+        return;
+    }
+    g.gen_planet_surface(p);
+    g.setup_landing(p, lon, lat, albedo, sc);
+    emit!(f, "=== SURFACE SECTOR (texture) ===\n");
+    g.build_surface_with_gap(&gap_hex);
+    report_surftex(&mut f, &g, p);
+
+    if let Ok(dir) = std::env::var("NIVDUMP") {
+        let _ = std::fs::write(format!("{}/SURFTEX.bin", dir), &g.p_background[..65536]);
+    }
+}
+
+fn report_surftex(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
+    let p = p as usize;
+    emit!(f, "SURFTEX body={} type={} lon={} lat={} sctype={} albedo={}\n",
+        p, g.p_type[p], g.landing_pt_lon, g.landing_pt_lat, g.sctype, g.albedo);
+    emit!(f, "  T_SCALE={} quartz={} groundflares={} gtx={}\n",
+        g.t_scale, g.quartz, g.groundflares, g.gtx);
+    emit!(f, "  rockscaling={:.3} rockpeaking={:.3} rockdensity={} treescaling={:.3}\n",
+        g.rockscaling, g.rockpeaking, g.rockdensity, g.treescaling);
+    hashline(f, "surf_texture", &g.p_background[..65536]);
+}
 
 fn cmd_fill_db(args: &[String]) {
     let db_path = args.iter().position(|a| a == "--db").and_then(|p| args.get(p + 1))
