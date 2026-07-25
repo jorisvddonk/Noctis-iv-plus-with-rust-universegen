@@ -1580,11 +1580,14 @@ impl SystemGen {
             }
             n -= 1;
         }
+        // Swap so smoothing works on s_background
+        std::mem::swap(&mut self.p_background, &mut self.s_background);
         let mut s = smooths;
         while s > 0 {
             self.ssmooth();
             s -= 1;
         }
+        std::mem::swap(&mut self.p_background, &mut self.s_background);
         self.quadwords = pqw;
     }
 
