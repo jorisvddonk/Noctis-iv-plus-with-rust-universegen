@@ -67,7 +67,7 @@ impl SystemGen {
     }
 
     // --- ssmooth (NOCTIS-0.CPP:4380): in-place 4-row packed 32-bit average ---
-    fn ssmooth(&mut self) {
+    pub(crate) fn ssmooth(&mut self) {
         let q = self.quadwords;
         let cx = (q * 4 - 360 * 4) as usize;
         let mut di = 360usize;
@@ -97,7 +97,7 @@ impl SystemGen {
     }
 
     // --- lssmooth (NOCTIS-0.CPP:4416): 2x2 average, in-place ---
-    fn lssmooth(&mut self) {
+    pub(crate) fn lssmooth(&mut self) {
         let q = self.quadwords;
         let cx = (q * 4 - 80 * 4) as usize;
         let mut di = 0usize;
@@ -123,7 +123,7 @@ impl SystemGen {
     }
 
     // --- psmooth_grays (NOCTIS-0.CPP:480): 2x2 average on target ---
-    fn psmooth_grays(&mut self) {
+    pub(crate) fn psmooth_grays(&mut self) {
         // C psmooth_grays (NOCTIS-0.CPP:480): in-place 4-row packed 32-bit
         // average, same dword packing as ssmooth. Averages 4 rows at once per
         // dword position, then sums the 4 resulting columns into one byte.
@@ -627,7 +627,7 @@ impl SystemGen {
     // `start_r += delta_r` rounds back to f32 each iteration. We must replicate
     // that per-step f32 rounding; accumulating in f64/F80 drifts the 64-colour
     // ramp and breaks type-7 palettes. See porting-gotchas §23/§26.
-    fn shade(&mut self, first_color: i32, number_of_colors: i32,
+    pub(crate) fn shade(&mut self, first_color: i32, number_of_colors: i32,
              start_r: f64, start_g: f64, start_b: f64,
              finish_r: f64, finish_g: f64, finish_b: f64) {
         let count = number_of_colors;

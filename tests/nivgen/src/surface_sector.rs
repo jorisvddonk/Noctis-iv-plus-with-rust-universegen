@@ -1,5 +1,5 @@
 //! Surface SECTOR generation: `build_surface()` and its helpers, ported
-//! bug-for-bug from `source/NOCTIS-1.CPP` (lines 1494-2731).
+//! bug-for-bug from `source/NOCTIS-1.CPP` (lines 1494-3139).
 //!
 //! This reproduces the 200x200 heightmap (`p_surfacemap`) and the 40000-byte
 //! object placement map (`objectschart`) for a single landing site. The C
@@ -27,6 +27,9 @@
 
 use crate::system::SystemGen;
 use std::f64::consts::PI;
+
+const ST_BYTES: usize = 64800;
+
 // Scenario types (NOCTIS-1.CPP:48 + harness NIVTEST.CPP:102).
 const SC_OCEAN: i32 = 1;
 const SC_PLAINS: i32 = 2;
@@ -1545,5 +1548,335 @@ impl SystemGen {
         } else {
             self.gtx = 1;
         }
+    }
+
+    // ── sky texture ─────────────────────────────────────────────────────
+
+    /// cloudy_sky (NOCTIS-1.CPP:1703). Writes cloud patterns into s_background.
+    fn cloudy_sky(&mut self, density: i32, smooths: i32) {
+        let mut n = self.rng.random(density + self.albedo);
+        let pqw = self.quadwords;
+        self.quadwords = ST_BYTES as i32 / 4;
+        while n > 0 {
+            let cx = self.rng.random(360) as f64;
+            let r = (self.rng.random(25) + 5) as f64;
+            let cy = self.rng.random(50) as f64 + 25.0 + r;
+            let mut y = -r;
+            while y < r {
+                let mut x = -2.0 * r;
+                while x < 2.0 * r {
+                    if (x * x * 0.2 + y * y).sqrt() < r {
+                        let p = (x + cx + 360.0 * (y + cy)) as usize;
+                        if p < ST_BYTES {
+                            let mut b = (1.4142 / ((x + r) * (x + r) + (y + r) * (y + r)).sqrt()) * 64.0;
+                            b += self.s_background[p] as f64;
+                            if b > 63.0 { b = 63.0; }
+                            self.s_background[p] = b as u8;
+                        }
+                    }
+                    x += 1.0;
+                }
+                y += 1.0;
+            }
+            n -= 1;
+        }
+        let mut s = smooths;
+        while s > 0 {
+            self.ssmooth();
+            s -= 1;
+        }
+        self.quadwords = pqw;
+    }
+
+    /// nebular_sky (NOCTIS-1.CPP:1674). Generates a nebula/alien sky texture
+    /// in s_background using the `imul ax` pattern.
+    fn nebular_sky(&mut self) {
+        let seed = self.rng.random(10000) as u32;
+        let pqw = self.quadwords;
+        self.quadwords = ST_BYTES as i32 / 4;
+        let mut cx = seed;
+        for i in 0..ST_BYTES {
+            cx = cx.wrapping_add(i as u32);
+            // imul ax: signed 16-bit square → dx:ax, keep low word
+            let lo = (cx as i16 as i32).wrapping_mul(cx as i16 as i32) as u16 as u32;
+            cx = lo;
+            cx = cx.wrapping_add(cx >> 16); // add ax, dx  (dx = high 16 bits)
+            self.s_background[i] = (cx as u8) & 0x3F;
+        }
+        // Swap buffers so smoothing works on s_background
+        std::mem::swap(&mut self.p_background, &mut self.s_background);
+        self.lssmooth();
+        if self.rng.random(2) != 0 {
+            self.ssmooth();
+        }
+        if self.rng.random(3) != 0 {
+            self.psmooth_grays();
+        }
+        std::mem::swap(&mut self.p_background, &mut self.s_background);
+        self.quadwords = pqw;
+    }
+
+    /// create_sky (NOCTIS-1.CPP:2736). Generates the sky texture, palette
+    /// gradients, and temperature/pressure for the sector.
+    fn create_sky(&mut self, atmosphere: i32) {
+        let br = self.sky_red_filter as f64 / 64.0;
+        let bg = self.sky_grn_filter as f64 / 64.0;
+        let bb = self.sky_blu_filter as f64 / 64.0;
+        let tr = self.gnd_red_filter as f64 / 64.0;
+        let tg = self.gnd_grn_filter as f64 / 64.0;
+        let tb = self.gnd_blu_filter as f64 / 64.0;
+        let mut fr = [0.0f64; 4];
+        let mut fg = [0.0f64; 4];
+        let mut fb = [0.0f64; 4];
+        let al = self.albedo as f64 / 64.0;
+        let mut dfs: f64;
+        let mut sb: f64;
+        let owner = self.p_owner[self.ip_targetted as usize];
+        if owner == -1 {
+            dfs = 1.0 - (self.ip_targetted as f64) * 0.05;
+        } else {
+            dfs = 1.0 - (owner as f64) * 0.05;
+        }
+        if atmosphere == 0 {
+            sb = 1.0;
+        } else {
+            sb = self.sky_brightness as f64 / 24.0;
+            if self.nightzone != 0 { dfs *= 0.5; }
+        }
+        if owner > 2 {
+            sb *= dfs * dfs;
+        } else {
+            dfs = 1.0;
+        }
+        dfs *= match self.nearstar_class {
+            0 => 1.0, 1 => 1.5, 2 => 0.5, 3 => 0.8, 4 => 1.2,
+            5 => 0.1, 6 => 0.1, 7 => 0.4, 8 => 0.9, 9 => 1.3,
+            10 => 0.5, 11 => 0.2, _ => 1.0,
+        };
+        let saturation = 1.0 - 0.15 * self.rainy;
+        self.frng.srand(self.global_surface_seed as u32);
+        self.rng.srand(self.global_surface_seed as u32);
+
+        let ptype = self.p_type[self.ip_targetted as usize] as i32;
+        match ptype {
+            1 => {
+                // rocky (moon-like)
+                self.pp_pressure = 0.0;
+                fr[0] = tr; fg[0] = tg; fb[0] = tb;
+                fr[1] = 1.5; fg[1] = 1.5; fb[1] = 1.5;
+                fr[2] = 2.0 * fr[0]; fg[2] = 2.0 * fg[0]; fb[2] = 2.0 * fb[0];
+                fr[3] = 0.0; fg[3] = 0.0; fb[3] = 0.0;
+            }
+            2 => {
+                // venusian (thick atmosphere)
+                fr[0] = 1.2 - tr;
+                fr[1] = tr + self.rng.flandom() * 0.15 - self.rng.flandom() * 0.15 + 0.3;
+                fr[2] = tr + self.rng.flandom() * 0.30 - self.rng.flandom() * 0.30 + 0.2;
+                fr[3] = tr + self.rng.flandom() * 0.45 - self.rng.flandom() * 0.45 + 0.1;
+                fg[0] = 1.2 - tg;
+                fg[1] = tg + self.rng.flandom() * 0.15 - self.rng.flandom() * 0.15 + 0.3;
+                fg[2] = tg + self.rng.flandom() * 0.30 - self.rng.flandom() * 0.30 + 0.2;
+                fg[3] = tg + self.rng.flandom() * 0.45 - self.rng.flandom() * 0.45 + 0.1;
+                fb[0] = 1.2 - tb;
+                fb[1] = tb + self.rng.flandom() * 0.15 - self.rng.flandom() * 0.15 + 0.3;
+                fb[2] = tb + self.rng.flandom() * 0.30 - self.rng.flandom() * 0.30 + 0.2;
+                fb[3] = tb + self.rng.flandom() * 0.45 - self.rng.flandom() * 0.45 + 0.1;
+                self.nebular_sky();
+                self.pp_pressure = self.frng.fast_flandom() * 20.0 + self.albedo as f64 + 1.0;
+            }
+            3 => {
+                // felisian (habitable)
+                fr[1] = br * 0.5 + 0.5 * self.rng.flandom();
+                fg[1] = bg * 0.5 + 0.5 * self.rng.flandom();
+                fb[1] = bb * 0.5 + 0.5 * self.rng.flandom();
+                match self.sctype {
+                    1 => { // OCEAN
+                        fr[0] = 0.65 + 0.5 * self.rng.flandom();
+                        fg[0] = 0.45 + 0.4 * self.rng.flandom();
+                        fb[0] = 0.25 + 0.3 * self.rng.flandom();
+                        if fg[0] < 0.6 { fg[0] *= 2.0; }
+                        fr[2] = 0.8 * self.rng.flandom();
+                        fg[2] = 0.8 * self.rng.flandom();
+                        fb[2] = fb[0] * 2.0 + 0.4;
+                        fr[3] = 0.2 + self.rng.flandom();
+                        fg[3] = 0.4 + self.rng.flandom();
+                        fb[3] = self.rng.flandom() * 0.6;
+                        self.cloudy_sky(50, 1);
+                    }
+                    2 => { // PLAINS
+                        fr[0] = 0.25 + 0.5 * self.rng.flandom();
+                        fg[0] = 0.50 + 0.4 * self.rng.flandom();
+                        fb[0] = 0.25 + 0.3 * self.rng.flandom();
+                        if fg[0] < 0.75 { fg[0] *= 1.5; }
+                        fr[2] = self.rng.flandom() * 0.4 + fr[0] * 0.3;
+                        fg[2] = self.rng.flandom() * 0.7 + fg[0] * 0.3;
+                        fb[2] = self.rng.flandom() * 0.2 + fb[0] * 0.3;
+                        fr[3] = self.rng.flandom();
+                        fg[3] = self.rng.flandom();
+                        fb[3] = self.rng.flandom();
+                        self.cloudy_sky(33, 1);
+                    }
+                    3 => { // DESERT
+                        fr[0] = tr + self.rng.flandom() * 0.33;
+                        fg[0] = tg + self.rng.flandom() * 0.25;
+                        fb[0] = tb + self.rng.flandom() * 0.12;
+                        fr[2] = tr; fg[2] = tg; fb[2] = tb;
+                        fr[3] = 0.50 * self.rng.flandom();
+                        fg[3] = 0.90 * self.rng.flandom();
+                        fb[3] = 0.40 * self.rng.flandom();
+                        self.cloudy_sky(10, 1);
+                    }
+                    _ => { // ICY
+                        fr[0] = 0.25 + self.rng.flandom();
+                        fg[0] = 0.55 + self.rng.flandom();
+                        fb[0] = 1.00 + self.rng.flandom();
+                        fr[2] = fr[0] * 0.6;
+                        fg[2] = fg[0] * 0.8;
+                        fb[2] = fb[0];
+                        fr[3] = 0.95 * self.rng.flandom();
+                        fg[3] = 0.95 * self.rng.flandom();
+                        fb[3] = 0.95 * self.rng.flandom();
+                        self.cloudy_sky(15, 1);
+                    }
+                }
+                self.pp_pressure = self.frng.fast_flandom() * 0.8 + 0.6;
+            }
+            4 => {
+                self.pp_pressure = self.frng.fast_flandom() * 0.1;
+                // goto like1 (same as case 1)
+                fr[0] = tr; fg[0] = tg; fb[0] = tb;
+                fr[1] = 1.5; fg[1] = 1.5; fb[1] = 1.5;
+                fr[2] = 2.0 * fr[0]; fg[2] = 2.0 * fg[0]; fb[2] = 2.0 * fb[0];
+                fr[3] = 0.0; fg[3] = 0.0; fb[3] = 0.0;
+            }
+            5 => {
+                // martian (thin atmosphere)
+                fr[0] = tr + 0.33 * self.rng.flandom() * al;
+                fg[0] = tg + 0.33 * self.rng.flandom() * al;
+                fb[0] = tb + 0.33 * self.rng.flandom() * al;
+                fr[1] = 0.8 * tb + 0.2 * self.rng.flandom() * al;
+                fg[1] = 0.8 * tg + 0.2 * self.rng.flandom() * al;
+                fb[1] = 0.8 * tr + 0.2 * self.rng.flandom() * al;
+                fr[2] = 0.5 + fr[0] * 0.5 * al;
+                fg[2] = 0.5 + fg[0] * 0.5 * al;
+                fb[2] = 0.5 + fb[0] * 0.5 * al;
+                fr[3] = 0.0; fg[3] = 0.0; fb[3] = 0.0;
+                self.sky_brightness = ((self.sky_brightness as f64) * 0.65) as i32;
+                self.cloudy_sky(10, 2);
+                self.pp_pressure = self.frng.fast_flandom() * 0.05 + 0.01;
+            }
+            7 => {
+                // icy (europa-like)
+                self.pp_pressure = self.frng.fast_flandom() * 0.02;
+                fr[0] = tr + self.rng.flandom() * al;
+                fg[0] = tg + self.rng.flandom() * al;
+                fb[0] = tb + self.rng.flandom() * al;
+                fr[1] = 1.3; fg[1] = 1.4; fb[1] = 1.5;
+                fr[2] = 0.5 + fr[0]; fg[2] = 0.5 + fg[0]; fb[2] = 0.5 + fb[0];
+                fr[3] = 0.0; fg[3] = 0.0; fb[3] = 0.0;
+            }
+            8 => {
+                self.pp_pressure = self.frng.fast_flandom() + 0.2;
+                // goto like7 (same as case 7)
+                fr[0] = tr + self.rng.flandom() * al;
+                fg[0] = tg + self.rng.flandom() * al;
+                fb[0] = tb + self.rng.flandom() * al;
+                fr[1] = 1.3; fg[1] = 1.4; fb[1] = 1.5;
+                fr[2] = 0.5 + fr[0]; fg[2] = 0.5 + fg[0]; fb[2] = 0.5 + fb[0];
+                fr[3] = 0.0; fg[3] = 0.0; fb[3] = 0.0;
+            }
+            _ => {}
+        }
+
+        // Clamp negative gradients
+        for i in 0..4 {
+            if fr[i] < 0.0 { fr[i] = 0.0; }
+            if fg[i] < 0.0 { fg[i] = 0.0; }
+            if fb[i] < 0.0 { fb[i] = 0.0; }
+        }
+
+        // Saturation correction for habitable / martian
+        if ptype == 3 || ptype == 5 {
+            for i in 0..4 {
+                fr[i] = (fr[i] - 0.5) * saturation + 0.5;
+                fg[i] = (fg[i] - 0.5) * saturation + 0.5;
+                fb[i] = (fb[i] - 0.5) * saturation + 0.5;
+            }
+        }
+
+        // Scale by dfs/sb
+        fr[0] *= 64.0 * dfs; fg[0] *= 64.0 * dfs; fb[0] *= 64.0 * dfs;
+        fr[1] *= 64.0 * dfs * sb; fg[1] *= 64.0 * dfs * sb; fb[1] *= 64.0 * dfs * sb;
+        fr[2] *= 64.0 * dfs; fg[2] *= 64.0 * dfs; fb[2] *= 64.0 * dfs;
+        fr[3] *= 64.0 * dfs; fg[3] *= 64.0 * dfs; fb[3] *= 64.0 * dfs;
+
+        if atmosphere == 0 {
+            self.shade(64, 64, 0.0, 0.0, 0.0, 100.0, 110.0, 120.0);
+        } else if self.nightzone != 0 {
+            self.shade(64, 64, 0.0, 0.0, 0.0, 60.0, 62.0, 64.0);
+            if ptype == 3 {
+                self.shade(0, 64, 0.0, 0.0, 0.0, 64.0, 62.0, 60.0);
+                self.shade(128, 64, 0.0, 0.0, 0.0, 64.0, 64.0, 64.0);
+                self.shade(192, 64, 8.0, 12.0, 16.0, 56.0, 60.0, 64.0);
+            } else {
+                fr[0] *= 0.33; fg[0] *= 0.44; fb[0] *= 0.55;
+                fr[2] *= 0.33; fg[2] *= 0.44; fb[2] *= 0.55;
+                fr[3] *= 0.33; fg[3] *= 0.44; fb[3] *= 0.55;
+                self.shade(64, 64, 0.0, 0.0, 0.0, fr[1], fg[1], fb[1]);
+            }
+        } else {
+            self.shade(64, 64, 0.0, 0.0, 0.0, fr[1], fg[1], fb[1]);
+        }
+
+        // Ground gradient
+        self.shade(0, 44, 0.0, 0.0, 0.0, fr[0], fg[0], fb[0]);
+        self.shade(44, 20, fr[0], fg[0], fb[0], fr[1], fg[1], fb[1]);
+
+        // Horizon gradient
+        self.shade(128, 10, 0.0, 0.0, 0.0, fr[0], fg[0], fb[0]);
+        self.shade(138, 44, fr[0], fg[0], fb[0], fr[2], fg[2], fb[2]);
+        self.shade(182, 10, fr[2], fg[2], fb[2], fr[1], fg[1], fb[1]);
+
+        // Vegetation gradient
+        self.shade(192, 10, 0.0, 0.0, 0.0, fr[0], fg[0], fb[0]);
+        self.shade(202, 44, fr[0], fg[0], fb[0], fr[3], fg[3], fb[3]);
+        self.shade(246, 10, fr[3], fg[3], fb[3], fr[1], fg[1], fb[1]);
+
+        // Temperature calculation
+        self.pp_temp = 90.0 - self.dsd1 * 0.33;
+        if atmosphere == 0 {
+            self.pp_temp -= 44.0;
+            self.pp_temp *= (self.pp_temp * 0.44).abs();
+            if self.nightzone != 0 {
+                self.pp_temp *= 0.3;
+            } else {
+                self.pp_temp *= 0.3 + self.exposure * 0.0077;
+            }
+        } else {
+            if self.nightzone != 0 {
+                self.pp_temp *= 0.6;
+            } else {
+                self.pp_temp *= 0.6 + self.exposure * 0.0044;
+            }
+        }
+        self.pp_temp -= (0.5 + 0.5 * self.frng.fast_flandom()) * (self.landing_pt_lat - 60).abs() as f64;
+        if self.pp_temp < -269.0 {
+            self.pp_temp = -269.0 + 4.0 * self.frng.fast_flandom();
+        }
+        if ptype == 2 {
+            self.pp_temp += self.frng.fast_flandom() * 150.0;
+        }
+        if ptype == 3 {
+            loop {
+                match self.sctype {
+                    1 => { if self.pp_temp >= 10.0 && self.pp_temp <= 60.0 { break; } }
+                    2 => { if self.pp_temp >= -10.0 && self.pp_temp <= 45.0 { break; } }
+                    3 => { if self.pp_temp >= 20.0 && self.pp_temp <= 80.0 { break; } }
+                    _ => { if self.pp_temp >= -120.0 && self.pp_temp <= 4.0 { break; } }
+                }
+                self.pp_temp += self.frng.fast_flandom() * if self.pp_temp < 0.0 { 5.0 } else { -5.0 };
+            }
+        }
+        self.base_pp_pressure = self.pp_pressure;
     }
 }
