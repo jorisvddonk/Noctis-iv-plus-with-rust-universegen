@@ -89,12 +89,17 @@ async function toggle(id, name) {
   }
 }
 
-function selLon(name, body, idx) {
-  const base = document.getElementById(`base-${name}-${body}`);
+function selLon(name, body) {
   const lon = document.getElementById(`lon-${name}-${body}`).value;
   const lat = document.getElementById(`lat-${name}-${body}`).value;
   document.getElementById(`sector-img-${name}-${body}`).src =
     `/stars/${encodeURIComponent(name)}/bodies/${body}/sector.png?lon=${lon}&lat=${lat}`;
+}
+function selStex(name, body) {
+  const lon = document.getElementById(`stex-lon-${name}-${body}`).value;
+  const lat = document.getElementById(`stex-lat-${name}-${body}`).value;
+  document.getElementById(`stex-img-${name}-${body}`).src =
+    `/stars/${encodeURIComponent(name)}/bodies/${body}/surftex.png?lon=${lon}&lat=${lat}`;
 }
 
 async function loadStar(id, name) {
@@ -126,9 +131,6 @@ async function loadStar(id, name) {
     if (stexOk) { html += ` · <span class="${stexOk}">stex ${stexOk}</span>`; }
     html += `</div>`;
     html += `<div class="images">`;
-    html += `<div><div class="label">SurfTex</div>`;
-    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surftex.png?lon=21&lat=87" loading="lazy" width="128" height="128" onclick="zoom(this)">`;
-    html += `</div>`;
     html += `<div><div class="label">Surface</div>`;
     html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surface.png?lon=0&lat=60" loading="lazy" width="180" height="90" onclick="zoom(this)">`;
     html += `</div>`;
@@ -137,6 +139,12 @@ async function loadStar(id, name) {
     html += `<div class="landing-form">`;
     html += `<label>lon</label><input id="lon-${name}-${p.body_index}" type="number" value="21" size="3" onchange="selLon('${name}',${p.body_index})">`;
     html += `<label>lat</label><input id="lat-${name}-${p.body_index}" type="number" value="87" size="3" onchange="selLon('${name}',${p.body_index})">`;
+    html += `</div></div>`;
+    html += `<div><div class="label">SurfTex</div>`;
+    html += `<img id="stex-img-${name}-${p.body_index}" src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surftex.png?lon=21&lat=87" loading="lazy" width="128" height="128" onclick="zoom(this)">`;
+    html += `<div class="landing-form">`;
+    html += `<label>lon</label><input id="stex-lon-${name}-${p.body_index}" type="number" value="21" size="3" onchange="selStex('${name}',${p.body_index})">`;
+    html += `<label>lat</label><input id="stex-lat-${name}-${p.body_index}" type="number" value="87" size="3" onchange="selStex('${name}',${p.body_index})">`;
     html += `</div></div>`;
     html += `<div><div class="label">Palette</div>`;
     html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/palette.png?lon=0&lat=60" loading="lazy" width="256" height="32" onclick="zoom(this)">`;
