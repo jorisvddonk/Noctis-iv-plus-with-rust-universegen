@@ -40,6 +40,10 @@
   #lightbox { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,.85); justify-content: center; align-items: center; cursor: zoom-out; }
   #lightbox.open { display: flex; }
   #lightbox img { width: 95vw; height: 95vh; object-fit: contain; image-rendering: pixelated; box-shadow: 0 0 40px #000; }
+  #report { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+  .stat-card { background: #1a1a2e; border-radius: 6px; padding: .5rem 1rem; min-width: 100px; text-align: center; }
+  .stat-card .num { font-size: 1.4rem; font-weight: bold; }
+  .stat-card .lbl { font-size: .7rem; color: #888; }
 </style>
 </head>
 <body>
@@ -47,6 +51,8 @@
 <body>
 <div class="wrap">
 <h1>Noctis IV · Visual Verifier</h1>
+<div id="report">Loading…</div>
+<div id="mismatches"></div>
 <p style="color:#888">
   {{ stars|length }} stars in DB. Click a row to expand.
 </p>
@@ -145,6 +151,29 @@ async function loadStar(id, name) {
   let matched = planets.filter(p => p.rust_sect_rand_hm === p.sect_rand_hm).length;
   document.getElementById(`status-${id}`).textContent = `${matched}/${planets.length} match`;
 }
+
+// Load report
+// Load mismatches
+fetch('/api/mismatches').then(r=>r.json()).then(mm => {
+  const el = document.getElementById('mismatches');
+  if (!mm.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<h3>Mismatches</h3><table><tr><th>Star</th><th>Body</th><th>Type</th><th>Diff</th></tr>' +
+    mm.map(m => `<tr><td>${m.star}</td><td>${m.body}</td><td>${m.type}</td><td style="font-size:.7rem">${m.diffs.join(', ')}</td></tr>`).join('') +
+    '</table>';
+});
+
+fetch('/api/report').then(r=>r.json()).then(d => {
+  const cards = [
+    {n:d.sector_match+'/'+d.sector_total, l:'Sector match'},
+    {n:d.stars, l:'Stars'},
+    {n:d.surf_match+'/'+d.surf_total, l:'Surface match'},
+    {n:d.atmo_match+'/'+d.surf_total, l:'Atmo match'},
+    {n:d.pal_match+'/'+d.surf_total, l:'Palette match'},
+  ];
+  document.getElementById('report').innerHTML = cards.map(c =>
+    `<div class="stat-card"><div class="num">${c.n}</div><div class="lbl">${c.l}</div></div>`
+  ).join('');
+});
 </script>
 </body>
 </html>

@@ -147,6 +147,44 @@ def index():
 def api_report():
     return db_report()
 
+@app.get("/api/mismatches")
+def api_mismatches():
+    with db() as conn:
+        rows = conn.execute("""
+            SELECT s.name, p.body_index, p.planet_type,
+                   p.sect_def_hm, p.rust_sect_def_hm,
+                   p.sect_def_oc, p.rust_sect_def_oc,
+                   p.sect_rand_hm, p.rust_sect_rand_hm,
+                   p.sect_rand_oc, p.rust_sect_rand_oc,
+                   p.surf_fnv, p.rust_surf_fnv,
+                   p.atmo_fnv, p.rust_atmo_fnv,
+                   p.pal_fnv, p.rust_pal_fnv
+            FROM planets p JOIN stars s ON s.id=p.star_id
+            WHERE (p.sect_def_hm IS NOT NULL
+              AND NOT (p.sect_def_hm = p.rust_sect_def_hm
+                       AND p.sect_def_oc = p.rust_sect_def_oc
+                       AND p.sect_rand_hm = p.rust_sect_rand_hm
+                       AND p.sect_rand_oc = p.rust_sect_rand_oc))
+               OR (p.surf_fnv IS NOT NULL
+                   AND (p.surf_fnv != p.rust_surf_fnv
+                        OR p.atmo_fnv != p.rust_atmo_fnv
+                        OR p.pal_fnv != p.rust_pal_fnv))
+            ORDER BY s.name, p.body_index
+        """).fetchall()
+    ms = []
+    for r in rows:
+        sname, bi, pt = r[0], r[1], r[2]
+        diffs = []
+        if r[3] is not None and r[3] != r[4]: diffs.append(f"def-hm {r[3][:8]} vs {r[4][:8]}")
+        if r[5] is not None and r[5] != r[6]: diffs.append(f"def-oc {r[5][:8]} vs {r[6][:8]}")
+        if r[7] is not None and r[7] != r[8]: diffs.append(f"rand-hm {r[7][:8]} vs {r[8][:8]}")
+        if r[9] is not None and r[9] != r[10]: diffs.append(f"rand-oc {r[9][:8]} vs {r[10][:8]}")
+        if r[11] is not None and r[11] != r[12]: diffs.append(f"surf {r[11][:8]} vs {r[12][:8]}")
+        if r[13] is not None and r[13] != r[14]: diffs.append(f"atmo {r[13][:8]} vs {r[14][:8]}")
+        if r[15] is not None and r[15] != r[16]: diffs.append(f"pal {r[15][:8]} vs {r[16][:8]}")
+        ms.append({"star": sname, "body": bi, "type": pt, "diffs": diffs})
+    return ms
+
 @app.get("/api/stars")
 def api_stars():
     with db() as conn:
