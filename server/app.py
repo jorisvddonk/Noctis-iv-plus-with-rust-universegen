@@ -164,7 +164,7 @@ def api_mismatches():
                    p.atmo_fnv, p.rust_atmo_fnv,
                    p.pal_fnv, p.rust_pal_fnv,
                    p.sky_texture, p.rust_sky_texture,
-                   p.surf_texture, p.rust_surf_texture
+                   p.canon_surftex, p.rust_surftex
             FROM planets p JOIN stars s ON s.id=p.star_id
             WHERE (p.sect_def_hm IS NOT NULL
               AND NOT (p.sect_def_hm = p.rust_sect_def_hm
@@ -193,7 +193,7 @@ def api_mismatches():
         if r[13] is not None and r[13] != r[14]: diffs.append(f"atmo {r[13][:8]} vs {r[14][:8]}")
         if r[15] is not None and r[15] != r[16]: diffs.append(f"pal {r[15][:8]} vs {r[16][:8]}")
         if r[17] is not None and r[17] != r[18]: diffs.append(f"sky_tex {r[17][:8]} vs {r[18][:8]}")
-        if r[19] is not None and r[19] != r[20]: diffs.append(f"surf_tex {r[19][:8]} vs {r[20][:8]}")
+        if r[19] is not None and r[19] != r[20]: diffs.append(f"surftex {r[19][:8]} vs {r[20][:8]}")
         ms.append({"star": sname, "body": bi, "type": pt, "diffs": diffs})
     return ms
 

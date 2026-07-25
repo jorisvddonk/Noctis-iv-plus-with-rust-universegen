@@ -120,9 +120,10 @@ async function loadStar(id, name) {
       html += `<span class="${palOk}">pal ${palOk}</span> · `;
     }
     html += `<span class="${defOk}">def ${defOk}</span> · <span class="${randOk}">rand ${randOk}</span>`;
-    if (p.planet_type === 3) {
-      html += ` <span class="gap-warn">(sctype=${p.sctype || "?"})</span>`;
-    }
+    const skyOk = p.rust_sky_texture && p.rust_sky_texture === p.sky_texture ? "ok" : p.sky_texture ? "mismatch" : "";
+    const stexOk = p.rust_surftex && p.rust_surftex === p.canon_surftex ? "ok" : p.canon_surftex ? "mismatch" : "";
+    if (skyOk) { html += ` · <span class="${skyOk}">sky ${skyOk}</span>`; }
+    if (stexOk) { html += ` · <span class="${stexOk}">stex ${stexOk}</span>`; }
     html += `</div>`;
     html += `<div class="images">`;
     html += `<div><div class="label">Surface</div>`;
