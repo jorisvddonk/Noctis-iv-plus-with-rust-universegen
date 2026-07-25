@@ -15,6 +15,7 @@ use std::io::Write;
 /// moon far-heap OOB read (lssmooth reading past s_background) lands. Those tail
 /// rows are never displayed, so hashing them would compare pure scratch memory.
 const SAMPLED_BYTES: usize = 360 * 128; // 46080
+const ST_BYTES: usize = 64800; // 360 * 180, full sky/surface texture
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -274,6 +275,10 @@ fn cmd_sector(args: &[String]) {
     emit!(f, "=== SURFACE SECTOR (heightmap) ===\n");
     g.build_surface_with_gap(&gap_hex);
 
+    // Generate sky texture
+    let atmosphere = 1i32; // always has atmosphere for sector context
+    g.create_sky(atmosphere);
+
     let pt = p as usize;
     let ptype = g.p_type[pt] as i32;
     emit!(f, "SECTOR body={} type={} lon={} lat={} sctype={} albedo={} night={}\n",
@@ -281,10 +286,14 @@ fn cmd_sector(args: &[String]) {
     emit!(f, "  global_surface_seed={}\n", g.global_surface_seed);
     hashline(&mut f, "heightmap", &g.p_surfacemap[0..40000]);
     hashline(&mut f, "objectchart", &g.objectschart[0..40000]);
+    hashline(&mut f, "sky_texture", &g.s_background[..ST_BYTES]);
+    hashline(&mut f, "surf_texture", &g.p_background[..ST_BYTES]);
 
     if let Ok(dir) = std::env::var("NIVDUMP") {
         let _ = std::fs::write(format!("{}/HEIGHT.bin", dir), &g.p_surfacemap[0..40000]);
         let _ = std::fs::write(format!("{}/OBJECTS.bin", dir), &g.objectschart[0..40000]);
+        let _ = std::fs::write(format!("{}/SKY.raw", dir), &g.s_background[..ST_BYTES]);
+        let _ = std::fs::write(format!("{}/SURF_TEX.raw", dir), &g.p_background[..ST_BYTES]);
     }
 }
 

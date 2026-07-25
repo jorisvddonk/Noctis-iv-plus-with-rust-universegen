@@ -558,6 +558,8 @@ static void report_sector_heightmap(int n)
 	hashline("heightmap", p_surfacemap, 40000UL);
 	/* objectschart is the 40000 byte object placement map. */
 	hashline("objectchart", (unsigned char huge *)objectschart, 40000UL);
+	hashline("sky_texture", s_background, 64800UL);
+	hashline("surf_texture", p_background, 64800UL);
 
 	dump_far("height.bin", p_surfacemap, 40000UL);
 	dump_far("objects.bin", (unsigned char huge *)objectschart, 40000UL);
@@ -612,6 +614,7 @@ static int cmd_sector(int argc, char **argv)
 	setup_landing(argc, argv, p);
 	out("=== SURFACE SECTOR (heightmap) ===\n");
 	build_surface();
+	create_sky(1);
 	report_sector_heightmap(p);
 	return 0;
 }

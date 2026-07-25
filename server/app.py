@@ -49,10 +49,11 @@ PLANET_TYPES = {
 def db_report():
     import sys as _sys
     _sys.path.insert(0, str(REPO / "tests" / "db"))
-    from report import sector_totals, surface_totals
+    from report import sector_totals, surface_totals, texture_totals
     with db() as conn:
         ok, d, rb, ro, tot, stars = sector_totals(conn)
         surf, atmo, pal, s_tot, unproc = surface_totals(conn)
+        sky, stex, tex_tot, tex_unproc = texture_totals(conn)
     return {
         "sector_match": ok, "sector_total": tot,
         "sector_def": d, "sector_rb": rb, "sector_ro": ro,
@@ -60,6 +61,8 @@ def db_report():
         "surf_match": surf, "surf_total": s_tot,
         "atmo_match": atmo, "pal_match": pal,
         "surf_unprocessed": unproc,
+        "sky_match": sky, "surf_tex_match": stex, "texture_total": tex_tot,
+        "texture_unprocessed": tex_unproc,
     }
 
 def has_surface(ptype: int) -> bool:
@@ -159,7 +162,9 @@ def api_mismatches():
                    p.sect_rand_oc, p.rust_sect_rand_oc,
                    p.surf_fnv, p.rust_surf_fnv,
                    p.atmo_fnv, p.rust_atmo_fnv,
-                   p.pal_fnv, p.rust_pal_fnv
+                   p.pal_fnv, p.rust_pal_fnv,
+                   p.sky_texture, p.rust_sky_texture,
+                   p.surf_texture, p.rust_surf_texture
             FROM planets p JOIN stars s ON s.id=p.star_id
             WHERE (p.sect_def_hm IS NOT NULL
               AND NOT (p.sect_def_hm = p.rust_sect_def_hm
@@ -170,6 +175,10 @@ def api_mismatches():
                    AND (p.surf_fnv != p.rust_surf_fnv
                         OR p.atmo_fnv != p.rust_atmo_fnv
                         OR p.pal_fnv != p.rust_pal_fnv))
+               OR (p.sky_texture IS NOT NULL
+                   AND p.sky_texture != p.rust_sky_texture)
+               OR (p.surf_texture IS NOT NULL
+                   AND p.surf_texture != p.rust_surf_texture)
             ORDER BY s.name, p.body_index
         """).fetchall()
     ms = []
@@ -183,6 +192,8 @@ def api_mismatches():
         if r[11] is not None and r[11] != r[12]: diffs.append(f"surf {r[11][:8]} vs {r[12][:8]}")
         if r[13] is not None and r[13] != r[14]: diffs.append(f"atmo {r[13][:8]} vs {r[14][:8]}")
         if r[15] is not None and r[15] != r[16]: diffs.append(f"pal {r[15][:8]} vs {r[16][:8]}")
+        if r[17] is not None and r[17] != r[18]: diffs.append(f"sky_tex {r[17][:8]} vs {r[18][:8]}")
+        if r[19] is not None and r[19] != r[20]: diffs.append(f"surf_tex {r[19][:8]} vs {r[20][:8]}")
         ms.append({"star": sname, "body": bi, "type": pt, "diffs": diffs})
     return ms
 

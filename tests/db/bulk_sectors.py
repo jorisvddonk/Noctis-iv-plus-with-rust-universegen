@@ -321,6 +321,8 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
 
 HM_RE = re.compile(r"^heightmap\s+len=\d+\s+fnv=(\w+)", re.M)
 OC_RE = re.compile(r"^objectchart\s+len=\d+\s+fnv=(\w+)", re.M)
+SKY_RE = re.compile(r"^sky_texture\s+len=\d+\s+fnv=(\w+)", re.M)
+STEX_RE = re.compile(r"^surf_texture\s+len=\d+\s+fnv=(\w+)", re.M)
 GAP_RE = re.compile(r"^gap\s+len=16\s+([0-9A-F]{32})", re.M)
 
 
@@ -336,9 +338,9 @@ def load_star(conn, star):
             lon_d, lat_d = 0, 60
             lon_r, lat_r = coords_from_seedval(seedval)
             up = {}
-            for (kind, lon, lat, hm_col, oc_col) in (
-                ("def", lon_d, lat_d, "sect_def_hm", "sect_def_oc"),
-                ("rand", lon_r, lat_r, "sect_rand_hm", "sect_rand_oc"),
+            for (kind, lon, lat, hm_col, oc_col, sky_col, stex_col) in (
+                ("def", lon_d, lat_d, "sect_def_hm", "sect_def_oc", "sky_texture", "surf_texture"),
+                ("rand", lon_r, lat_r, "sect_rand_hm", "sect_rand_oc", "sky_texture", "surf_texture"),
             ):
                 out = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
                 if not os.path.exists(out):
@@ -346,6 +348,8 @@ def load_star(conn, star):
                 t = open(out).read()
                 hm = HM_RE.findall(t)
                 oc = OC_RE.findall(t)
+                sk = SKY_RE.findall(t)
+                st = STEX_RE.findall(t)
                 if hm:
                     if len(hm) > 1:
                         print(f"  WARN {star} body {body} {kind}: {len(hm)} heightmap blocks in file, using first")
@@ -354,6 +358,10 @@ def load_star(conn, star):
                     if len(oc) > 1:
                         print(f"  WARN {star} body {body} {kind}: {len(oc)} objectchart blocks in file, using first")
                     up[oc_col] = oc[0]
+                if sk:
+                    up[sky_col] = sk[0]
+                if st:
+                    up[stex_col] = st[0]
                 # Capture gap from this landing's fixture (DEF and RAND may differ)
                 m = GAP_RE.findall(t)
                 if m:
@@ -367,7 +375,7 @@ NIVGEN = os.path.join(REPO, "tests", "nivgen", "target", "release", "nivgen")
 
 
 def rust_sector_hashes(x, y, z, body, lon, lat, star_name=None, gap=None):
-    """Run `nivgen sector` for one landing and return (hm_fnv, oc_fnv)."""
+    """Run `nivgen sector` for one landing and return (hm_fnv, oc_fnv, sky_fnv, stex_fnv)."""
     starmap_bin = os.path.join(REPO, "data", "STARMAP.BIN")
     cmd = [NIVGEN, "sector", "-x", str(x), "-y", str(y), "-z", str(z),
            "-p", str(body), "-lon", str(lon), "-lat", str(lat)]
@@ -377,11 +385,15 @@ def rust_sector_hashes(x, y, z, body, lon, lat, star_name=None, gap=None):
         cmd += ["-gap", gap]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
-        return None, None
+        return None, None, None, None
     hm = HM_RE.search(r.stdout)
     oc = OC_RE.search(r.stdout)
+    sk = SKY_RE.search(r.stdout)
+    st = STEX_RE.search(r.stdout)
     return (hm.group(1) if hm else None,
-            oc.group(1) if oc else None)
+            oc.group(1) if oc else None,
+            sk.group(1) if sk else None,
+            st.group(1) if st else None)
 
 
 def rust_star(conn, star):
@@ -417,11 +429,15 @@ def rust_star(conn, star):
                 ).fetchone()
                 if row and row[0]:
                     gap = row[0]
-            hm, oc = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
+            hm, oc, sky, stex = rust_sector_hashes(x, y_usr, z, body, lon, lat, star, gap)
             if hm:
                 up[hm_col] = hm
             if oc:
                 up[oc_col] = oc
+            if sky:
+                up[f"rust_sky_texture"] = sky
+            if stex:
+                up[f"rust_surf_texture"] = stex
         if up:
             update_planet(conn, sid[0], body, up)
     conn.commit()
@@ -538,14 +554,19 @@ def report_all(conn, short=False):
     """).fetchall()
 
     if short:
-        from report import sector_totals, surface_totals
+        from report import sector_totals, surface_totals, texture_totals
         ok, d, rb, ro, tot, n_stars = sector_totals(conn)
         surf, atmo, pal, s_tot, unproc = surface_totals(conn)
+        sky, stex, tex_tot, tex_unproc = texture_totals(conn)
         print(f'SECTOR: {ok}/{tot} MATCH | def* {d} MISMATCH | r-b* {rb} MISMATCH | r-o* {ro} MISMATCH | {n_stars} stars')
         if s_tot:
             print(f'SURFACE: {surf}/{s_tot} surf MATCH | {atmo}/{s_tot} atmo MATCH | {pal}/{s_tot} pal MATCH | {unproc} unprocessed')
         else:
             print('SURFACE: no canonical data')
+        if tex_tot:
+            print(f'TEXTURE: {sky}/{tex_tot} sky MATCH | {stex}/{tex_tot} surf_tex MATCH | {tex_unproc} unprocessed')
+        else:
+            print('TEXTURE: no canonical data')
         return
 
     print(f'Planet-type breakdown (bodies with sector data):')
