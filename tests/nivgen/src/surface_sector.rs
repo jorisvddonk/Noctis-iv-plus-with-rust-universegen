@@ -802,10 +802,9 @@ impl SystemGen {
         // (Borland int is 16 bits). 100 * 359 = 35900 overflows signed
         // 16-bit to -29636, which is sign-extended to 32-bit 0xFFFF8C3C.
         let land_seed = ((self.landing_pt_lat as i16).wrapping_mul(self.landing_pt_lon as i16)) as i32 as u32;
+        let ptype = self.p_type[n_idx] as i32;
         self.frng.srand(land_seed);
         self.rng.srand(land_seed);
-
-        let ptype = self.p_type[n_idx] as i32;
         match ptype {
             // case 0: vulcanico, non considerato.
 
@@ -1451,8 +1450,9 @@ impl SystemGen {
 
     fn oc_revert(&mut self) {
         let mut ptr = 0usize;
-        if self.rng.random(2) != 0 {
-                            ptr = (self.rng.random(50) + 5) as usize;
+        let branch = self.rng.random(2);
+        if branch != 0 {
+            ptr = (self.rng.random(50) + 5) as usize;
             while ptr != 0 {
                 let a_h = self.rng.random(30) + 1;
                 let a_r = self.rng.random(200) + 1;
@@ -1462,7 +1462,7 @@ impl SystemGen {
                 ptr -= 1;
             }
         } else {
-                            ptr = (self.rng.random(25) + 10) as usize;
+            ptr = (self.rng.random(25) + 10) as usize;
             while ptr != 0 {
                 let a_h = self.rng.random(100) + 1;
                 let a_r = self.rng.random(200) + 1;
