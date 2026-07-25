@@ -634,6 +634,7 @@ static int cmd_surftex(int argc, char **argv)
 	setup_landing(argc, argv, p);
 	out("=== SURFACE SECTOR (texture) ===\n");
 	build_surface();
+	_fmemset(s_background, sky_brightness, st_bytes);
 	create_sky(1);
 	report_surface_texture(p);
 	return 0;
