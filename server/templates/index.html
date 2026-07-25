@@ -126,6 +126,9 @@ async function loadStar(id, name) {
     if (stexOk) { html += ` · <span class="${stexOk}">stex ${stexOk}</span>`; }
     html += `</div>`;
     html += `<div class="images">`;
+    html += `<div><div class="label">SurfTex</div>`;
+    html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surftex.png?lon=21&lat=87" loading="lazy" width="128" height="128" onclick="zoom(this)">`;
+    html += `</div>`;
     html += `<div><div class="label">Surface</div>`;
     html += `<img src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/surface.png?lon=0&lat=60" loading="lazy" width="180" height="90" onclick="zoom(this)">`;
     html += `</div>`;

@@ -328,6 +328,44 @@ def palette_png(name: str, body: int,
     img.save(buf, "PNG")
     return Response(buf.getvalue(), media_type="image/png")
 
+@app.get("/stars/{name}/bodies/{body}/surftex.png")
+def surftex_png(name: str, body: int,
+                lon: int = Query(21), lat: int = Query(87),
+                albedo: int = Query(32), sc: int = Query(-1)):
+    with db() as conn:
+        star = conn.execute("SELECT * FROM stars WHERE name=?", (name,)).fetchone()
+        if not star:
+            raise HTTPException(404)
+        p = conn.execute("SELECT * FROM planets WHERE star_id=? AND body_index=?",
+                         (star["id"], body)).fetchone()
+    if not p:
+        raise HTTPException(404)
+    if not has_surface(p["planet_type"]):
+        return Response(no_data_png("companion star - no surface"), media_type="image/png")
+    dump = nivgen_run("surftex", "-x", str(star["x"]), "-y", str(star["y_user"]),
+                      "-z", str(star["z"]), "-p", str(body),
+                      "-lon", str(lon), "-lat", str(lat),
+                      "-albedo", str(albedo), "-sc", str(sc))
+    try:
+        raw = open(os.path.join(dump, "SURFTEX.bin"), "rb").read(65536)
+    except FileNotFoundError:
+        import shutil; shutil.rmtree(dump, ignore_errors=True)
+        return Response(no_data_png("no surftex data"), media_type="image/png")
+    import shutil; shutil.rmtree(dump, ignore_errors=True)
+
+    # Render 256x256 grayscale
+    img = Image.new("RGB", (256, 256))
+    px = img.load()
+    for y in range(256):
+        for x in range(256):
+            v = raw[y * 256 + x]
+            # Scale 6-bit (0-63) to 8-bit with *4
+            r = g = b = min(v * 4, 255)
+            px[x, y] = (r, g, b)
+    buf = BytesIO()
+    img.save(buf, "PNG")
+    return Response(buf.getvalue(), media_type="image/png")
+
 @app.get("/stars/{name}/bodies/{body}/atmo.png")
 def atmo_png(name: str, body: int,
              lon: int = Query(0), lat: int = Query(60),
