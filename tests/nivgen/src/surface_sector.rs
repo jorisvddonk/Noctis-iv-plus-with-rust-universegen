@@ -1618,7 +1618,7 @@ impl SystemGen {
 
     /// create_sky (NOCTIS-1.CPP:2736). Generates the sky texture, palette
     /// gradients, and temperature/pressure for the sector.
-    fn create_sky(&mut self, atmosphere: i32) {
+    pub fn create_sky(&mut self, atmosphere: i32) {
         let br = self.sky_red_filter as f64 / 64.0;
         let bg = self.sky_grn_filter as f64 / 64.0;
         let bb = self.sky_blu_filter as f64 / 64.0;
@@ -1867,14 +1867,21 @@ impl SystemGen {
             self.pp_temp += self.frng.fast_flandom() * 150.0;
         }
         if ptype == 3 {
-            loop {
-                match self.sctype {
-                    1 => { if self.pp_temp >= 10.0 && self.pp_temp <= 60.0 { break; } }
-                    2 => { if self.pp_temp >= -10.0 && self.pp_temp <= 45.0 { break; } }
-                    3 => { if self.pp_temp >= 20.0 && self.pp_temp <= 80.0 { break; } }
-                    _ => { if self.pp_temp >= -120.0 && self.pp_temp <= 4.0 { break; } }
-                }
-                self.pp_temp += self.frng.fast_flandom() * if self.pp_temp < 0.0 { 5.0 } else { -5.0 };
+            let (lo, hi) = match self.sctype {
+                1 => (10.0, 60.0),
+                2 => (-10.0, 45.0),
+                3 => (20.0, 80.0),
+                _ => (-120.0, 4.0),
+            };
+            let mut _safety = 0i32;
+            while self.pp_temp < lo && _safety < 10000 {
+                self.pp_temp += self.frng.fast_flandom() * 5.0;
+                _safety += 1;
+            }
+            _safety = 0;
+            while self.pp_temp > hi && _safety < 10000 {
+                self.pp_temp -= self.frng.fast_flandom() * 5.0;
+                _safety += 1;
             }
         }
         self.base_pp_pressure = self.pp_pressure;
