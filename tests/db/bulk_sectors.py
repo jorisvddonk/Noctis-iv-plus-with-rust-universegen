@@ -538,22 +538,13 @@ def report_all(conn, short=False):
     """).fetchall()
 
     if short:
-        tot_p = tot_m = tot_ok = tot_def = tot_rb = tot_ro = 0
-        for t, m, ok, df, rh, ro in rows:
-            if m: tot_m += ok+df+rh+ro
-            else: tot_p += ok+df+rh+ro
-            tot_ok += ok; tot_def += df; tot_rb += rh; tot_ro += ro
-        surf_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv IS NOT NULL').fetchone()[0]
-        n_stars = conn.execute('SELECT COUNT(DISTINCT star_id) FROM planets WHERE sect_def_hm IS NOT NULL').fetchone()[0]
-        if surf_tot > 0:
-            surf_match = conn.execute('SELECT COUNT(*) FROM planets WHERE surf_fnv = rust_surf_fnv AND surf_fnv IS NOT NULL').fetchone()[0]
-            atmo_match = conn.execute('SELECT COUNT(*) FROM planets WHERE atmo_fnv = rust_atmo_fnv AND atmo_fnv IS NOT NULL').fetchone()[0]
-            pal_match = conn.execute('SELECT COUNT(*) FROM planets WHERE pal_fnv = rust_pal_fnv AND pal_fnv IS NOT NULL').fetchone()[0]
-            surf_none = surf_tot - surf_match
-            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | def* {tot_def} MISMATCH | r-b* {tot_rb} MISMATCH | r-o* {tot_ro} MISMATCH | {n_stars} stars')
-            print(f'SURFACE: {surf_match}/{surf_tot} surf MATCH | {atmo_match}/{surf_tot} atmo MATCH | {pal_match}/{surf_tot} pal MATCH | {surf_none} unprocessed')
+        from report import sector_totals, surface_totals
+        ok, d, rb, ro, tot, n_stars = sector_totals(conn)
+        surf, atmo, pal, s_tot, unproc = surface_totals(conn)
+        print(f'SECTOR: {ok}/{tot} MATCH | def* {d} MISMATCH | r-b* {rb} MISMATCH | r-o* {ro} MISMATCH | {n_stars} stars')
+        if s_tot:
+            print(f'SURFACE: {surf}/{s_tot} surf MATCH | {atmo}/{s_tot} atmo MATCH | {pal}/{s_tot} pal MATCH | {unproc} unprocessed')
         else:
-            print(f'SECTOR: {tot_ok}/{tot_ok+tot_def+tot_rb+tot_ro} MATCH | def* {tot_def} MISMATCH | r-b* {tot_rb} MISMATCH | r-o* {tot_ro} MISMATCH | {n_stars} stars')
             print('SURFACE: no canonical data')
         return
 
