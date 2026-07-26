@@ -271,7 +271,8 @@ impl SystemGen {
         while length != 0 {
             fx = ((fx as i16).wrapping_add((self.rng.random(3) + x_trend) as i16)) as i32;
             fz = ((fz as i16).wrapping_add((self.rng.random(3) + z_trend) as i16)) as i32;
-            let location = align * (fz as i64) + (fx as i64);
+            // C uses `unsigned location` (16-bit), so large fz/fx wrap into [0,65535].
+            let location = ((align * (fz as i64) + (fx as i64)) & 0xFFFF) as i64;
             if location > 0 && location < mapsize {
                 let loc = location as usize;
                 match map {
@@ -295,7 +296,8 @@ impl SystemGen {
             fx = ((fx as i16).wrapping_add((self.rng.random(3) + x_trend) as i16)) as i32;
             fz = ((fz as i16).wrapping_add((self.rng.random(3) + z_trend) as i16)) as i32;
             deviation += self.rng.random(variability) - (variability >> 1);
-            let location = align * (fz as i64) + (fx as i64);
+            // C uses `unsigned location` (16-bit), wraps large fz/fx.
+            let location = ((align * (fz as i64) + (fx as i64)) & 0xFFFF) as i64;
             if location > 0 && location < mapsize {
                 let loc = location as usize;
                 let mut peak = self.p_surfacemap[loc] as i32;

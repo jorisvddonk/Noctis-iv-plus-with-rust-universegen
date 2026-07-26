@@ -1,0 +1,8 @@
+C_RNG_SEED srand(46513)
+C_RNG random(2)=1
+C_RNG random(100)=88
+C_RNG treepeaking=1.598553
+C_RNG random(3)=-128
+C_RNG random(30)=0
+C_RNG random(15)=0
+C_RNG flandom_r=0.273350 flandom_l=0.603127 treescaling=4399.356934
