@@ -264,14 +264,12 @@ impl SystemGen {
 
     /// srf_darkline (NOCTIS-1.CPP:1589). `map` 0/1 like std_crater.
     fn srf_darkline(&mut self, map: u8, mut length: i32, x_trend: i32, z_trend: i32, align: i64) {
-        // C uses `int` (16-bit) for fx/fz — overflow wraps signed 16-bit.
         let mut fx = self.rng.random(align as i32) as i16 as i32;
         let mut fz = self.rng.random(align as i32) as i16 as i32;
         let mapsize = align * align;
         while length != 0 {
             fx = ((fx as i16).wrapping_add((self.rng.random(3) + x_trend) as i16)) as i32;
             fz = ((fz as i16).wrapping_add((self.rng.random(3) + z_trend) as i16)) as i32;
-            // C uses `unsigned location` (16-bit), so large fz/fx wrap into [0,65535].
             let location = ((align * (fz as i64) + (fx as i64)) & 0xFFFF) as i64;
             if location > 0 && location < mapsize {
                 let loc = location as usize;
