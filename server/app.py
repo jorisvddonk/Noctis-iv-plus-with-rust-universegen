@@ -401,6 +401,38 @@ def atmo_png(name: str, body: int,
     img.save(buf, "PNG")
     return Response(buf.getvalue(), media_type="image/png")
 
+@app.get("/stars/{name}/bodies/{body}/sky.png")
+def sky_png(name: str, body: int,
+            lon: int = Query(21), lat: int = Query(87),
+            albedo: int = Query(32), sc: int = Query(-1)):
+    with db() as conn:
+        star = conn.execute("SELECT * FROM stars WHERE name=?", (name,)).fetchone()
+        if not star:
+            raise HTTPException(404)
+        p = conn.execute("SELECT * FROM planets WHERE star_id=? AND body_index=?",
+                         (star["id"], body)).fetchone()
+    if not p:
+        raise HTTPException(404)
+    if not has_surface(p["planet_type"]):
+        return Response(no_data_png("companion star - no surface"), media_type="image/png")
+    dump = nivgen_run("surftex", "-x", str(star["x"]), "-y", str(star["y_user"]),
+                      "-z", str(star["z"]), "-p", str(body),
+                      "-lon", str(lon), "-lat", str(lat),
+                      "-albedo", str(albedo), "-sc", str(sc))
+    try:
+        raw = open(os.path.join(dump, "SKY.bin"), "rb").read(64800)
+    except FileNotFoundError:
+        import shutil; shutil.rmtree(dump, ignore_errors=True)
+        return Response(no_data_png("no sky data"), media_type="image/png")
+    import shutil; shutil.rmtree(dump, ignore_errors=True)
+
+    # Render 360x180 grayscale
+    img = Image.new("L", (360, 180))
+    img.frombytes(raw)
+    buf = BytesIO()
+    img.save(buf, "PNG")
+    return Response(buf.getvalue(), media_type="image/png")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=4274)

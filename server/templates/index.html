@@ -95,6 +95,7 @@ function updLon(name, body) {
   const base = `/stars/${encodeURIComponent(name)}/bodies/${body}`;
   document.getElementById(`sector-img-${name}-${body}`).src = `${base}/sector.png?lon=${lon}&lat=${lat}`;
   document.getElementById(`stex-img-${name}-${body}`).src = `${base}/surftex.png?lon=${lon}&lat=${lat}`;
+  document.getElementById(`sky-img-${name}-${body}`).src = `${base}/sky.png?lon=${lon}&lat=${lat}`;
 }
 
 async function loadStar(id, name) {
@@ -143,6 +144,9 @@ async function loadStar(id, name) {
     html += `</div>`;
     html += `<div><div class="label">Atmo</div>`;
     html += `<img id="atmo-img-${name}-${p.body_index}" src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/atmo.png?lon=0&lat=60" loading="lazy" width="180" height="90" onclick="zoom(this)">`;
+    html += `</div>`;
+    html += `<div><div class="label">Sky</div>`;
+    html += `<img id="sky-img-${name}-${p.body_index}" src="/stars/${encodeURIComponent(name)}/bodies/${p.body_index}/sky.png?lon=21&lat=87" loading="lazy" width="180" height="90" onclick="zoom(this)">`;
     html += `</div>`;
     html += `</div>`; // images
     html += `</div>`; // card
