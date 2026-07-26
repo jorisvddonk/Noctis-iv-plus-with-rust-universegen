@@ -925,9 +925,9 @@ impl SystemGen {
                 }
                 match self.rng.random(2) {
                         0 => {
-                        // C evaluates arithmetic left-to-right: random(200) first, then random(100)
-                        let _r200 = self.rng.random(200);
+                        // C RTL: random(100) first (right operand of -), then random(200)
                         let _r100 = self.rng.random(100);
+                        let _r200 = self.rng.random(200);
                         n = self.albedo + _r200 - _r100;
                         hf = f(self.rng.random(10) as f64 * 0.02);
                         if n < 0 {
@@ -940,8 +940,7 @@ impl SystemGen {
                             if self.rng.random(2) != 0 {
                                 self.std_crater(1, cx, cz, -cr, 31, hf, 1.0, 256);
                             } else {
-                                eprintln!("[DBG_T1] cx={} cz={} cr={} hf={}", cx, cz, cr, hf);
-                        self.std_crater(1, cx, cz, cr, 31, hf, 1.0, 256);
+                                self.std_crater(1, cx, cz, cr, 31, hf, 1.0, 256);
                             }
                             n -= 1;
                         }
