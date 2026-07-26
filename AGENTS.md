@@ -164,13 +164,15 @@ body 3, rand landing, ruinschart alias). All 117 former r-o\* mismatches fixed.
 
 **Textures**: Sky: ~100% matching. Surf\_tex: type 4 (roccioso) fixed
 via _fmemset wrapping correction (commit 5fdf7baf). Types 0, 6 also match
-(bare _fmemset — no txtr operations). Remaining mismatches:
-- Types 1, 2, 5, 7: std\_crater + srf\_darkline on txtr produce different
-  pixel values despite IDENTICAL crater params (cx, cz, cr, hf all match).
-  The first diff appears at position (197,0) in the SECOND crater when
-  cr%2 triggers the negative-r secondary crater. Rust produces 0x16, C
-  produces 0x0B — a difference far larger than float precision can explain.
-  The root cause is still unknown.
+(bare _fmemset — no txtr operations).
+
+**Type 1 (rocciosi)**: Fixed via `unsigned location` wrapping
+(commit ed6026f4). C uses `unsigned` (16-bit) for `location` in
+`srf_darkline`/`felisian_srf_darkline` — when `align*fz+fx` exceeds 65535
+the location wraps into [0,65535] instead of being clipped. Rust was using
+i64 (no wrap), causing darkline paths to diverge. 532 byte diffs → 0.
+
+Remaining mismatches: types 2, 5, 7 likely need similar fixes.
 
 ### Debugging the type-1 stex bug
 
