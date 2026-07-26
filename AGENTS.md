@@ -75,6 +75,31 @@ bulk_atlas.py ──import stars──► noctis.db ──► bulk_sectors.py (o
                                           computes hashes, DB stores them
 ```
 
+### Standard verification workflow
+
+```bash
+# 1. Auto-import & process next unprocessed star:
+uv run python3 tests/db/bulk_sectors.py one_iter
+```
+
+If it reports "0 bodies match" or "nothing to generate" with 0 bodies,
+just run it again. Keep running until it processes a star with planets
+(some stars are just companions with no planetary bodies).
+
+**Do NOT** add flags, do NOT check the DB first, do NOT try to be smart.
+Just brute-force `one_iter` repeatedly.
+
+```bash
+# 2. Check results:
+uv run python3 tests/db/bulk_sectors.py db-report --short
+```
+
+After a fix, verify the targeted star explicitly before bulk-running:
+```bash
+uv run python3 tests/db/bulk_sectors.py one_iter <STAR_NAME>
+uv run python3 tests/db/bulk_sectors.py db-report --short
+```
+
 ### Commands
 
 ```bash
@@ -89,6 +114,9 @@ uv run python3 tests/db/bulk_sectors.py db-report
 
 # Condensed summary:
 uv run python3 tests/db/bulk_sectors.py db-report --short
+
+# Compare a specific star's Rust sector hashes vs C:
+uv run python3 tests/db/bulk_sectors.py cmp <STAR_NAME>
 
 # Import new stars from Feltyrion Explorer atlas:
 uv run python3 tests/db/bulk_atlas.py run --per-class 2
@@ -108,8 +136,12 @@ uv run python3 tests/db/query_db.py FENIA     # filter by star
 | `planets.pal_fnv` | C's palette FNV hash |
 | `planets.sect_def_hm` / `sect_rand_hm` | C's sector heightmap FNV hash |
 | `planets.sect_def_oc` / `sect_rand_oc` | C's sector object chart FNV hash |
+| `planets.sect_def_stex` / `sect_rand_stex` | C's surface texture (surftex) FNV hash |
+| `planets.sect_def_sky` / `sect_rand_sky` | C's sky texture FNV hash |
 | `planets.rust_surf_fnv` | Rust's surface map FNV hash (computed by `bulk_sectors.py`) |
 | `planets.rust_sect_*` | Rust's sector hashes (computed by `bulk_sectors.py`) |
+| `planets.rust_sect_def_stex` / `rust_sect_rand_stex` | Rust's surface texture FNV hash |
+| `planets.rust_sect_def_sky` / `rust_sect_rand_sky` | Rust's sky texture FNV hash |
 
 The `cmp*` columns compare Rust vs C after both are stored.
 
@@ -129,6 +161,9 @@ Palette: 10685/10686 (1 pre-existing TWENDZ body 13 fixture variance).
 
 **Sectors**: 9321/9322 match C (1 known r-b\* mismatch — BALASTRACKONASTREYA
 body 3, rand landing, ruinschart alias). All 117 former r-o\* mismatches fixed.
+
+**Textures**: Sky: ~100% matching. Surf\_tex: type 4 (roccioso) fixed
+via _fmemset wrapping correction; types 0, 1, 2, 5, 6, 7 pre-existing mismatches remain.
 
 ## References
 

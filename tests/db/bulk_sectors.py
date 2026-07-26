@@ -576,14 +576,15 @@ def report_all(conn, short=False):
         from report import sector_totals, surface_totals, texture_totals
         ok, d, rb, ro, tot, n_stars = sector_totals(conn)
         surf, atmo, pal, s_tot, unproc = surface_totals(conn)
-        sky, stex, tex_tot, tex_unproc = texture_totals(conn)
+        sky_def, sky_rand, stex_def, stex_rand, tex_tot = texture_totals(conn)
         print(f'SECTOR: {ok}/{tot} MATCH | def* {d} MISMATCH | r-b* {rb} MISMATCH | r-o* {ro} MISMATCH | {n_stars} stars')
         if s_tot:
             print(f'SURFACE: {surf}/{s_tot} surf MATCH | {atmo}/{s_tot} atmo MATCH | {pal}/{s_tot} pal MATCH | {unproc} unprocessed')
         else:
             print('SURFACE: no canonical data')
         if tex_tot:
-            print(f'TEXTURE: {sky}/{tex_tot} sky MATCH | {stex}/{tex_tot} surf_tex MATCH | {tex_unproc} unprocessed')
+            print(f'TEXTURE: sky {sky_def}/{tex_tot} def MATCH | {sky_rand}/{tex_tot} rand MATCH')
+            print(f'         stex {stex_def}/{tex_tot} def MATCH | {stex_rand}/{tex_tot} rand MATCH')
         else:
             print('TEXTURE: no canonical data')
         return

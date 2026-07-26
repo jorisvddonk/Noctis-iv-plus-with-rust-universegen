@@ -264,12 +264,13 @@ impl SystemGen {
 
     /// srf_darkline (NOCTIS-1.CPP:1589). `map` 0/1 like std_crater.
     fn srf_darkline(&mut self, map: u8, mut length: i32, x_trend: i32, z_trend: i32, align: i64) {
-        let mut fx = self.rng.random(align as i32);
-        let mut fz = self.rng.random(align as i32);
+        // C uses `int` (16-bit) for fx/fz — overflow wraps signed 16-bit.
+        let mut fx = self.rng.random(align as i32) as i16 as i32;
+        let mut fz = self.rng.random(align as i32) as i16 as i32;
         let mapsize = align * align;
         while length != 0 {
-            fx += self.rng.random(3) + x_trend;
-            fz += self.rng.random(3) + z_trend;
+            fx = ((fx as i16).wrapping_add((self.rng.random(3) + x_trend) as i16)) as i32;
+            fz = ((fz as i16).wrapping_add((self.rng.random(3) + z_trend) as i16)) as i32;
             let location = align * (fz as i64) + (fx as i64);
             if location > 0 && location < mapsize {
                 let loc = location as usize;
@@ -285,14 +286,14 @@ impl SystemGen {
 
     /// felisian_srf_darkline (NOCTIS-1.CPP:1605).
     fn felisian_srf_darkline(&mut self, mut length: i32, x_trend: i32, z_trend: i32, align: i64) {
-        let mut fx = self.rng.random(align as i32);
-        let mut fz = self.rng.random(align as i32);
+        let mut fx = self.rng.random(align as i32) as i16 as i32;
+        let mut fz = self.rng.random(align as i32) as i16 as i32;
         let mut deviation = self.rng.random(25) - 50;
         let mut variability = 2 + self.rng.random(10);
         let mapsize = align * align;
         while length != 0 {
-            fx += self.rng.random(3) + x_trend;
-            fz += self.rng.random(3) + z_trend;
+            fx = ((fx as i16).wrapping_add((self.rng.random(3) + x_trend) as i16)) as i32;
+            fz = ((fz as i16).wrapping_add((self.rng.random(3) + z_trend) as i16)) as i32;
             deviation += self.rng.random(variability) - (variability >> 1);
             let location = align * (fz as i64) + (fx as i64);
             if location > 0 && location < mapsize {
@@ -800,12 +801,10 @@ impl SystemGen {
             9 => self.leafflares = 4,
             _ => self.leafflares = 0,
         }
-        // C evaluates leftmost flandom first in the expression
-        // `3000 + flandom() * 3000 - flandom() * 1500` (not RTL — that
-        // only applies to multi-argument function calls, not to
-        // independent function calls in an additive expression).
-        let _ts_l = self.rng.flandom() as f32;  // left flandom, evaluated first
-        let _ts_r = self.rng.flandom() as f32;  // right flandom, evaluated second
+        // C comma-operator fix: `{ float _r = flandom(); float _l = flandom(); ... }`
+        // evaluates _r (right operand) FIRST, then _l (left operand) SECOND.
+        let _ts_r = self.rng.flandom() as f32;  // right flandom (C _r), evaluated first
+        let _ts_l = self.rng.flandom() as f32;  // left flandom (C _l), evaluated second
         self.treescaling = 3000.0f32 + _ts_l * 3000.0f32 - _ts_r * 1500.0f32;
         let _sp_l = self.rng.flandom();
         let _sp_r = self.rng.flandom();
@@ -939,7 +938,8 @@ impl SystemGen {
                             if self.rng.random(2) != 0 {
                                 self.std_crater(1, cx, cz, -cr, 31, hf, 1.0, 256);
                             } else {
-                                self.std_crater(1, cx, cz, cr, 31, hf, 1.0, 256);
+                                eprintln!("[DBG_T1] cx={} cz={} cr={} hf={}", cx, cz, cr, hf);
+                        self.std_crater(1, cx, cz, cr, 31, hf, 1.0, 256);
                             }
                             n -= 1;
                         }
