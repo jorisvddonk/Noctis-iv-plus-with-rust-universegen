@@ -1,6 +1,0 @@
-=== PLANET TEXTURES (all 1 bodies) ===
-PLANET body=0 type=5 (small, solid, thin atmosphere.) owner=-1 seedval=574.911456
-  rtperiod=371 rotation=0 term_start=349 term_end=119
-surface_map      len=46080  fnv=D03318EE crc=B09E405C
-atmo_overlay     len=32400  fnv=8BA1CB05 crc=E34ECE2D
-palette64        len=192    fnv=E9C5AF78 crc=ED4E1812

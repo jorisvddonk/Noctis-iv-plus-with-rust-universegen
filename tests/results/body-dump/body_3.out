@@ -1,6 +1,0 @@
-=== PLANET TEXTURE ===
-PLANET body=3 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=-1 seedval=148122381.349600
-  rtperiod=278 rotation=0 term_start=230 term_end=0
-surface_map      len=64800  fnv=6CC505C6 crc=B98ED6CE
-atmo_overlay     len=32400  fnv=DF7C8DB9 crc=6C422094
-palette64        len=192    fnv=08C0F967 crc=CB29B1F1

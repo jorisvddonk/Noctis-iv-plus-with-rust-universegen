@@ -1,4 +1,0 @@
-=== PLANET TEXTURES (all 1 bodies) ===
-PLANET body=0 type=10 (companion star - not a planet) owner=-1 seedval=-3088458190.226710
-  rtperiod=0 rotation=0 term_start=0 term_end=0
-  (companion star - surface() is a no-op)

@@ -1,6 +1,0 @@
-=== PLANET TEXTURES (all 1 bodies) ===
-PLANET body=0 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=-661022.494363
-  rtperiod=336 rotation=0 term_start=145 term_end=275
-surface_map      len=46080  fnv=634E7706 crc=ED90005E
-atmo_overlay     len=32400  fnv=67121D6E crc=71AB1828
-palette64        len=192    fnv=6FF0CBB2 crc=BBF4A73A
