@@ -670,6 +670,41 @@ def report_all(conn, short=False):
     else:
         print('Surface hash breakdown: no canonical surface data in DB')
         print('(run load_canonical.py after fill-db to populate surf/atmo/pal hashes)')
+
+    # Texture breakdown (sky + stex)
+    tex_tot = conn.execute('SELECT COUNT(*) FROM planets WHERE sect_def_sky IS NOT NULL').fetchone()[0]
+    if tex_tot > 0:
+        tex_rows = conn.execute('''
+            SELECT planet_type, is_moon,
+                   SUM(CASE WHEN sect_def_sky = rust_sect_def_sky THEN 1 ELSE 0 END) as def_sky_ok,
+                   SUM(CASE WHEN sect_rand_sky = rust_sect_rand_sky THEN 1 ELSE 0 END) as rand_sky_ok,
+                   SUM(CASE WHEN sect_def_stex = rust_sect_def_stex THEN 1 ELSE 0 END) as def_stex_ok,
+                   SUM(CASE WHEN sect_rand_stex = rust_sect_rand_stex THEN 1 ELSE 0 END) as rand_stex_ok,
+                   COUNT(*) as tot
+            FROM planets WHERE sect_def_sky IS NOT NULL
+            GROUP BY planet_type, is_moon ORDER BY planet_type, is_moon
+        ''').fetchall()
+
+        print('Texture hash breakdown (bodies with canonical data):')
+        print(f'{"Typ":>3} {"P/M":>3} {"d-sky":>5} {"r-sky":>5} {"d-stx":>5} {"r-stx":>5} {"tot":>5}')
+        print('-' * 41)
+        tx_p = tx_m = 0
+        dsky_ok = rsky_ok = dstex_ok = rstex_ok = 0
+        for t, m, ds, rs, dt, rt, tot in tex_rows:
+            print(f'{t:3d} {"M" if m else "P":>3} {ds:5d} {rs:5d} {dt:5d} {rt:5d} {tot:5d}')
+            if m: tx_m += tot
+            else: tx_p += tot
+            dsky_ok += ds; rsky_ok += rs; dstex_ok += dt; rstex_ok += rt
+        print('-' * 41)
+        print(f'{"ALL":>3} {"":>3} {dsky_ok:5d} {rsky_ok:5d} {dstex_ok:5d} {rstex_ok:5d} {tx_p+tx_m:5d}')
+        print()
+        print(f'  d-sky/r-sky/d-stx/r-stx: count of bodies where Rust hash == canonical hash')
+        if dsky_ok == tx_p+tx_m and rsky_ok == tx_p+tx_m and dstex_ok == tx_p+tx_m and rstex_ok == tx_p+tx_m:
+            print(f'  ALL TEXTURE HASHES MATCH ({tx_p+tx_m}/{tx_p+tx_m})')
+        else:
+            print(f'  TEXTURE MISMATCH: def-sky={dsky_ok}/{tx_p+tx_m} rand-sky={rsky_ok}/{tx_p+tx_m} def-stex={dstex_ok}/{tx_p+tx_m} rand-stex={rstex_ok}/{tx_p+tx_m}')
+    else:
+        print('Texture hash breakdown: no canonical texture data in DB')
     print()
 
     # Summary
