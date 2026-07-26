@@ -313,9 +313,6 @@ fn cmd_surftex(args: &[String]) {
     g.setup_landing(p, lon, lat, albedo, sc);
     emit!(f, "=== SURFACE SECTOR (texture) ===\n");
     g.build_surface_with_gap(&gap_hex);
-    // DEBUG: check p_background after build_surface
-    let non16 = g.p_background[..65536].iter().filter(|&&v| v != 16).count();
-    eprintln!("[DBG] after build_surface: p_background non-16s = {}", non16);
     // Fill sky background with sky_brightness like the game does
     let sky_fill = if g.sky_brightness > 0 { g.sky_brightness as u8 } else { 32 };
     for i in 0..64800 {

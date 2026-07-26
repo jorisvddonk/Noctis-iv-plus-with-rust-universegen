@@ -1613,9 +1613,10 @@ impl SystemGen {
             let step = (ST_BYTES - i) as u32; // C decrements cx from st_bytes to 1
             cx = cx.wrapping_add(step);
             // imul ax: signed 16-bit square → dx:ax, keep low word
-            let lo = (cx as i16 as i32).wrapping_mul(cx as i16 as i32) as u16 as u32;
-            cx = lo;
-            cx = cx.wrapping_add(cx >> 16); // add ax, dx  (dx = high 16 bits)
+            let prod = (cx as i16 as i32).wrapping_mul(cx as i16 as i32) as u32;
+            let lo = prod & 0xFFFF;
+            let hi = prod >> 16;
+            cx = lo.wrapping_add(hi); // add ax, dx
             self.s_background[i] = (cx as u8) & 0x3F;
         }
         // Swap buffers so smoothing works on s_background
