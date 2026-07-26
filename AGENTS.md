@@ -163,7 +163,28 @@ Palette: 10685/10686 (1 pre-existing TWENDZ body 13 fixture variance).
 body 3, rand landing, ruinschart alias). All 117 former r-o\* mismatches fixed.
 
 **Textures**: Sky: ~100% matching. Surf\_tex: type 4 (roccioso) fixed
-via _fmemset wrapping correction; types 0, 1, 2, 5, 6, 7 pre-existing mismatches remain.
+via _fmemset wrapping correction (commit 5fdf7baf). Types 0, 6 also match
+(bare _fmemset — no txtr operations). Remaining mismatches:
+- Types 1, 2, 5, 7: std\_crater + srf\_darkline on txtr produce different
+  pixel values despite IDENTICAL crater params (cx, cz, cr, hf all match).
+  The first diff appears at position (197,0) in the SECOND crater when
+  cr%2 triggers the negative-r secondary crater. Rust produces 0x16, C
+  produces 0x0B — a difference far larger than float precision can explain.
+  The root cause is still unknown.
+
+### Debugging the type-1 stex bug
+
+When investigating a mismatching body, do this:
+
+1. Add RNGTRACE to the C type-1 txtr crater loop (`source/NOCTIS-1.CPP`) and
+   `eprintln!` to the Rust equivalent, then compare crater params. They WILL
+   be identical (proven: cx/cz/cr all match).
+2. Add per-pixel tracing to `std_crater` for a specific mismatching position
+   to compare the intermediate values: d, sin(d/fr\*PI), y, map[cur], y_final.
+3. The mismatch is NOT in RNG order, NOT in loop bounds, NOT in float precision
+   of d computation (all integer, exact), NOT in h computation (simple mul),
+   NOT in PI value. The bug is somewhere in the sin/pow/y+map pipeline but
+   has resisted all analysis so far.
 
 ## References
 
