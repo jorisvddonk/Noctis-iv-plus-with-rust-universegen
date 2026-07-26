@@ -450,7 +450,7 @@ def rust_star(conn, star):
                         "-p", str(body), "-lon", str(lon), "-lat", str(lat)]
             if gap:
                 stex_cmd += ["-gap", gap]
-            r2 = subprocess.run(stex_cmd, capture_output=True, text=True)
+            r2 = subprocess.run(stex_cmd, capture_output=True, text=True, timeout=30)
             if r2.returncode == 0:
                 sk = SKY_RE.search(r2.stdout)
                 st = STEX_RE.search(r2.stdout)
@@ -458,6 +458,7 @@ def rust_star(conn, star):
                 if st: up[stex_col] = st.group(1)
         if up:
             update_planet(conn, sid[0], body, up)
+        print(f"  body {body}: sky={up.get(sky_col,'?')} stex={up.get(stex_col,'?')}", flush=True)
     conn.commit()
     print(f"{star}: computed Rust sector hashes for {len(bodies)} bodies")
 
