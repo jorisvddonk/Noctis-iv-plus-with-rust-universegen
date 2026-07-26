@@ -421,14 +421,24 @@ def sky_png(name: str, body: int,
                       "-albedo", str(albedo), "-sc", str(sc))
     try:
         raw = open(os.path.join(dump, "SKY.bin"), "rb").read(64800)
+        pal = open(os.path.join(dump, "palette.raw"), "rb").read(768)
     except FileNotFoundError:
         import shutil; shutil.rmtree(dump, ignore_errors=True)
         return Response(no_data_png("no sky data"), media_type="image/png")
     import shutil; shutil.rmtree(dump, ignore_errors=True)
 
-    # Render 360x180 grayscale
-    img = Image.new("L", (360, 180))
-    img.frombytes(raw)
+    # Render 360x180 using sky palette (indices 64-127)
+    img = Image.new("RGB", (360, 180))
+    px = img.load()
+    for y in range(180):
+        for x in range(360):
+            v = raw[y * 360 + x]
+            if v > 63: v = 63
+            pi = (64 + v) * 3
+            r = min(pal[pi] * 4, 255)
+            g = min(pal[pi + 1] * 4, 255)
+            b = min(pal[pi + 2] * 4, 255)
+            px[x, y] = (r, g, b)
     buf = BytesIO()
     img.save(buf, "PNG")
     return Response(buf.getvalue(), media_type="image/png")

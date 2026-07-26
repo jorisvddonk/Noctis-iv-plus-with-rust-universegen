@@ -317,16 +317,17 @@ fn cmd_surftex(args: &[String]) {
     emit!(f, "=== SURFACE SECTOR (texture) ===\n");
     g.build_surface_with_gap(&gap_hex);
     // Fill sky background with sky_brightness like the game does
-    let sky_fill = if g.sky_brightness > 0 { g.sky_brightness as u8 } else { 32 };
+    let sky_fill = g.sky_brightness as u8;
     for i in 0..64800 {
         g.s_background[i] = sky_fill;
     }
-    g.create_sky(1);
+    g.create_sky(g.atmosphere);
     report_surftex(&mut f, &g, p);
 
     if let Ok(dir) = std::env::var("NIVDUMP") {
         let _ = std::fs::write(format!("{}/SURFTEX.bin", dir), &g.p_background[..65536]);
         let _ = std::fs::write(format!("{}/SKY.bin", dir), &g.s_background[..64800]);
+        let _ = std::fs::write(format!("{}/palette.raw", dir), &g.tmppal);
     }
 }
 
