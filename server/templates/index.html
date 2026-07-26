@@ -167,19 +167,19 @@ fetch('/api/mismatches').then(r=>r.json()).then(mm => {
 });
 
 fetch('/api/report').then(r=>r.json()).then(d => {
+  const t = d.sector_total;
   const cards = [
-    {n:d.sector_match+'/'+d.sector_total, l:'Sector match'},
+    {n:d.sector_match+'/'+t, l:'Sector'},
     {n:d.stars, l:'Stars'},
-    {n:d.surf_match+'/'+d.surf_total, l:'Surface match'},
-    {n:d.atmo_match+'/'+d.surf_total, l:'Atmo match'},
-    {n:d.pal_match+'/'+d.surf_total, l:'Palette match'},
+    {n:d.surf_match+'/'+d.surf_total, l:'Surface'},
+    {n:d.atmo_match+'/'+d.surf_total, l:'Atmo'},
+    {n:d.pal_match+'/'+d.surf_total, l:'Palette'},
   ];
   if (d.texture_total) {
-    cards.push({n:d.sky_match+'/'+d.texture_total, l:'Sky match'});
-    cards.push({n:d.surf_tex_match+'/'+d.texture_total, l:'Surf tex match'});
-  }
-  if (d.surf_unprocessed) {
-    cards.push({n:d.surf_unprocessed, l:'Unprocessed'});
+    cards.push({n:d.sky_def+'/'+t+' def', l:'Sky'});
+    cards.push({n:d.sky_rand+'/'+t+' rand', l:'Sky'});
+    cards.push({n:d.stex_def+'/'+t+' def', l:'Stex'});
+    cards.push({n:d.stex_rand+'/'+t+' rand', l:'Stex'});
   }
   document.getElementById('report').innerHTML = cards.map(c =>
     `<div class="stat-card"><div class="num">${c.n}</div><div class="lbl">${c.l}</div></div>`

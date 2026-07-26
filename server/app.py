@@ -53,7 +53,7 @@ def db_report():
     with db() as conn:
         ok, d, rb, ro, tot, stars = sector_totals(conn)
         surf, atmo, pal, s_tot, unproc = surface_totals(conn)
-        sky, stex, tex_tot, tex_unproc = texture_totals(conn)
+        sky_def, sky_rand, stex_def, stex_rand, tex_tot = texture_totals(conn)
     return {
         "sector_match": ok, "sector_total": tot,
         "sector_def": d, "sector_rb": rb, "sector_ro": ro,
@@ -61,8 +61,9 @@ def db_report():
         "surf_match": surf, "surf_total": s_tot,
         "atmo_match": atmo, "pal_match": pal,
         "surf_unprocessed": unproc,
-        "sky_match": sky, "surf_tex_match": stex, "texture_total": tex_tot,
-        "texture_unprocessed": tex_unproc,
+        "sky_def": sky_def, "sky_rand": sky_rand,
+        "stex_def": stex_def, "stex_rand": stex_rand,
+        "texture_total": tex_tot,
     }
 
 def has_surface(ptype: int) -> bool:
