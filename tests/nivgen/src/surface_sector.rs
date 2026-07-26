@@ -1683,8 +1683,12 @@ impl SystemGen {
             10 => 0.5, 11 => 0.2, _ => 1.0,
         };
         let saturation = 1.0 - 0.15 * self.rainy;
-        self.frng.srand(self.global_surface_seed as u32);
-        self.rng.srand(self.global_surface_seed as u32);
+        let sky_seed = (self.global_surface_seed as u32)
+            .wrapping_add(self.landing_pt_lon as u32)
+            .wrapping_mul(31337)
+            .wrapping_add(self.landing_pt_lat as u32);
+        self.frng.srand(sky_seed);
+        self.rng.srand(sky_seed);
 
         let ptype = self.p_type[self.ip_targetted as usize] as i32;
         match ptype {
