@@ -555,24 +555,30 @@ def cmp_star(conn, star):
             no_canon += 1
             continue
         parts = []
+        loose = []
         for (canon, rust, lbl) in ((cdm, rdm, "def-hm"), (cdo, rdo, "def-oc"),
                                    (crm, rrm, "rand-hm"), (cro, rro, "rand-oc")):
             if canon is None: continue
             if rust is None: parts.append(f"{lbl}=MISSING")
             elif canon != rust: parts.append(f"{lbl}={canon}/{rust}")
+            else: loose.append(lbl)
         for (canon, rust, lbl) in ((cs, rs, "surf"), (ca, ra, "atmo"), (cp, rp, "pal")):
             if canon is None: continue
             if rust is None: parts.append(f"{lbl}=MISSING")
             elif canon != rust: parts.append(f"{lbl}={canon[:8]}/{rust[:8]}")
+            else: loose.append(lbl)
         for (canon, rust, lbl) in ((cds, rds, "def-sky"), (cdt, rdt, "def-stex"),
                                    (crs, rrs, "rand-sky"), (crt, rrt, "rand-stex")):
             if canon is None: continue
             if rust is None: parts.append(f"{lbl}=MISSING")
             elif canon != rust: parts.append(f"{lbl}={canon}/{rust}")
+            else: loose.append(lbl)
+        lon, lat = coords_from_seedval(sv)
         if parts:
-            lon, lat = coords_from_seedval(sv)
             print(f"  body {b:3d}: DIFF lon={lon} lat={lat} {' '.join(parts)}")
         else:
+            ok_label = ' '.join(loose) if loose else 'all'
+            print(f"  body {b:3d}: OK ({ok_label})")
             ok += 1
     label = f"{ok}/{len(bodies)} bodies match" if no_canon == 0 else f"{ok}/{len(bodies)} bodies match ({no_canon} no canonical)"
     print(f"{star}: {label}")
