@@ -25,6 +25,7 @@
 //!   `txtr = p_background`); the heightmap lives in the separate
 //!   `p_surfacemap`. So texture writes here go into `self.p_background`.
 
+use crate::rng::BorlandRng;
 use crate::system::SystemGen;
 use std::f64::consts::PI;
 
@@ -217,7 +218,7 @@ impl SystemGen {
         h_raiser: f32,
         align: i64,
     ) {
-        let h: f32 = f(r as f64 * h_factor as f64);
+        let h: f32 = (r as f32) * h_factor;
         let r = r.abs();
         let fr: f32 = r as f32;
         let x0 = cx - r;
@@ -229,20 +230,19 @@ impl SystemGen {
             let mut z = z0;
             while z < z1 {
                 if x > -1 && z > -1 && x < align as i32 && z < align as i32 {
-                    let dx: f32 = f((x - cx) as f64);
-                    let dz: f32 = f((z - cz) as f64);
-                    let d: f32 = f((((dx as f64) * (dx as f64) + (dz as f64) * (dz as f64)).sqrt()));
+                    let dx: f32 = (x - cx) as f32;
+                    let dz: f32 = (z - cz) as f32;
+                    let d: f32 = (((dx as f64) * (dx as f64) + (dz as f64) * (dz as f64)).sqrt()) as f32;
                     if d <= fr {
-                        let mut y: f32 = f((d as f64 / fr as f64 * PI).sin() * h as f64);
-                        // pow() is a double op; result stored to float y.
-                        y = f((y as f64).powf(h_raiser as f64));
+                        let mut y: f32 = ((((d as f64) / (fr as f64)) * PI).sin() * h as f64) as f32;
+                        y = ((y as f64).powf(h_raiser as f64)) as f32;
                         let loc = (align * (z as i64) + x as i64) as usize;
                         let cur = match map {
                             0 => self.p_surfacemap[loc],
                             1 => self.p_background[loc],
                             _ => unreachable!(),
                         };
-                        y = f(y as f64 + cur as f64);
+                        y = y + cur as f32;
                         if y < 0.0 {
                             y = 0.0;
                         }
@@ -648,7 +648,10 @@ impl SystemGen {
         self.sun_z = 0.0;
 
         // global_surface_seed exactly as planetary_main derives it
-        self.global_surface_seed = ((self.p_ray[n_idx] + self.p_orb_ray[n_idx] + self.p_orb_orient[n_idx])
+        let seed_p_ray = self.p_ray[n_idx];
+        let seed_p_orb_ray = self.p_orb_ray[n_idx];
+        let seed_p_orb_orient = self.p_orb_orient[n_idx];
+        self.global_surface_seed = ((seed_p_ray + seed_p_orb_ray + seed_p_orb_orient)
             * 4112.0)
             .trunc() as i64;
         if self.p_type[n_idx] as i32 == 3 {
@@ -719,15 +722,17 @@ impl SystemGen {
         self.quartz = 0;
         self.gtx = 1; // suolo con texture, per default
 
-        // _fmemset(txtr, 16, 65535): txtr aliases p_background.
-        // Borland's _fmemset fills n bytes; txtr[65535] is NOT filled by
-        // this call but lies inside the farmalloc(65552) block. In DOSBox-X
-        // that byte is 0 (zeroed heap). In Rust the Vec tail (from make_bg
-        // 0xFF fill) leaves it as 255 unless we explicitly clear it.
-        for i in 0..65535 {
+        // _fmemset(txtr, 16, 65535): due to far-pointer segment:offset wrapping
+        // in Borland C, only 65532 bytes (indices 0..65531) are written. The
+        // last 4 bytes (65532-65535) remain as farmalloc stale content (0x00
+        // in DOSBox — not 0xFF from freed-page fill).
+        for i in 0..65532 {
             self.p_background[i] = 16;
         }
-        self.p_background[65535] = 0;
+        // Tail bytes 65532-65535: farmalloc stale in DOSBox = 0x00
+        for i in 65532..65536 {
+            self.p_background[i] = 0;
+        }
         // _fmemset(p_surfacemap, 0, ps_bytes)
         for i in 0..40000 {
             self.p_surfacemap[i] = 0;
@@ -740,6 +745,15 @@ impl SystemGen {
         // regolazione dei parametri generali
         self.frng.srand(self.global_surface_seed as u32);
         self.rng.srand(self.global_surface_seed as u32);
+        // trace: print seed and first 12 RNG values (NOT consuming from main rng)
+        {
+            let mut tr = BorlandRng::new();
+            tr.srand(self.global_surface_seed as u32);
+            let mut seq = Vec::with_capacity(12);
+            for _ in 0..12 { seq.push(tr.rand()); }
+            eprintln!("[TRACE] global_surface_seed={} rng_seq={:?}",
+                self.global_surface_seed, seq);
+        }
 
         self.groundflares = 0;
 
@@ -786,12 +800,15 @@ impl SystemGen {
             9 => self.leafflares = 4,
             _ => self.leafflares = 0,
         }
-        // C evaluates right-to-left: right flandom() first, then left.
-        let _ts_r = self.rng.flandom();
-        let _ts_l = self.rng.flandom();
-        self.treescaling = f(3000.0 + _ts_l * 3000.0 - _ts_r * 1500.0);
-        let _sp_r = self.rng.flandom();
+        // C evaluates leftmost flandom first in the expression
+        // `3000 + flandom() * 3000 - flandom() * 1500` (not RTL — that
+        // only applies to multi-argument function calls, not to
+        // independent function calls in an additive expression).
+        let _ts_l = self.rng.flandom() as f32;  // left flandom, evaluated first
+        let _ts_r = self.rng.flandom() as f32;  // right flandom, evaluated second
+        self.treescaling = 3000.0f32 + _ts_l * 3000.0f32 - _ts_r * 1500.0f32;
         let _sp_l = self.rng.flandom();
+        let _sp_r = self.rng.flandom();
         self.treespreads = f(0.75 + _sp_l * 0.50 - _sp_r * 0.50);
         self.branchwidth = f(0.05 + self.rng.flandom() * 0.15);
         self.rootheight = f(0.05 + self.rng.flandom());
@@ -1129,9 +1146,6 @@ impl SystemGen {
                     cz = self.rng.random(150) + 25;
                     cr = self.rng.random(10) + 15;
                 self.std_crater(1, cx, cz, -cr, 31, hf, 1.0, 256);
-                if cr % 2 != 0 {
-                    self.std_crater(1, cx + cr / 3, cz + cr / 3, -cr, 31, hf, 1.0, 256);
-                }
                 n -= 1;
             }
                 self.rockscaling = f(100.0 + self.rng.random(200) as f64);

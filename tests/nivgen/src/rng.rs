@@ -83,9 +83,12 @@ impl BorlandRng {
         (self.random(range) - self.random(range)) as f64
     }
 
-    /// `flandom()` = `random(32767) * 0.000030518`.
+    /// `flandom()` = `((float)random(32767) * 0.000030518)`. The literal 0.000030518
+    /// is DOUBLE in C (no `f` suffix), so the multiply is `(double)(float)val * double`
+    /// → double result → truncated to `float` for return.
     pub fn flandom(&mut self) -> f64 {
-        (self.random(32767) as f64) * 0.000030518
+        let v = self.random(32767) as f32;
+        ((v as f64) * 0.000030518) as f32 as f64
     }
 }
 
@@ -138,8 +141,11 @@ impl FastRng {
         (self.fast_random(0x7FFF) as i32) % range
     }
 
+    /// `fast_flandom()` = `((float)fast_random(32767) * 0.000030518)`. Like flandom,
+    /// the literal is DOUBLE, so the multiply is in double, then truncated to float.
     pub fn fast_flandom(&mut self) -> f64 {
-        (self.fast_random(0x7FFF) as f64) * 0.000030518
+        let v = self.fast_random(0x7FFF) as f32;
+        ((v as f64) * 0.000030518) as f32 as f64
     }
 }
 

@@ -311,6 +311,9 @@ fn cmd_surftex(args: &[String]) {
     }
     g.gen_planet_surface(p);
     g.setup_landing(p, lon, lat, albedo, sc);
+    if let Ok(dir) = std::env::var("NIVDUMP") {
+        let _ = std::fs::write(format!("{}/SURFTEX_BEFORE.bin", dir), &g.p_background[..65536]);
+    }
     emit!(f, "=== SURFACE SECTOR (texture) ===\n");
     g.build_surface_with_gap(&gap_hex);
     // Fill sky background with sky_brightness like the game does

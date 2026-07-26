@@ -1980,8 +1980,11 @@ void build_surface ()
 	// potrebbe esserlo? mah, per esempio in caso di ghiacci molto
 	// particolari, o di interi pianeti fatti di sostanze trasparenti.
 	// rarissimi, direi.
-	cz = random (2);
-	cx = random (100);
+	{ FILE *_tf = fopen("RNGTRACE.TXT", "w"); if(_tf) { fprintf(_tf, "C_RNG_SEED srand(%ld)\n", (long)global_surface_seed); fclose(_tf); } }
+	cz = random(2);
+	{ FILE *_tf = fopen("RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG random(2)=%d\n", cz); fclose(_tf); } }
+	cx = random(100);
+	{ FILE *_tf = fopen("RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG random(100)=%d\n", cx); fclose(_tf); } }
 	if (cx > 97)
 		groundflares = 2 + (2 * cz);
 	if (cx > 45 && cx < 55) {
@@ -2005,6 +2008,7 @@ void build_surface ()
 		treepeaking = flandom() * 0.9 + 0.1;
 	else
 		treepeaking = flandom() + 0.75;
+	{ FILE *_tf = fopen("D:\\RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG treepeaking=%f\n", treepeaking); fclose(_tf); } }
 	// un dettaglio raro ma possibile: alberi fibrosi, con il tronco
 	// simile a un grosso stelo... tanto si parla di ambienti alieni...
 	switch (random(3)) {
@@ -2012,6 +2016,7 @@ void build_surface ()
 		case 1: rootshade = 0x80; break;
 		case 2: rootshade = 0xC0; break;
 	}
+	{ FILE *_tf = fopen("D:\\RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG random(3)=%d\n", rootshade); fclose(_tf); } }
 	// altro dettaglio parecchio insolito, che per� conviene sia
 	// davvero molto raro: alberi trasparenti (e chi lo sa? magari...)
 	switch (random(30)) {
@@ -2020,6 +2025,7 @@ void build_surface ()
 		case 9:  treeflares = 4; break;
 		default: treeflares = 0;
 	}
+	{ FILE *_tf = fopen("D:\\RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG random(30)=%d\n", treeflares); fclose(_tf); } }
 	// pi� probabile... foglie trasparenti... credo sia pi� plausibile.
 	switch (random(15)) {
 		case 7:  leafflares = 1; break;
@@ -2027,8 +2033,10 @@ void build_surface ()
 		case 9:  leafflares = 4; break;
 		default: leafflares = 0;
 	}
+	{ FILE *_tf = fopen("D:\\RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG random(15)=%d\n", leafflares); fclose(_tf); } }
 	// gli altri parametri degli alberi, b�... sono piuttosto casuali.
-	treescaling = 3000 + flandom() * 3000 - flandom() * 1500;
+	{ float _r = flandom(); float _l = flandom(); treescaling = 3000 + _l * 3000 - _r * 1500;
+	  { FILE *_tf = fopen("D:\\RNGTRACE.TXT", "a"); if(_tf) { fprintf(_tf, "C_RNG flandom_r=%f flandom_l=%f treescaling=%f\n", _r, _l, treescaling); fclose(_tf); } } }
 	treespreads = 0.75 + flandom() * 0.50 - flandom() * 0.50;
 	branchwidth = 0.05 + flandom() * 0.15;
 	rootheight  = 0.05 + flandom();

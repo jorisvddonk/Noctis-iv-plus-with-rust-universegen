@@ -633,6 +633,7 @@ static int cmd_surftex(int argc, char **argv)
 	gen_planet_surface(p);
 	setup_landing(argc, argv, p);
 	out("=== SURFACE SECTOR (texture) ===\n");
+	out("; DBG global_surface_seed=%ld\n", (long)global_surface_seed);
 	build_surface();
 	_fmemset(s_background, sky_brightness, st_bytes);
 	create_sky(1);
