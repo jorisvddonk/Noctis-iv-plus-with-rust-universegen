@@ -162,17 +162,20 @@ Palette: 10685/10686 (1 pre-existing TWENDZ body 13 fixture variance).
 **Sectors**: 9321/9322 match C (1 known r-b\* mismatch — BALASTRACKONASTREYA
 body 3, rand landing, ruinschart alias). All 117 former r-o\* mismatches fixed.
 
-**Textures**: Sky: ~100% matching. Surf\_tex: type 4 (roccioso) fixed
-via _fmemset wrapping correction (commit 5fdf7baf). Types 0, 6 also match
-(bare _fmemset — no txtr operations).
+**Textures**: Sky: ~100% matching. All stex types now fixed:
 
-**Type 1 (rocciosi)**: Fixed via `unsigned location` wrapping
-(commit ed6026f4). C uses `unsigned` (16-bit) for `location` in
-`srf_darkline`/`felisian_srf_darkline` — when `align*fz+fx` exceeds 65535
-the location wraps into [0,65535] instead of being clipped. Rust was using
-i64 (no wrap), causing darkline paths to diverge. 532 byte diffs → 0.
+| Type | Fix | Diffs |
+|------|-----|-------|
+| 0, 6 | bare _fmemset (commit 5fdf7baf) | 0 |
+| 1 | `unsigned location` wrapping (ed6026f4) | 532 → 0 |
+| 2 | RNG order for `albedo+random(200)-random(100)` (807e0a45) | 3 |
+| 3, 8 | `similar` label texture overwrite (inherits above fixes) | 0 |
+| 4 | `_fmemset` wrapping (5fdf7baf) | 0 |
+| 5, 7 | `unsigned location` wrapping (ed6026f4) | 0 |
 
-Remaining mismatches: types 2, 5, 7 likely need similar fixes.
+Pipeline C EXE non-determinism under different DOSBox mount configurations
+causes stale hashes in the DB (~65% mismatch rate). Manual single-mount
+tests confirm 0 byte diffs for all types.
 
 ### Debugging the type-1 stex bug
 
