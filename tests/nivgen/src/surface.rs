@@ -97,26 +97,41 @@ impl SystemGen {
     }
 
     // --- lssmooth (NOCTIS-0.CPP:4416): 2x2 average, in-place ---
+    // C reads DWORDs at DWORD index di (byte di*4) and di+360 ((di+360)*4),
+    // writes back to BYTE index di (byte di). Rust must use the same
+    // addressing or the OOB read pattern differs (used by nebular_sky).
     pub(crate) fn lssmooth(&mut self) {
         let q = self.quadwords;
         let cx = (q * 4 - 80 * 4) as usize;
         let mut di = 0usize;
         unsafe {
             let buf = self.p_background.as_mut_ptr();
+            let len = self.p_background.len();
             for _ in 0..cx {
-                let d0 = *buf.add(di) as u32;
-                let d1 = *buf.add(di + 1) as u32;
-                let b0 = *buf.add(di + 360) as u32;
-                let b1 = *buf.add(di + 361) as u32;
-                let dx = (d0 | (d1 << 8)) & 0x3F3F;
-                let bx = (b0 | (b1 << 8)) & 0x3F3F;
-                let mut al: u8 = (d0 as u8) & 0xC0;
-                let mut dl = ((d0 & 0x3F) as u8).wrapping_add((dx >> 8) as u8);
-                dl = dl.wrapping_add((bx & 0xFF) as u8);
-                dl = dl.wrapping_add(((bx >> 8) & 0xFF) as u8);
-                dl >>= 2;
-                al |= dl;
-                *buf.add(di) = al;
+                let top_dw = (di * 4) as usize;
+                let bot_dw = ((di + 360) * 4) as usize;
+                let r0 = if top_dw < len { *buf.add(top_dw) as u32 } else { 0 };
+                let r1 = if top_dw + 1 < len { *buf.add(top_dw + 1) as u32 } else { 0 };
+                let r2 = if top_dw + 2 < len { *buf.add(top_dw + 2) as u32 } else { 0 };
+                let r3 = if top_dw + 3 < len { *buf.add(top_dw + 3) as u32 } else { 0 };
+                let b0 = if bot_dw < len { *buf.add(bot_dw) as u32 } else { 0 };
+                let b1 = if bot_dw + 1 < len { *buf.add(bot_dw + 1) as u32 } else { 0 };
+                let b2 = if bot_dw + 2 < len { *buf.add(bot_dw + 2) as u32 } else { 0 };
+                let b3 = if bot_dw + 3 < len { *buf.add(bot_dw + 3) as u32 } else { 0 };
+                let dx = (r0 | (r1 << 8) | (r2 << 16) | (r3 << 24)) & 0x3F3F3F3F;
+                let bx = (b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)) & 0x3F3F3F3F;
+                let dx2 = dx >> 2;
+                let ax = (r0 | (r1 << 8) | (r2 << 16) | (r3 << 24)) & 0xC0C0C0C0;
+                let al = (ax & 0xFF) as u8;
+                let ah = (dx2 & 0xFF) as u8;
+                let bl = ((dx2 >> 8) & 0xFF) as u8;
+                let bh = ah; // C: _BH = _AH
+                let result = ((al as u16).wrapping_add(ah as u16)
+                    .wrapping_add(bl as u16)
+                    .wrapping_add(bh as u16) >> 2) as u8;
+                if di < len {
+                    *buf.add(di) = result;
+                }
                 di += 1;
             }
         }
