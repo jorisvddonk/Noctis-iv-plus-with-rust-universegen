@@ -540,15 +540,17 @@ def cmp_star(conn, star):
         "sect_rand_oc, rust_sect_def_hm, rust_sect_def_oc, "
         "rust_sect_rand_hm, rust_sect_rand_oc, seedval, "
         "sect_def_sky, rust_sect_def_sky, sect_def_stex, rust_sect_def_stex, "
-        "sect_rand_sky, rust_sect_rand_sky, sect_rand_stex, rust_sect_rand_stex "
+        "sect_rand_sky, rust_sect_rand_sky, sect_rand_stex, rust_sect_rand_stex, "
+        "surf_fnv, rust_surf_fnv, atmo_fnv, rust_atmo_fnv, pal_fnv, rust_pal_fnv "
         "FROM planets "
         "WHERE star_id=? ORDER BY body_index", (sid,)).fetchall()
     ok = 0
     no_canon = 0
     for row in bodies:
         b, cdm, cdo, crm, cro, rdm, rdo, rrm, rro, sv = row[:10]
-        cds, rds, cdt, rdt, crs, rrs, crt, rrt = row[10:]
-        if all(x is None for x in (cdm, cdo, crm, cro, cds, rds, cdt, rdt, crs, rrs, crt, rrt)):
+        cds, rds, cdt, rdt, crs, rrs, crt, rrt = row[10:18]
+        cs, rs, ca, ra, cp, rp = row[18:24]
+        if all(x is None for x in (cdm, cdo, crm, cro, cds, rds, cdt, rdt, crs, rrs, crt, rrt, cs, ca, cp)):
             print(f"  body {b:3d}: NO CANONICAL DATA")
             no_canon += 1
             continue
@@ -558,6 +560,10 @@ def cmp_star(conn, star):
             if canon is None: continue
             if rust is None: parts.append(f"{lbl}=MISSING")
             elif canon != rust: parts.append(f"{lbl}={canon}/{rust}")
+        for (canon, rust, lbl) in ((cs, rs, "surf"), (ca, ra, "atmo"), (cp, rp, "pal")):
+            if canon is None: continue
+            if rust is None: parts.append(f"{lbl}=MISSING")
+            elif canon != rust: parts.append(f"{lbl}={canon[:8]}/{rust[:8]}")
         for (canon, rust, lbl) in ((cds, rds, "def-sky"), (cdt, rdt, "def-stex"),
                                    (crs, rrs, "rand-sky"), (crt, rrt, "rand-stex")):
             if canon is None: continue
