@@ -162,7 +162,7 @@ the last 4 bytes of the 256×256 texture retain stale farmalloc data that is
 non-deterministic across pipeline runs. Excluding them from the hash is
 identical in principle to `SAMPLED_BYTES` (46080) for planet surfaces.
 
-Both C harness (`NIVTEST.CPP:593`) and Rust (`main.rs:341`) hash at 65532.
+Both C harness (`NIVTEST.CPP:593`) and Rust (`main.rs:341`) hash at 65024 (254×256).
 
 ## Current status
 

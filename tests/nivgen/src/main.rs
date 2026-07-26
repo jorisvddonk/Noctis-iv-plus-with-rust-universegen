@@ -338,7 +338,7 @@ fn report_surftex(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
         g.t_scale, g.quartz, g.groundflares, g.gtx);
     emit!(f, "  rockscaling={:.3} rockpeaking={:.3} rockdensity={} treescaling={:.3}\n",
         g.rockscaling, g.rockpeaking, g.rockdensity, g.treescaling);
-    hashline(f, "surf_texture", &g.p_background[..65532]);
+    hashline(f, "surf_texture", &g.p_background[..65024]); /* 254x256 */
     hashline(f, "sky_texture", &g.s_background[..SAMPLED_BYTES]);
 }
 

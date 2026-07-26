@@ -590,9 +590,9 @@ static void report_surface_texture(int n)
 
 	/* txtr is aliased onto p_background (pl_bytes = 65552). The surface
 	   texture occupies a 256x256 = 65536 byte region. */
-	hashline("surf_texture", txtr, 65532UL);
+	hashline("surf_texture", txtr, 65024UL); /* 254x256, exclude last 2 rows */
 	hashline("sky_texture", s_background, 46080UL); /* SAMPLED_BYTES = 360*128 */
-	dump_far("surftex.bin", txtr, 65532UL);
+	dump_far("surftex.bin", txtr, 65024UL);
 	dump_far("sky.bin", s_background, 64800UL);
 }
 
