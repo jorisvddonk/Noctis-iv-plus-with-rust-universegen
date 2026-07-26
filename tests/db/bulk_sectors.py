@@ -516,7 +516,7 @@ def surf_star(conn, star):
 
 
 def cmp_star(conn, star):
-    """Compare Rust vs canonical sector hashes; report OK/DIFF per body."""
+    """Compare Rust vs canonical sector+stex hashes; report OK/DIFF per body."""
     sid = conn.execute("SELECT id FROM stars WHERE name=?",
                        (star,)).fetchone()
     if not sid:
@@ -525,26 +525,31 @@ def cmp_star(conn, star):
     bodies = conn.execute(
         "SELECT body_index, sect_def_hm, sect_def_oc, sect_rand_hm, "
         "sect_rand_oc, rust_sect_def_hm, rust_sect_def_oc, "
-        "rust_sect_rand_hm, rust_sect_rand_oc, seedval "
+        "rust_sect_rand_hm, rust_sect_rand_oc, seedval, "
+        "sect_def_sky, rust_sect_def_sky, sect_def_stex, rust_sect_def_stex, "
+        "sect_rand_sky, rust_sect_rand_sky, sect_rand_stex, rust_sect_rand_stex "
         "FROM planets "
         "WHERE star_id=? ORDER BY body_index", (sid,)).fetchall()
     ok = 0
     no_canon = 0
-    for (b, cdm, cdo, crm, cro, rdm, rdo, rrm, rro, sv) in bodies:
-        # If no canonical data at all, report that instead of "match"
-        if cdm is None and cdo is None and crm is None and cro is None:
+    for row in bodies:
+        b, cdm, cdo, crm, cro, rdm, rdo, rrm, rro, sv = row[:10]
+        cds, rds, cdt, rdt, crs, rrs, crt, rrt = row[10:]
+        if all(x is None for x in (cdm, cdo, crm, cro, cds, rds, cdt, rdt, crs, rrs, crt, rrt)):
             print(f"  body {b:3d}: NO CANONICAL DATA")
             no_canon += 1
             continue
         parts = []
         for (canon, rust, lbl) in ((cdm, rdm, "def-hm"), (cdo, rdo, "def-oc"),
                                    (crm, rrm, "rand-hm"), (cro, rro, "rand-oc")):
-            if canon is None:
-                continue
-            if rust is None:
-                parts.append(f"{lbl}=MISSING")
-            elif canon != rust:
-                parts.append(f"{lbl}={canon}/{rust}")
+            if canon is None: continue
+            if rust is None: parts.append(f"{lbl}=MISSING")
+            elif canon != rust: parts.append(f"{lbl}={canon}/{rust}")
+        for (canon, rust, lbl) in ((cds, rds, "def-sky"), (cdt, rdt, "def-stex"),
+                                   (crs, rrs, "rand-sky"), (crt, rrt, "rand-stex")):
+            if canon is None: continue
+            if rust is None: parts.append(f"{lbl}=MISSING")
+            elif canon != rust: parts.append(f"{lbl}={canon}/{rust}")
         if parts:
             lon, lat = coords_from_seedval(sv)
             print(f"  body {b:3d}: DIFF lon={lon} lat={lat} {' '.join(parts)}")
