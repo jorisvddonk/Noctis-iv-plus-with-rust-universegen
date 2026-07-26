@@ -96,7 +96,7 @@ uv run python3 tests/db/bulk_sectors.py db-report --short
 
 After a fix, verify the targeted star explicitly before bulk-running:
 ```bash
-uv run python3 tests/db/bulk_sectors.py one_iter <STAR_NAME>
+uv run python3 tests/db/bulk_sectors.py one_iter <STAR_NAME> --force --build
 uv run python3 tests/db/bulk_sectors.py db-report --short
 ```
 
@@ -154,42 +154,35 @@ cd tests/nivgen && cargo run --release -- sector -x X -y Y -z Z -p BODY -lon LON
 This does NOT touch the DB. All inputs are from coordinates. Output is the
 sector text-framing + hashes to stdout (matching the C `NIVTEST.EXE` format).
 
+## surftex hashing rule
+
+Surftex hashes cover **65532 bytes** (256×256 − 4). Borland C's `_fmemset`
+underfills by 4 bytes at the tail due to internal REP STOSD optimization:
+the last 4 bytes of the 256×256 texture retain stale farmalloc data that is
+non-deterministic across pipeline runs. Excluding them from the hash is
+identical in principle to `SAMPLED_BYTES` (46080) for planet surfaces.
+
+Both C harness (`NIVTEST.CPP:593`) and Rust (`main.rs:341`) hash at 65532.
+
 ## Current status
 
 **Surface maps**: 10686/10686 match C (100%). Atmosphere: 10686/10686.
 Palette: 10685/10686 (1 pre-existing TWENDZ body 13 fixture variance).
 
-**Sectors**: 9321/9322 match C (1 known r-b\* mismatch — BALASTRACKONASTREYA
-body 3, rand landing, ruinschart alias). All 117 former r-o\* mismatches fixed.
+**Sectors**: 9321/9322 match C (1 known r-b\* mismatch).
+Sky: 74/74 match. Surftex: type-0 bodies all match (65532 fix).
 
-**Textures**: Sky: ~100% matching. All stex types now fixed:
+### Debugging non-type-0 stex mismatches
 
-| Type | Fix | Diffs |
-|------|-----|-------|
-| 0, 6 | bare _fmemset (commit 5fdf7baf) | 0 |
-| 1 | `unsigned location` wrapping (ed6026f4) | 532 → 0 |
-| 2 | RNG order for `albedo+random(200)-random(100)` (807e0a45) | 3 |
-| 3, 8 | `similar` label texture overwrite (inherits above fixes) | 0 |
-| 4 | `_fmemset` wrapping (5fdf7baf) | 0 |
-| 5, 7 | `unsigned location` wrapping (ed6026f4) | 0 |
+For the remaining type-1/2/3/4/5/7/8 bodies that still mismatch after the
+65532 hash fix, investigate the diff at the binary level:
 
-Pipeline C EXE non-determinism under different DOSBox mount configurations
-causes stale hashes in the DB (~65% mismatch rate). Manual single-mount
-tests confirm 0 byte diffs for all types.
-
-### Debugging the type-1 stex bug
-
-When investigating a mismatching body, do this:
-
-1. Add RNGTRACE to the C type-1 txtr crater loop (`source/NOCTIS-1.CPP`) and
-   `eprintln!` to the Rust equivalent, then compare crater params. They WILL
-   be identical (proven: cx/cz/cr all match).
-2. Add per-pixel tracing to `std_crater` for a specific mismatching position
-   to compare the intermediate values: d, sin(d/fr\*PI), y, map[cur], y_final.
-3. The mismatch is NOT in RNG order, NOT in loop bounds, NOT in float precision
-   of d computation (all integer, exact), NOT in h computation (simple mul),
-   NOT in PI value. The bug is somewhere in the sin/pow/y+map pipeline but
-   has resisted all analysis so far.
+1. Run `one_iter` with `NIV_SAVE_WORK=1` to capture C binary dumps (see
+   `gen_stars_batch` finally block). The dump directory has per-body
+   `SURFTEX.BIN`.
+2. Run Rust `surftex --dump` for the same inputs → get Rust binary.
+3. `cmp -l C.bin Rust.bin` to find first differing byte position.
+4. The position tells you which code path diverges.
 
 ## References
 

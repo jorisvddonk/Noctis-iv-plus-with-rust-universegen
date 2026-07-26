@@ -19,3 +19,4 @@ tests/nivgen/starmap2.bin
 tests/results/canonical/*.out
 tests/results/body-dump/
 tests/results/canonical/
+tests/results/sectors/*.out

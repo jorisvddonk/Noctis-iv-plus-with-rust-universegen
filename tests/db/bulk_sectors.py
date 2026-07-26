@@ -130,10 +130,11 @@ def _star_cmds(conn, star, force, star_idx=0):
             if force and os.path.exists(out):
                 os.remove(out)  # Delete so gen produces a fresh file (no append)
             suf = "D" if kind == "def" else "R"
-            cmds.append((body, lon, lat, f"s{star_idx}_{body}{suf}.out", out, x, y_usr, z, "sector"))
+            cmds.append((body, lon, lat, f"s{star_idx}_{body}{suf}.out", out, x, y_usr, z, "sector", ""))
             stex_out = os.path.join(SECT_DIR, fname(star, body, f"{kind}_stex", lon, lat))
             stex_dosname = f"t{star_idx}_{body}{suf}.out"
-            cmds.append((body, lon, lat, stex_dosname, stex_out, x, y_usr, z, "surftex"))
+            dump_dir = f"d{star_idx}_{body:03d}{suf}"
+            cmds.append((body, lon, lat, stex_dosname, stex_out, x, y_usr, z, "surftex", dump_dir))
     return cmds, x, y_usr, z, star
 
 def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=False, dry_run=False):
@@ -151,7 +152,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
         return
 
     if dry_run:
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type, dump_dir in all_cmds:
             snm = info.get((star_name, body, dosname), ("?", ""))
             print(f"  {snm[0]} body {body:3d}: {cmd_type} lon={lon} lat={lat} dosname={dosname}")
         print(f"[dry-run] {len(all_cmds)} commands for {len(stars)} stars")
@@ -224,7 +225,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
         # RUN.BAT: planet-all for each star, then all sector landings
         run_lines = ["@echo off"]
         seen_stars = []
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type, dump_dir in all_cmds:
             if star_name not in seen_stars:
                 seen_stars.append(star_name)
                 canon_idx = len(seen_stars) - 1
@@ -242,8 +243,13 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
                 run_lines.append(
                     f"NIVTEST.EXE surftex -x {cx} -y {cy} -z {cz} -p {body}"
                     f" -lon {lon} -lat {lat} -o D:\\{dosname}"
+                    f" -dump D:\\{dump_dir}"
                 )
         run_lines.append("exit")
+        # Create dump directories for surftex binaries
+        for _, _, _, _, _, _, _, _, _, cmd_type, dump_dir in all_cmds:
+            if cmd_type == "surftex" and dump_dir:
+                os.makedirs(os.path.join(work, dump_dir), exist_ok=True)
         with open(os.path.join(work, "RUN.BAT"), "w") as f:
             f.write("\r\n".join(run_lines) + "\r\n")
 
@@ -268,7 +274,7 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
             f.write(conf)
 
         # Print progress
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type, dump_dir in all_cmds:
             snm = info.get((star_name, body, dosname), ("?", ""))
             print(f"  {snm[0]} body {body:3d}: {cmd_type} lon={lon} lat={lat} ...", flush=True)
 
@@ -288,9 +294,12 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
             print(f"  [!] stderr: {r.stderr[-500:]}", flush=True)
             return
 
+        # DEBUG: save niv.conf for analysis
+        shutil.copy2(os.path.join(work, "niv.conf"), "/tmp/niv_debug.conf")
+        shutil.copy2(os.path.join(work, "RUN.BAT"), "/tmp/run_debug.bat")
         # Copy outputs, grouped by star
         star_ok = {}
-        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type in all_cmds:
+        for star_name, body, lon, lat, dosname, outpath, cx, cy, cz, cmd_type, dump_dir in all_cmds:
             snm = info.get((star_name, body, dosname), ("?", ""))
             src = os.path.join(work, dosname)
             if os.path.exists(src):
@@ -325,6 +334,10 @@ def gen_stars_batch(conn, stars, force=False, build_flag=False, keep_fixtures=Fa
                 print(f"  [canon] {star_name}: no planet-all output", flush=True)
 
     finally:
+        if os.environ.get("NIV_SAVE_WORK"):
+            import tempfile as _tf; save_path = f"/tmp/work_save_{os.path.basename(work)}"
+            shutil.copytree(work, save_path, dirs_exist_ok=True)
+            print(f"  [debug] work dir saved to {save_path}")
         shutil.rmtree(work, ignore_errors=True)
 
 
