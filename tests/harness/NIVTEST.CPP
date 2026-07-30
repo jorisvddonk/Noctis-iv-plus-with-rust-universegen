@@ -635,8 +635,19 @@ static int cmd_surftex(int argc, char **argv)
 	out("=== SURFACE SECTOR (texture) ===\n");
 	out("; DBG global_surface_seed=%ld\n", (long)global_surface_seed);
 	build_surface();
-	_fmemset(s_background, sky_brightness, st_bytes);
-	create_sky(1);
+
+	/* planetary_main per-type overrides (NOCTIS-1.CPP:3636-3674). */
+	{
+		char sky_atmo = 1;
+		switch (nearstar_p_type[p]) {
+			case 1: case 4: case 7:
+				sky_brightness = 0;  sky_atmo = 0;  break;
+			case 2:
+				sky_brightness = 63 - nightzone * 31;  break;
+		}
+		_fmemset(s_background, sky_brightness, st_bytes);
+		create_sky(sky_atmo);
+	}
 	report_surface_texture(p);
 	return 0;
 }

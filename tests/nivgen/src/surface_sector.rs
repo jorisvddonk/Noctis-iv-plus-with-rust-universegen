@@ -632,7 +632,8 @@ impl SystemGen {
         // latitude = |landing_pt_lat - 60| * 1.5  (float)
         self.latitude = f(((lat - 60).abs() as f64) * 1.5);
 
-        // nightzone default 0 (caller override not needed for our fixtures)
+        // nightzone: C harness defaults to 0 (via argl(..., "-night", 0)).
+        // The harness does NOT compute from terminator like the game does.
         self.nightzone = 0;
 
         // albedo: caller supplies 0..63; default 32
@@ -832,6 +833,7 @@ impl SystemGen {
         let ptype = self.p_type[n_idx] as i32;
         self.frng.srand(land_seed);
         self.rng.srand(land_seed);
+        eprintln!("[TRACE] land_seed={} ptype={}", land_seed, ptype);
         match ptype {
             // case 0: vulcanico, non considerato.
 
@@ -905,14 +907,25 @@ impl SystemGen {
                 self.rockpeaking = f(100.0 + self.rng.random(300) as f64);
             }
 
-            2 => {
+                2 => {
                 // con spessa atmosfera (venusiani)
                 self.rockyground(10, 1, 0);
-                n = self.albedo + self.rng.random(100);
+                let rng_100 = self.rng.random(100);
+                n = self.albedo + rng_100;
+                eprintln!("[R_RNG] T2 random(100)={}", rng_100);
+                let first_loop = n.min(1);
+                if first_loop > 0 {
+                    let a_h = self.rng.random(50) + 10;
+                    let a_hmax = 0;
+                    let a_r = self.rng.random(100) + 50;
+                    let a_cz = self.rng.random(200);
+                    let a_cx = self.rng.random(200);
+                    eprintln!("[R_RNG] T3 random(50)={} random(100)={} random(200)={} random(200)={}",
+                        a_h - 10, a_r - 50, a_cz, a_cx);
+                    self.round_hill(a_cx, a_cz, a_r as u32, f(a_h as f64), f(a_hmax as f64), 1);
+                    n -= 1;
+                }
                 while n != 0 {
-                    // round_hill(random(200), random(200), random(100)+50,
-                    //            random(50)+10, 0, 1)
-                    // right-to-left: h, hmax, r, cz, cx
                     let a_h = self.rng.random(50) + 10;
                     let a_hmax = 0;
                     let a_r = self.rng.random(100) + 50;
@@ -921,15 +934,35 @@ impl SystemGen {
                     self.round_hill(a_cx, a_cz, a_r as u32, f(a_h as f64), f(a_hmax as f64), 1);
                     n -= 1;
                 }
-                match self.rng.random(2) {
+                let sw = self.rng.random(2);
+                eprintln!("[R_RNG] T4 random(2)={}", sw);
+                match sw {
                         0 => {
                         // C RTL: random(100) first (right operand of -), then random(200)
                         let _r100 = self.rng.random(100);
                         let _r200 = self.rng.random(200);
+                        eprintln!("[R_RNG] T5 random(100)={} random(200)={}", _r100, _r200);
                         n = self.albedo + _r200 - _r100;
-                        hf = f(self.rng.random(10) as f64 * 0.02);
+                        let hf_raw = self.rng.random(10);
+                        eprintln!("[R_RNG] T6 random(10)={}", hf_raw);
+                        hf = f(hf_raw as f64 * 0.02);
                         if n < 0 {
                             n = 0;
+                        }
+                        let first_cr = n.min(1);
+                        if first_cr > 0 {
+                            cx = self.rng.random(256);
+                            cz = self.rng.random(256);
+                            cr = self.rng.random(8) + 8;
+                            let sw2 = self.rng.random(2);
+                            eprintln!("[R_RNG] T7 random(256)={} random(256)={} random(8)={} random(2)={}",
+                                cx, cz, cr - 8, sw2);
+                            if sw2 != 0 {
+                                self.std_crater(1, cx, cz, -cr, 31, hf, 1.0, 256);
+                            } else {
+                                self.std_crater(1, cx, cz, cr, 31, hf, 1.0, 256);
+                            }
+                            n -= 1;
                         }
                         while n != 0 {
                             cx = self.rng.random(256);
@@ -946,6 +979,7 @@ impl SystemGen {
                     _ => {
                         n = self.albedo + self.rng.random(500);
                         ptr = self.rng.random(2000) as usize;
+                        eprintln!("[R_RNG] T11 random(500)={} random(2000)={}", n - self.albedo, ptr);
                         while n != 0 {
                             let r = self.rng.random(ptr as i32);
                             self.srf_darkline(1, r, -1, -1, 256);
@@ -953,9 +987,13 @@ impl SystemGen {
                         }
                     }
                 }
-                self.rockscaling = f(500.0 + self.rng.random(500) as f64);
-                self.rockdensity = 7 + 8 * self.rng.random(2);
-                self.rockpeaking = f(50.0 + self.rng.random(150) as f64);
+                let rs = self.rng.random(500);
+                let rd = self.rng.random(2);
+                let rp = self.rng.random(150);
+                eprintln!("[R_RNG] T8 random(500)={} T9 random(2)={} T10 random(150)={}", rs, rd, rp);
+                self.rockscaling = f(500.0 + rs as f64);
+                self.rockdensity = 7 + 8 * rd;
+                self.rockpeaking = f(50.0 + rp as f64);
             }
 
             3 => {
@@ -1647,7 +1685,11 @@ impl SystemGen {
 
     /// create_sky (NOCTIS-1.CPP:2736). Generates the sky texture, palette
     /// gradients, and temperature/pressure for the sector.
+    /// NOTE: C re-seeds the RNG at the start (line 2803-2804):
+    ///   fast_srand(global_surface_seed); srand(global_surface_seed);
     pub fn create_sky(&mut self, atmosphere: i32) {
+        self.frng.srand(self.global_surface_seed as u32);
+        self.rng.srand(self.global_surface_seed as u32);
         let br = self.sky_red_filter as f64 / 64.0;
         let bg = self.sky_grn_filter as f64 / 64.0;
         let bb = self.sky_blu_filter as f64 / 64.0;

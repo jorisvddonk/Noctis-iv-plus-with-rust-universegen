@@ -984,12 +984,10 @@ impl SystemGen {
             self.surface(n as i32, self.p_type[n] as i32, seedval, colorbase);
         }
 
-        // Per-type atmosphere/sky_brightness (C NOCTIS-1.CPP:3636-3674)
-        match self.p_type[n] as i32 {
-            1 | 4 | 7 => { self.sky_brightness = 0; self.atmosphere = 0; }
-            2 => { self.sky_brightness = 63 - self.nightzone * 31; }
-            _ => {} // type 3,5,6,8,9,0 keep defaults (sky_brightness=32, atmosphere=1)
-        }
+        // Per-type sky_brightness/atmosphere is applied by the caller
+        // (main.rs cmd_surftex) after setup_landing() and before the
+        // _fmemset+create_sky call, matching planetary_main() overrides
+        // (NOCTIS-1.CPP:3636-3674) in both the game and the C harness.
     }
 
     // ===================== switch(type) cases =====================

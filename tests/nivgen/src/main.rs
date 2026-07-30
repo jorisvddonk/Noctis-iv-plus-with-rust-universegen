@@ -316,6 +316,13 @@ fn cmd_surftex(args: &[String]) {
     }
     emit!(f, "=== SURFACE SECTOR (texture) ===\n");
     g.build_surface_with_gap(&gap_hex);
+    // Apply planetary_main per-type overrides (same as C harness cmd_surftex)
+    match g.p_type[p as usize] {
+        1 | 4 | 7 => { g.sky_brightness = 0; g.atmosphere = 0; }
+        2 => { g.sky_brightness = 63 - g.nightzone * 31; }
+        _ => {}
+    }
+
     // Fill sky background with sky_brightness like the game does
     let sky_fill = g.sky_brightness as u8;
     for i in 0..64800 {
