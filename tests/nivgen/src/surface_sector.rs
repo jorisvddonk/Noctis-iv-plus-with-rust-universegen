@@ -25,6 +25,7 @@
 //!   `txtr = p_background`); the heightmap lives in the separate
 //!   `p_surfacemap`. So texture writes here go into `self.p_background`.
 
+use crate::f80::F80;
 use crate::rng::BorlandRng;
 use crate::system::SystemGen;
 use std::f64::consts::PI;
@@ -149,7 +150,12 @@ impl SystemGen {
                     let dx: f32 = f((xi - cx) as f64);
                     let dz: f32 = f((zi - cz) as f64);
                     let d: f32 = f((((dx as f64) * (dx as f64) + (dz as f64) * (dz as f64)).sqrt()));
-                    let mut y: f32 = f((d as f64 / v as f64).cos() * h as f64);
+                    // Compute cos(d/v)*h via F80 (80-bit extended precision) to match x87
+                    let prod = F80::from_f64(d as f64)
+                        .div(&F80::from_f64(v as f64))
+                        .cos()
+                        .mul(&F80::from_f64(h as f64));
+                    let mut y: f32 = prod.to_f32();
                     if y >= 0.0 {
                         y = f(y as f64 + self.p_surfacemap[(200 * (zi as i64) + xi as i64) as usize] as f64);
                         if allowcanyons != 0 {

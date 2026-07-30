@@ -118,6 +118,56 @@ impl F80 {
         f64::from_bits(bits)
     }
 
+    /// Convert to `f32` (round to nearest-even), matching the x87 store
+    /// of an 80-bit register directly into a 32-bit memory slot (no f64
+    /// intermediate).
+    pub fn to_f32(&self) -> f32 {
+        if self.exp == 0 && self.mant == 0 {
+            return f32::from_bits(if self.neg { 1u32 << 31 } else { 0 });
+        }
+        if self.exp == 0x7FFF {
+            let payload = self.mant & !(1u64 << 63);
+            let bits = ((self.neg as u32) << 31)
+                | (0xFFu32 << 23)
+                | ((payload >> (64 - 23)) as u32 & 0x7F_FFFF);
+            return f32::from_bits(bits);
+        }
+        let unbiased = self.exp - BIAS;
+        let mant = self.mant;
+        // Round 64-bit mantissa to 24-bit (23 + implicit): keep top 24 bits.
+        let total_bits = 64i32;
+        let shift = total_bits - 24; // = 40: keep top 24 bits
+        let keep_mask = !((1u64 << shift) - 1);
+        let kept = mant & keep_mask;
+        let round_bit = (mant >> (shift - 1)) & 1;
+        let sticky = if shift >= 2 { (mant & ((1u64 << (shift - 1)) - 1)) != 0 } else { false };
+        let mut rounded = (kept >> shift) as u32; // 24-bit value (top bit = 1)
+        if round_bit == 1 && (sticky || (rounded & 1) == 1) {
+            rounded = rounded.wrapping_add(1);
+        }
+        let mut e = unbiased;
+        if (rounded >> 24) & 1 == 1 {
+            rounded >>= 1;
+            e += 1;
+        }
+        if e < -126 {
+            if e < -126 - 23 {
+                return f32::from_bits(if self.neg { 1u32 << 31 } else { 0 });
+            }
+            let sub = (-126 - e) as u32;
+            let frac = (rounded >> (sub + 1)) | (((rounded >> sub) & 1) << 23);
+            let bits = ((self.neg as u32) << 31) | (frac & 0x7F_FFFF);
+            return f32::from_bits(bits);
+        }
+        if e > 127 {
+            let bits = ((self.neg as u32) << 31) | (0xFFu32 << 23);
+            return f32::from_bits(bits);
+        }
+        let frac = rounded & !(1u32 << 23);
+        let bits = ((self.neg as u32) << 31) | (((e + 127) as u32) << 23) | frac;
+        f32::from_bits(bits)
+    }
+
     /// x87 `FTST` comparison with +0.0: returns true if the 80-bit value
     /// is strictly greater than zero. Must match the x87 condition flags
     /// exactly — rounding to f64 first flips the sign for values < 2^-1022.
@@ -414,6 +464,114 @@ impl F80 {
         F80 { mant: masked, ..added }
     }
 
+    /// Negation (flip sign bit).
+    pub fn neg(&self) -> F80 {
+        F80 { neg: !self.neg, exp: self.exp, mant: self.mant }
+    }
+
+    /// Absolute value.
+    pub fn abs(&self) -> F80 {
+        F80 { neg: false, exp: self.exp, mant: self.mant }
+    }
+
+    /// Full ordering (matches x87 `fcomi` semantics).
+    pub fn cmp(&self, other: &F80) -> std::cmp::Ordering {
+        use std::cmp::Ordering::{Equal, Greater, Less};
+        // Handle zero
+        let self_zero = self.exp == 0 && self.mant == 0;
+        let other_zero = other.exp == 0 && other.mant == 0;
+        if self_zero && other_zero { return Equal; }
+        if self_zero { return if other.neg { Greater } else { Less }; }
+        if other_zero { return if self.neg { Less } else { Greater }; }
+        // Negative < positive
+        if self.neg && !other.neg { return Less; }
+        if !self.neg && other.neg { return Greater; }
+        // Same sign: compare (exponent, mantissa)
+        if self.neg {
+            // Both negative: larger exponent/mantissa = smaller value
+            if self.exp != other.exp { return other.exp.cmp(&self.exp); }
+            other.mant.cmp(&self.mant)
+        } else {
+            if self.exp != other.exp { return self.exp.cmp(&other.exp); }
+            self.mant.cmp(&other.mant)
+        }
+    }
+
+    /// x87 π constant (80-bit extended precision).
+    pub fn pi() -> F80 {
+        F80 { neg: false, exp: BIAS + 1, mant: 0xC90FDA_A22168C235 }
+    }
+
+    /// π/2
+    pub fn pi_2() -> F80 {
+        let half = F80 { neg: false, exp: BIAS - 1, mant: 1u64 << 63 };
+        F80::pi().mul(&half)
+    }
+
+    /// 2π
+    pub fn two_pi() -> F80 {
+        let two = F80 { neg: false, exp: BIAS + 1, mant: 1u64 << 63 };
+        F80::pi().mul(&two)
+    }
+
+    /// Square root via Newton's method: y_{n+1} = (y_n + x/y_n)/2.
+    pub fn sqrt(&self) -> F80 {
+        if self.exp == 0 && self.mant == 0 { return F80::zero(self.neg); }
+        if self.neg { return F80 { neg: true, exp: 0x7FFF, mant: 1u64 << 63 }; } // -0 -> -inf
+        // Initial guess from f64
+        let mut y = F80::from_f64(self.to_f64().sqrt());
+        // Newton iteration (6 iterations for 64-bit convergence)
+        let half = F80 { neg: false, exp: BIAS - 1, mant: 1u64 << 63 };
+        for _ in 0..6 {
+            let inv = self.div(&y);
+            let sum = y.add(&inv, false);
+            y = sum.mul(&half);
+        }
+        y
+    }
+
+    /// Cosine via Taylor series with range reduction to [0, π/2].
+    pub fn cos(&self) -> F80 {
+        let _zero = F80::zero(false);
+        let one = F80 { neg: false, exp: BIAS, mant: 1u64 << 63 };
+        let _half = F80 { neg: false, exp: BIAS - 1, mant: 1u64 << 63 };
+        let mut x = self.abs();
+        // Reduce modulo 2π
+        let two_pi = F80::two_pi();
+        while x.cmp(&two_pi) != std::cmp::Ordering::Less {
+            x = x.add(&two_pi, true); // x - 2π
+        }
+        let pi = F80::pi();
+        // If x > π: cos(x) = cos(2π - x)
+        if x.cmp(&pi) == std::cmp::Ordering::Greater {
+            x = F80::two_pi().add(&x, true); // 2π - x
+        }
+        let pi_2 = F80::pi_2();
+        let mut negate = false;
+        // If x > π/2: cos(x) = -cos(π - x)
+        if x.cmp(&pi_2) == std::cmp::Ordering::Greater {
+            x = pi.add(&x, true); // π - x
+            negate = !negate;
+        }
+        // Now x ∈ [0, π/2]; compute cos via Taylor series
+        // cos(x) = Σ_{n=0}^{N} (-1)^n * x^{2n} / (2n)!
+        // 20 terms gives 64-bit precision for x ∈ [0, π/2]
+        let x2 = x.mul(&x);
+        let neg_x2 = x2.mul(&one.neg()); // -x^2
+        let mut term = one.clone();  // n=0: x^0/0! = 1
+        let mut result = term.clone();
+        // Pre-compute inverse factorials for speed: 1/(2n*(2n-1)) for n=1..20
+        // but since F80 division is fast, just divide each iteration.
+        for n in 1..=20 {
+            // term = term * (-x^2) / (2n*(2n-1))
+            let d1 = F80::from_i64(2 * n - 1);
+            let d2 = F80::from_i64(2 * n);
+            term = term.mul(&neg_x2).div(&d1).div(&d2);
+            result = result.add(&term, false);
+        }
+        if negate { result.neg() } else { result }
+    }
+
     /// Format to 6 decimal places using F80 arithmetic (matches C printf "%.6f").
     /// No f64 conversion — the 80-bit value is rounded and decomposed directly.
     pub fn format_6f(&self) -> String {
@@ -547,5 +705,32 @@ mod wave_all_test {
             out.push_str(&format!("{} {}\n", px, py));
         }
         let _ = fs::write("/tmp/rust_wave1.txt", out);
+    }
+}
+
+#[cfg(test)]
+mod cos_tests {
+    use super::F80;
+    #[test]
+    fn f80_cos_test() {
+        let cases = [
+            (0.0_f64, 1.0),
+            (0.5, 0.8775825618903728),
+            (1.0, 0.5403023058681398),
+            (1.5707963267948966, 0.0), // π/2
+            (3.141592653589793, -1.0), // π
+            (4.71238898038469, 0.0),   // 3π/2
+            (6.283185307179586, 1.0),   // 2π
+            (2.0, -0.4161468365471424),
+            (3.0, -0.9899924966004454),
+        ];
+        for &(x, expected) in &cases {
+            let cos_f80 = F80::from_f64(x).cos().to_f64();
+            let err = (cos_f80 - expected).abs();
+            let cutoff = if expected.abs() < 1e-10 { 1e-10 } else { expected.abs() * 1e-10 };
+            assert!(err < cutoff, "cos({:.10}): expected {:.10e} got {:.10e} err={:.2e}",
+                x, expected, cos_f80, err);
+        }
+        println!("F80 cos: all {} cases passed", cases.len());
     }
 }
