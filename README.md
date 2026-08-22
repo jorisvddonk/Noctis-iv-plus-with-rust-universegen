@@ -11,10 +11,11 @@ For the manual, see [manual/noctis_iv_manual.html](manual/noctis_iv_manual.html)
 ## Deterministic Rust port (universe generator)
 
 This repository also contains a **100% standalone Rust reimplementation** of the
-game's universe generator (`tests/nivgen`). It derives every planet, moon,
-star, surface, sector and sky texture purely from the Parsis coordinates and
-the Borland RNG — no C code, no fixtures, no DOSBox. The output is verified
-byte-for-byte against canonical hashes captured from the original game.
+game's universe generator. Source: [`tests/nivgen/`](tests/nivgen/). It derives
+every planet, moon, star, surface, sector and sky texture purely from the Parsis
+coordinates and the Borland RNG — no C code, no fixtures, no DOSBox. The output
+is verified byte-for-byte against canonical hashes captured from the original
+game.
 
 ```
 SystemGen::generate(x, y, z)
@@ -28,12 +29,12 @@ SystemGen::generate(x, y, z)
 
 | Module | Purpose |
 |--------|---------|
-| `tests/nivgen/src/rng.rs` | Borland `rand()` / `srand()` and `fast_random()` / `fast_srand()` |
-| `tests/nivgen/src/system.rs` | Star system generation (planet count, types, orbits) |
-| `tests/nivgen/src/surface.rs` | 360×180 surface map + atmosphere + palette |
-| `tests/nivgen/src/surface_sector.rs` | 200×200 sector heightmap + object chart + surftex/sky |
-| `tests/nivgen/src/f80.rs` | Noctis' x87 80-bit float emulation |
-| `tests/nivgen/src/wasm.rs` | C-ABI exports for the browser demo |
+| [`tests/nivgen/src/rng.rs`](tests/nivgen/src/rng.rs) | Borland `rand()` / `srand()` and `fast_random()` / `fast_srand()` |
+| [`tests/nivgen/src/system.rs`](tests/nivgen/src/system.rs) | Star system generation (planet count, types, orbits) |
+| [`tests/nivgen/src/surface.rs`](tests/nivgen/src/surface.rs) | 360×180 surface map + atmosphere + palette |
+| [`tests/nivgen/src/surface_sector.rs`](tests/nivgen/src/surface_sector.rs) | 200×200 sector heightmap + object chart + surftex/sky |
+| [`tests/nivgen/src/f80.rs`](tests/nivgen/src/f80.rs) | Noctis' x87 80-bit float emulation |
+| [`tests/nivgen/src/wasm.rs`](tests/nivgen/src/wasm.rs) | C-ABI exports for the browser demo |
 
 Key Borland behaviours faithfully replicated: 16-bit `int`/`unsigned`
 arithmetic, right-to-left argument evaluation, 32-bit `float` intermediates
