@@ -80,6 +80,37 @@ See `AGENTS.md` for the full workflow and hashing conventions
 (`SAMPLED_BYTES` = 46080 for surfaces, 65024 for surftex, 32400 for
 atmosphere).
 
+### C test harness (DOSBox)
+
+`tests/harness/NIVTEST.CPP` compiles the **unmodified** game generation
+sources (`source/NOCTIS-0.CPP`, `source/NOCTIS-1.CPP`) and emits stable
+FNV-1a + CRC32 hashes of every generated artifact — it never touches
+generation logic. It mirrors the game's `main()` buffer allocation and
+landing-context setup, then drives the real generation functions
+(`extract_ap_target_infos` → `prepare_nearstar` → `surface` /
+`build_surface` / `create_sky`).
+
+| File | Purpose |
+|------|---------|
+| `tests/harness/NIVTEST.CPP` | the harness: `selftest`/`system`/`scan`/`find`/`planet`/`planet-all`/`sector`/`surftex` |
+| `tests/dosbox/BUILD.BAT` | compiles game sources + harness with the exact `NOCTIS.CFG` flags (Borland C++ 3.1) |
+| `tests/dosbox/RUN.BAT` | runs all test sets, writes `.OUT` hash files |
+| `tests/scripts/fetch-toolchain.sh` | assembles the Borland C++ 3.1 toolchain from archive.org |
+| `tests/scripts/run-niv-tests.sh` | builds in DOSBox (container or `--local` DOSBox-X) and copies results |
+| `tests/results/*.OUT` | committed reference fixtures (one star per class, one body per planet type, sector + surftex samples) |
+
+```sh
+tests/scripts/run-niv-tests.sh --local           # native DOSBox-X
+tests/scripts/run-niv-tests.sh --container       # Apple container (Linux arm64)
+tests/scripts/run-niv-tests.sh --local --rebuild # force clean build
+```
+
+The five test sets are: `selftest` (hash vectors + Borland RNG
+sequences), solar systems (one per star class 0..11), planet textures
+(one body per planet type 0..9), sector heightmaps, and surface textures.
+`tests/results/BUILD.LOG` records the compiler banner so the build can be
+audited.
+
 ### WebAssembly demo
 
 `web/` is a browser demo compiling the generator to WASM (raw C ABI, no
