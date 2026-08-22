@@ -8,5 +8,8 @@ pub mod system;
 pub use system::{MAXBODIES, PLANET_DESCRIPTION, SystemGen, EngineY};
 mod ext_test;
 
+#[cfg(test)]
+mod surface_tests;
+
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
