@@ -11,6 +11,9 @@
  *.zip
 
  tests/nivgen/target/
+tests/.harness_build/
+b/
+nivlin.out
 
 __pycache__/
 *.pyc
