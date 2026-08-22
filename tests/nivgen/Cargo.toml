@@ -5,14 +5,19 @@ edition = "2021"
 description = "Bug-for-bug Rust reimplementation of the Noctis IV Plus universe generator"
 license = "MIT"
 
+[features]
+default = ["db"]
+db = ["dep:rusqlite"]
+
 [dependencies]
 extended = "0.1.0"
 swfp = "0.1.0"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.31", features = ["bundled"], optional = true }
 
 [lib]
 name = "nivgen"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "nivgen"

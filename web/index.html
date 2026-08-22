@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Noctis IV Plus — WASM Universe Generator</title>
+<link rel="stylesheet" href="demo.css" />
+</head>
+<body>
+<header>
+  <h1>NOCTIS IV <span>PLUS</span></h1>
+  <p class="tagline">A deterministic universe, generated in your browser.</p>
+  <p class="sub">
+    Bug-for-bug Rust port of the original DOS universe generator, compiled to
+    WebAssembly. Every planet, star and sector below is derived purely from
+    coordinates + the Borland RNG — no data files, no server.
+  </p>
+</header>
+
+<main>
+  <!-- ============================ coordinates ============================ -->
+  <section id="coords" class="panel">
+    <h2>1 · Parsis coordinates</h2>
+    <div class="row">
+      <label>x <input id="x" type="number" step="any" value="4342128" /></label>
+      <label>y <input id="y" type="number" step="any" value="4559934" /></label>
+      <label>z <input id="z" type="number" step="any" value="-807862" /></label>
+      <button id="gen">Generate system</button>
+      <button id="rand">Random</button>
+    </div>
+    <div class="presets">
+      <span>Named stars:</span>
+      <button data-x="-18928" data-y="29680" data-z="-67336">BALASTRACKONASTREYA</button>
+      <button data-x="4342128" data-y="4559934" data-z="-807862">FENIA</button>
+      <button data-x="1399069584" data-y="1988408" data-z="1399905480">CHOALUUS</button>
+      <button data-x="104784" data-y="-8554" data-z="49535587">PITSTOP 12</button>
+      <button data-x="1977136" data-y="5126384" data-z="-394992">AWELER</button>
+    </div>
+  </section>
+
+  <!-- ============================ star system ============================ -->
+  <section id="system" class="panel hidden">
+    <h2>2 · Star system</h2>
+    <div id="starinfo" class="starinfo"></div>
+    <div class="systemgrid">
+      <div>
+        <canvas id="orbit" width="420" height="420" class="pixel"></canvas>
+        <p class="caption">Top-down orbital map (planets &amp; moons, radii not to scale)</p>
+      </div>
+      <div>
+        <table id="bodies" class="bodies">
+          <thead>
+            <tr><th>#</th><th>Type</th><th>Owner</th><th>Ray</th><th>Orb. ray</th><th>Tilt</th><th>Ecc</th><th>Ring</th><th>Rot. pd</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="caption">Click <em>Surface</em> to view the body, <em>Land</em> to walk its surface sector.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ planet surface ============================ -->
+  <section id="planet" class="panel hidden">
+    <h2>3 · Planet surface map <span id="planettitle" class="muted"></span></h2>
+    <div class="row">
+      <button id="rendersurf">Generate surface</button>
+      <label class="check"><input id="atmo" type="checkbox" checked /> atmosphere overlay</label>
+      <span id="surfhash" class="hash"></span>
+    </div>
+    <div class="grid2">
+      <div>
+        <canvas id="surface" width="360" height="180" class="pixel wide"></canvas>
+        <p class="caption">360 × 180 equirectangular surface (planet palette)</p>
+      </div>
+      <div>
+        <canvas id="palette" width="256" height="32" class="pixel wide"></canvas>
+        <p class="caption">64-colour surface palette (6-bit VGA)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ landing sector ============================ -->
+  <section id="sector" class="panel hidden">
+    <h2>4 · Landing sector <span id="sectortitle" class="muted"></span></h2>
+    <div class="row">
+      <label>lon <input id="lon" type="number" value="0" /></label>
+      <label>lat <input id="lat" type="number" value="60" /></label>
+      <label>albedo <input id="albedo" type="number" value="-1" title="-1 = auto" /></label>
+      <button id="land">Land</button>
+      <span id="sectorhash" class="hash"></span>
+    </div>
+    <div id="env" class="env"></div>
+    <div class="grid4">
+      <div>
+        <canvas id="heightmap" width="200" height="200" class="pixel"></canvas>
+        <p class="caption">200 × 200 heightmap</p>
+      </div>
+      <div>
+        <canvas id="objchart" width="200" height="200" class="pixel"></canvas>
+        <p class="caption">200 × 200 object chart</p>
+      </div>
+      <div>
+        <canvas id="surftex" width="256" height="256" class="pixel"></canvas>
+        <p class="caption">256 × 256 surface texture</p>
+      </div>
+      <div>
+        <canvas id="sky" width="360" height="180" class="pixel wide"></canvas>
+        <p class="caption">360 × 180 sky texture</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ RNG lab ============================ -->
+  <section id="rnglab" class="panel">
+    <h2>5 · Borland RNG lab</h2>
+    <p class="sub">
+      The two RNGs that drive the whole generator. The sequences below match the
+      canonical vectors (<code>srand(1)</code> &rarr; <code>346, 130, 10982, 1090, …</code>).
+    </p>
+    <div class="rnggrid">
+      <div class="rngbox">
+        <h3>Borland <code>rand()</code> / <code>srand()</code></h3>
+        <div class="row">
+          <label>seed <input id="rngseed" type="number" value="1" /></label>
+          <button id="rnggo">Generate</button>
+        </div>
+        <pre id="rngseq" class="mono"></pre>
+        <span id="rngcheck" class="check"></span>
+      </div>
+      <div class="rngbox">
+        <h3>Noctis <code>fast_random()</code> / <code>fast_srand()</code></h3>
+        <div class="row">
+          <label>seed <input id="frngseed" type="number" value="12345" /></label>
+          <button id="frnggo">Generate</button>
+        </div>
+        <pre id="frngseq" class="mono"></pre>
+        <span id="frngcheck" class="check"></span>
+      </div>
+      <div class="rngbox">
+        <h3><code>flandom()</code></h3>
+        <div class="row">
+          <label>seed <input id="frandseed" type="number" value="1" /></label>
+          <button id="frandgo">Generate</button>
+        </div>
+        <pre id="frandseq" class="mono"></pre>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Determinism proof: every image above is derived from the coordinates in
+      panel 1 through the same Borland LCG the original 1990s game used.
+      Re-run with the same coordinates and you get the identical universe.
+    </p>
+  </footer>
+</main>
+
+<div id="status" class="status hidden"></div>
+
+<script src="demo.js"></script>
+</body>
+</html>

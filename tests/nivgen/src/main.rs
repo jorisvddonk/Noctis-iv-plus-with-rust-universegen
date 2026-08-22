@@ -32,6 +32,7 @@ fn main() {
         "planet-all" => cmd_planet_all(&args),
         "sector" => cmd_sector(&args),
         "surftex" => cmd_surftex(&args),
+        #[cfg(feature = "db")]
         "fill-db" => cmd_fill_db(&args),
         _ => {
             eprintln!("unknown command: {}", cmd);
@@ -151,6 +152,17 @@ fn cmd_system(args: &[String]) {
             emit!(f, "          tilt={:.8} orb_tilt={:.8} orb_orient={:.8} orb_ecc={:.8} orb_seed={:.6} ring={:.6}\n",
                 g.p_tilt[n], g.p_orb_tilt[n], g.p_orb_orient[n], g.p_orb_ecc[n], g.p_orb_seed[n], g.p_ring[n]);
         }
+    }
+    if let Ok(dir) = std::env::var("NIVDUMP") {
+        let mut out = String::new();
+        for n in 0..g.nearstar_nob as usize {
+            out.push_str(&format!("BODY {} type={} owner={} moonid={}\n", n, g.p_type[n], g.p_owner[n], g.p_moonid[n]));
+            out.push_str(&format!("ray={:016X} orb_ray={:016X}\n", g.p_ray[n].to_bits(), g.p_orb_ray[n].to_bits()));
+            out.push_str(&format!("tilt={:016X} orbtilt={:016X} orient={:016X} ecc={:016X} orbdseed={:016X} ring={:016X}\n",
+                g.p_tilt[n].to_bits(), g.p_orb_tilt[n].to_bits(), g.p_orb_orient[n].to_bits(),
+                g.p_orb_ecc[n].to_bits(), g.p_orb_seed[n].to_bits(), g.p_ring[n].to_bits()));
+        }
+        let _ = std::fs::write(format!("{}/SYSTEMBODIES.txt", dir), out);
     }
 }
 
@@ -350,6 +362,7 @@ fn report_surftex(f: &mut Option<std::fs::File>, g: &SystemGen, p: i32) {
     hashline(f, "sky_texture", &g.s_background[..SAMPLED_BYTES]);
 }
 
+#[cfg(feature = "db")]
 fn cmd_fill_db(args: &[String]) {
     let db_path = args.iter().position(|a| a == "--db").and_then(|p| args.get(p + 1))
         .map(|s| s.as_str()).unwrap_or("db/noctis.db");

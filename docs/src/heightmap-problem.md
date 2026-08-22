@@ -225,6 +225,62 @@ the problem is specific to certain non-zero land_seed values.
    round_hill, then compare C and Rust outputs at the pixel level
    to find the exact first divergence.
 
+## Recent investigation (2026-07-30)
+
+### Attempts that did NOT fix the issue:
+
+1. **Computing d using F80 sqrt instead of f64 sqrt**: No change. This suggests
+   that the difference between 80-bit FSQRT and 64-bit sqrt is not the cause.
+   
+2. **Using native f64 cos() instead of F80 Taylor series cos()**: No change.
+   This confirms the doc's earlier finding that cos precision is not the issue.
+
+3. **Computing d/v as f32 division before promoting to f64/F80**: This actually
+   broke other bodies that were passing, suggesting the current F80 division
+   approach is correct.
+
+### Key observations:
+
+- The three failing bodies (4, 13, 21) all produce **exactly the same hashes**
+  regardless of whether we use F80 or f64 arithmetic: `F0DD723B`, `F8B6F1F9`,
+  `F45061CF` respectively.
+  
+- This hash stability across different floating-point approaches suggests the
+  bug is **not** in floating-point precision differences.
+
+- The def landing (land_seed=0) works perfectly for all bodies, including
+  the three that fail on rand landings. This means the terrain generation
+  code itself is fundamentally correct.
+
+- The RNG sequences have been confirmed identical between C and Rust at all
+  checkpoints, so the inputs to `round_hill` are the same.
+
+### Working hypothesis:
+
+Given that:
+- Float precision (f64 vs F80) doesn't matter
+- RNG is identical
+- The same 33/99 hills execute in both C and Rust
+- def landing works but certain rand landings fail
+
+The bug may be in a **subtle interaction** between specific parameter values
+that only occur with certain land_seed values. Possible candidates:
+
+1. **Edge case in loop bounds**: Although unsigned comparison was confirmed,
+   there might be an edge case when `cx == r` or `cz == r` (equality) that's
+   handled differently.
+
+2. **Signed zero or NaN handling**: The check `if (y >= 0)` might behave
+   differently between C and Rust if `y` is -0.0 or NaN in edge cases.
+
+3. **Unknown compiler behavior**: Borland C 3.1 might have a quirk in how
+   it compiles the specific sequence of operations in `round_hill` that we
+   haven't identified yet.
+
+4. **Memory aliasing or undefined behavior in C**: The C code might rely on
+   undefined behavior that coincidentally works but produces different results
+   when reimplemented in well-defined Rust.
+
 ## Relevant files
 
 | File | Purpose |
