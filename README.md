@@ -1,6 +1,6 @@
-# Noctis IV Plus
+# Noctis IV Plus — Universe Generator & Rust Port
 
-This is the home of Noctis IV Plus, a basic modification of Alessandro Ghignola's excellent [Noctis IV](https://80.style/#/hsp/noctis_iv/noctis_iv_download_JmsLdos_onlyK) space exploration simulator.
+This is the home of Noctis IV Plus, a basic modification of Alessandro Ghignola's excellent [Noctis IV](https://80.style/#/hsp/noctis_iv/noctis_iv_download_JmsLdos_onlyK) space exploration simulator — and of a **100% standalone Rust reimplementation** of its deterministic universe generator.
 
 ![](gallery/SAMPLE.BMP)
 
