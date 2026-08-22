@@ -155,6 +155,92 @@ impl SystemGen {
         }
     }
 
+    // --- safe reference implementations of the three smoothers ---
+    //
+    // Bit-compatible byte-granular versions (plain slice indexing, no raw
+    // pointers) of the unsafe loops above. These are the drop-in safe
+    // replacements; `surface_tests` asserts they produce identical output to
+    // the unsafe versions, and `examples/smooth_dump.rs` verifies them against
+    // the real compiled C loops.
+    pub(crate) fn ssmooth_safe(&mut self) {
+        let q = self.quadwords;
+        let cx = (q * 4 - 360 * 4) as usize;
+        let mut di = 360usize;
+        for _ in 0..cx {
+            let w = |buf: &[u8], off: usize| -> u32 {
+                buf[off] as u32
+                    | (buf[off + 1] as u32) << 8
+                    | (buf[off + 2] as u32) << 16
+                    | (buf[off + 3] as u32) << 24
+            };
+            let mut edx = w(&self.p_background, di - 360)
+                .wrapping_add(w(&self.p_background, di))
+                .wrapping_add(w(&self.p_background, di + 360))
+                .wrapping_add(w(&self.p_background, di + 720));
+            edx &= 0xFCFCFCFC;
+            edx >>= 2;
+            let mut al = (edx & 0xFF) as u8;
+            al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
+            edx >>= 16;
+            al = al.wrapping_add((edx & 0xFF) as u8);
+            al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
+            al >>= 2;
+            self.p_background[di] = al;
+            di += 1;
+        }
+    }
+
+    pub(crate) fn lssmooth_safe(&mut self) {
+        let q = self.quadwords;
+        let cx = (q * 4 - 80 * 4) as usize;
+        let mut di = 0usize;
+        for _ in 0..cx {
+            let d0 = self.p_background[di] as u32;
+            let d1 = self.p_background[di + 1] as u32;
+            let b0 = self.p_background[di + 360] as u32;
+            let b1 = self.p_background[di + 361] as u32;
+            let dx = (d0 | (d1 << 8)) & 0x3F3F;
+            let bx = (b0 | (b1 << 8)) & 0x3F3F;
+            let mut al = (d0 as u8) & 0xC0;
+            let mut dl = (d0 & 0x3F) as u8;
+            dl = dl.wrapping_add((dx >> 8) as u8);
+            dl = dl.wrapping_add((bx & 0xFF) as u8);
+            dl = dl.wrapping_add(((bx >> 8) & 0xFF) as u8);
+            dl >>= 2;
+            al |= dl;
+            self.p_background[di] = al;
+            di += 1;
+        }
+    }
+
+    pub(crate) fn psmooth_grays_safe(&mut self) {
+        let q = self.quadwords;
+        let cx = (q * 4 - 320 * 4) as usize;
+        let mut di = 320usize;
+        for _ in 0..cx {
+            let w = |buf: &[u8], off: usize| -> u32 {
+                buf[off] as u32
+                    | (buf[off + 1] as u32) << 8
+                    | (buf[off + 2] as u32) << 16
+                    | (buf[off + 3] as u32) << 24
+            };
+            let mut edx = w(&self.p_background, di - 320)
+                .wrapping_add(w(&self.p_background, di))
+                .wrapping_add(w(&self.p_background, di + 320))
+                .wrapping_add(w(&self.p_background, di + 640));
+            edx &= 0xFCFCFCFC;
+            edx >>= 2;
+            let mut al = (edx & 0xFF) as u8;
+            al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
+            edx >>= 16;
+            al = al.wrapping_add((edx & 0xFF) as u8);
+            al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
+            al >>= 2;
+            self.p_background[di] = al;
+            di += 1;
+        }
+    }
+
     // --- pclear (NOCTIS-0.CPP:332): fill QUADWORDS*4 bytes with pattern ---
     fn pclear(&mut self, pattern: u8) {
         let n = (self.quadwords * 4) as usize;

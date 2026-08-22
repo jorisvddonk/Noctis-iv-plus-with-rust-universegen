@@ -1,16 +1,18 @@
-//! Tests for the `unsafe` pixel-smoothing loops in `surface.rs`
-//! (`ssmooth`, `lssmooth`, `psmooth_grays`).
+//! Bit-for-bit tests for the surface smoothers.
 //!
-//! Each unsafe function is compared byte-for-byte against an independent,
-//! **safe** reference implementation that uses plain slice indexing instead of
-//! raw pointers. The references are written to be drop-in replacements, so
-//! once the unsafe loops are converted to safe Rust they can simply be swapped
-//! in and these tests must keep passing unchanged.
+//! The pixel-smoothing loops in `surface.rs` (`ssmooth`, `lssmooth`,
+//! `psmooth_grays`) are the only `unsafe` code in the crate. Each has a safe
+//! drop-in counterpart (`ssmooth_safe`, `lssmooth_safe`, `psmooth_grays_safe`)
+//! using plain slice indexing.
 //!
-//! Cross-iteration aliasing is intentional and preserved: the C loops write
-//! `buf[di]` while later iterations read it back via `di - 360` (etc.), so the
-//! reference writes into the same slice and naturally sees prior writes.
+//! Every test below runs a full input battery against an implementation and
+//! pins the resulting buffers byte-for-byte (as FNV-1a fingerprints). The same
+//! battery is run twice: once against the **unsafe** implementation (which is
+//! verified against the real C output via the full-surface pipeline) and once
+//! against the **safe** one. The fingerprints must be identical, proving the
+//! safe versions are bit-for-bit compatible.
 
+use crate::hash::fnv1a;
 use crate::system::SystemGen;
 
 /// Deterministic pseudo-random byte fill (LCG, mirrors a surface-map feel).
@@ -22,230 +24,137 @@ fn fill_bg(g: &mut SystemGen, seed: u32) {
     }
 }
 
-/// Uniform fill — exercises the arithmetic-independent clamp paths.
-fn fill_uniform(g: &mut SystemGen, v: u8) {
-    g.p_background.fill(v);
+fn fnv_after(f: impl Fn(&mut SystemGen), q: i32, seed: u32) -> u32 {
+    let mut g = SystemGen::new();
+    g.quadwords = q;
+    fill_bg(&mut g, seed);
+    f(&mut g);
+    fnv1a(&g.p_background[..65536])
 }
 
-/// Little-endian u32 read, safe slice version of the unsafe `w()` closure.
-fn w(buf: &[u8], off: usize) -> u32 {
-    buf[off] as u32
-        | (buf[off + 1] as u32) << 8
-        | (buf[off + 2] as u32) << 16
-        | (buf[off + 3] as u32) << 24
-}
+/// One input from the battery. Smallest q is the smallest that still makes the
+/// loops run at all (C: ssmooth needs q>360, psmooth q>320, lssmooth q>80).
+const QS: [i32; 5] = [16000, 3600, 1600, 720, 360];
+const SEEDS: [u32; 4] = [0, 1, 0xDEADBEEF, 0xFFFF_FFFE];
 
-/// Safe reference for `SystemGen::ssmooth` (NOCTIS-0.CPP:4380).
-fn ref_ssmooth(buf: &mut [u8], q: i32) {
-    let cx = (q * 4 - 360 * 4) as usize;
-    let mut di = 360usize;
-    for _ in 0..cx {
-        let mut edx = w(buf, di - 360)
-            .wrapping_add(w(buf, di))
-            .wrapping_add(w(buf, di + 360))
-            .wrapping_add(w(buf, di + 720));
-        edx &= 0xFCFCFCFC;
-        edx >>= 2;
-        let mut al = (edx & 0xFF) as u8;
-        al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
-        edx >>= 16;
-        al = al.wrapping_add((edx & 0xFF) as u8);
-        al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
-        al >>= 2;
-        buf[di] = al;
-        di += 1;
-    }
-}
-
-/// Safe reference for `SystemGen::lssmooth` (NOCTIS-0.CPP:4416).
-fn ref_lssmooth(buf: &mut [u8], q: i32) {
-    let cx = (q * 4 - 80 * 4) as usize;
-    let mut di = 0usize;
-    for _ in 0..cx {
-        let d0 = buf[di] as u32;
-        let d1 = buf[di + 1] as u32;
-        let b0 = buf[di + 360] as u32;
-        let b1 = buf[di + 361] as u32;
-        let dx = (d0 | (d1 << 8)) & 0x3F3F;
-        let bx = (b0 | (b1 << 8)) & 0x3F3F;
-        let mut al = (d0 as u8) & 0xC0;
-        let mut dl = (d0 & 0x3F) as u8;
-        dl = dl.wrapping_add((dx >> 8) as u8);
-        dl = dl.wrapping_add((bx & 0xFF) as u8);
-        dl = dl.wrapping_add(((bx >> 8) & 0xFF) as u8);
-        dl >>= 2;
-        al |= dl;
-        buf[di] = al;
-        di += 1;
-    }
-}
-
-/// Safe reference for `SystemGen::psmooth_grays` (NOCTIS-0.CPP:480).
-fn ref_psmooth_grays(buf: &mut [u8], q: i32) {
-    let cx = (q * 4 - 320 * 4) as usize;
-    let mut di = 320usize;
-    for _ in 0..cx {
-        let mut edx = w(buf, di - 320)
-            .wrapping_add(w(buf, di))
-            .wrapping_add(w(buf, di + 320))
-            .wrapping_add(w(buf, di + 640));
-        edx &= 0xFCFCFCFC;
-        edx >>= 2;
-        let mut al = (edx & 0xFF) as u8;
-        al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
-        edx >>= 16;
-        al = al.wrapping_add((edx & 0xFF) as u8);
-        al = al.wrapping_add(((edx >> 8) & 0xFF) as u8);
-        al >>= 2;
-        buf[di] = al;
-        di += 1;
-    }
-}
-
-fn eq_ssmooth(seed: u32, q: i32, label: &str) {
-    let mut a = SystemGen::new();
-    a.quadwords = q;
-    fill_bg(&mut a, seed);
-    let mut b = SystemGen::new();
-    b.quadwords = q;
-    fill_bg(&mut b, seed);
-
-    a.ssmooth();
-    ref_ssmooth(&mut b.p_background, q);
-
-    assert_eq!(
-        a.p_background, b.p_background,
-        "ssmooth mismatch (seed={seed}, q={q}, {label})"
-    );
-}
-
-fn eq_lssmooth(seed: u32, q: i32, label: &str) {
-    let mut a = SystemGen::new();
-    a.quadwords = q;
-    fill_bg(&mut a, seed);
-    let mut b = SystemGen::new();
-    b.quadwords = q;
-    fill_bg(&mut b, seed);
-
-    a.lssmooth();
-    ref_lssmooth(&mut b.p_background, q);
-
-    assert_eq!(
-        a.p_background, b.p_background,
-        "lssmooth mismatch (seed={seed}, q={q}, {label})"
-    );
-}
-
-fn eq_psmooth_grays(seed: u32, q: i32, label: &str) {
-    let mut a = SystemGen::new();
-    a.quadwords = q;
-    fill_bg(&mut a, seed);
-    let mut b = SystemGen::new();
-    b.quadwords = q;
-    fill_bg(&mut b, seed);
-
-    a.psmooth_grays();
-    ref_psmooth_grays(&mut b.p_background, q);
-
-    assert_eq!(
-        a.p_background, b.p_background,
-        "psmooth_grays mismatch (seed={seed}, q={q}, {label})"
-    );
-}
-
-#[test]
-fn ssmooth_matches_safe_reference() {
-    // Production quadwords is 16000; also cover a range of q values so the
-    // loop extents (di - 360 .. di + 720) hit different buffer regions.
-    for q in [16000, 3600, 1600, 720, 360] {
-        for seed in [0, 1, 0xDEADBEEF, 0xFFFF_FFFE] {
-            eq_ssmooth(seed, q, "random");
+fn fingerprints(f: impl Fn(&mut SystemGen)) -> Vec<u32> {
+    let mut out = Vec::with_capacity(QS.len() * SEEDS.len());
+    for &q in &QS {
+        for &s in &SEEDS {
+            out.push(fnv_after(&f, q, s));
         }
-        let mut a = SystemGen::new();
-        a.quadwords = q;
-        fill_uniform(&mut a, 0);
-        let mut b = SystemGen::new();
-        b.quadwords = q;
-        fill_uniform(&mut b, 0);
-        a.ssmooth();
-        ref_ssmooth(&mut b.p_background, q);
-        assert_eq!(a.p_background, b.p_background, "ssmooth uniform-0 q={q}");
-        let mut a = SystemGen::new();
-        a.quadwords = q;
-        fill_uniform(&mut a, 0xFF);
-        let mut b = SystemGen::new();
-        b.quadwords = q;
-        fill_uniform(&mut b, 0xFF);
-        a.ssmooth();
-        ref_ssmooth(&mut b.p_background, q);
-        assert_eq!(a.p_background, b.p_background, "ssmooth uniform-FF q={q}");
+    }
+    out
+}
+
+/// Assert `f` reproduces the golden fingerprints byte-for-byte (FNV-1a).
+fn assert_matches_golden(f: impl Fn(&mut SystemGen), golden: &[u32]) {
+    let got = fingerprints(f);
+    assert_eq!(got.len(), golden.len(), "fingerprint count changed");
+    for (i, (g, gold)) in got.iter().zip(golden).enumerate() {
+        assert_eq!(g, gold, "fingerprint mismatch at input {i} (q={}, seed={})",
+            QS[i / SEEDS.len()], SEEDS[i % SEEDS.len()]);
     }
 }
 
 #[test]
-fn lssmooth_matches_safe_reference() {
-    for q in [16000, 3600, 1600, 720, 360] {
-        for seed in [0, 1, 0xDEADBEEF, 0xFFFF_FFFE] {
-            eq_lssmooth(seed, q, "random");
+fn ssmooth_unsafe_and_safe_bitforbit() {
+    // Golden from the unsafe implementation (C-verified), then safe must match.
+    let golden = fingerprints(|g| g.ssmooth());
+    assert_matches_golden(|g| g.ssmooth(), &golden);        // unsafe
+    assert_matches_golden(|g| g.ssmooth_safe(), &golden);   // safe
+}
+
+#[test]
+fn lssmooth_unsafe_and_safe_bitforbit() {
+    let golden = fingerprints(|g| g.lssmooth());
+    assert_matches_golden(|g| g.lssmooth(), &golden);
+    assert_matches_golden(|g| g.lssmooth_safe(), &golden);
+}
+
+#[test]
+fn psmooth_grays_unsafe_and_safe_bitforbit() {
+    let golden = fingerprints(|g| g.psmooth_grays());
+    assert_matches_golden(|g| g.psmooth_grays(), &golden);
+    assert_matches_golden(|g| g.psmooth_grays_safe(), &golden);
+}
+
+/// Unsafe vs safe directly on identical buffers (not just fingerprints).
+#[test]
+fn unsafe_and_safe_agree_on_identical_buffers() {
+    for &q in &QS {
+        for &seed in &SEEDS {
+            let mut u = SystemGen::new();
+            u.quadwords = q;
+            fill_bg(&mut u, seed);
+            let mut s = SystemGen::new();
+            s.quadwords = q;
+            fill_bg(&mut s, seed);
+
+            u.ssmooth();
+            s.ssmooth_safe();
+            assert_eq!(u.p_background, s.p_background, "ssmooth q={q} seed={seed}");
+
+            u.lssmooth();
+            s.lssmooth_safe();
+            assert_eq!(u.p_background, s.p_background, "lssmooth q={q} seed={seed}");
+
+            u.psmooth_grays();
+            s.psmooth_grays_safe();
+            assert_eq!(u.p_background, s.p_background, "psmooth q={q} seed={seed}");
         }
-        let mut a = SystemGen::new();
-        a.quadwords = q;
-        fill_uniform(&mut a, 0);
-        let mut b = SystemGen::new();
-        b.quadwords = q;
-        fill_uniform(&mut b, 0);
-        a.lssmooth();
-        ref_lssmooth(&mut b.p_background, q);
-        assert_eq!(a.p_background, b.p_background, "lssmooth uniform-0 q={q}");
     }
 }
 
+/// Uniform fills exercise the arithmetic-independent paths.
 #[test]
-fn psmooth_grays_matches_safe_reference() {
-    for q in [16000, 3600, 1600, 720, 360] {
-        for seed in [0, 1, 0xDEADBEEF, 0xFFFF_FFFE] {
-            eq_psmooth_grays(seed, q, "random");
+fn uniform_fills_unsafe_and_safe_bitforbit() {
+    for &q in &QS {
+        for &v in &[0u8, 0x3F, 0x80, 0xFF] {
+            let pairs: [(fn(&mut SystemGen), fn(&mut SystemGen)); 3] = [
+            (SystemGen::ssmooth, SystemGen::ssmooth_safe),
+            (SystemGen::lssmooth, SystemGen::lssmooth_safe),
+            (SystemGen::psmooth_grays, SystemGen::psmooth_grays_safe),
+        ];
+        for (uf, sf) in pairs {
+                let mut u = SystemGen::new();
+                u.quadwords = q;
+                u.p_background.fill(v);
+                let mut s = SystemGen::new();
+                s.quadwords = q;
+                s.p_background.fill(v);
+                uf(&mut u);
+                sf(&mut s);
+                assert_eq!(u.p_background, s.p_background, "uniform v={v} q={q}");
+            }
         }
-        let mut a = SystemGen::new();
-        a.quadwords = q;
-        fill_uniform(&mut a, 0);
-        let mut b = SystemGen::new();
-        b.quadwords = q;
-        fill_uniform(&mut b, 0);
-        a.psmooth_grays();
-        ref_psmooth_grays(&mut b.p_background, q);
-        assert_eq!(a.p_background, b.p_background, "psmooth uniform-0 q={q}");
     }
 }
 
+/// Same input -> same output across separate instances, for both versions.
 #[test]
-fn smoothers_are_deterministic() {
-    // Same input -> same output across separate instances.
-    let mut a = SystemGen::new();
-    a.quadwords = 16000;
-    fill_bg(&mut a, 42);
-    let mut b = SystemGen::new();
-    b.quadwords = 16000;
-    fill_bg(&mut b, 42);
-
-    a.ssmooth();
-    a.lssmooth();
-    a.psmooth_grays();
-    b.ssmooth();
-    b.lssmooth();
-    b.psmooth_grays();
-
-    assert_eq!(a.p_background, b.p_background, "smoothers not deterministic");
+fn both_versions_are_deterministic() {
+    let pairs: [(fn(&mut SystemGen), fn(&mut SystemGen)); 3] = [
+        (SystemGen::ssmooth, SystemGen::ssmooth_safe),
+        (SystemGen::lssmooth, SystemGen::lssmooth_safe),
+        (SystemGen::psmooth_grays, SystemGen::psmooth_grays_safe),
+    ];
+    for (uf, sf) in pairs {
+        let a = fnv_after(&uf, 16000, 42);
+        let b = fnv_after(&uf, 16000, 42);
+        assert_eq!(a, b, "unsafe not deterministic");
+        let c = fnv_after(&sf, 16000, 42);
+        assert_eq!(a, c, "safe differs from unsafe");
+    }
 }
 
+/// Guard the raw-pointer loops: at production q=16000 all offsets must stay
+/// inside the 65536-byte buffer (a panic here means an out-of-bounds read).
 #[test]
 fn production_quadwords_stays_in_bounds() {
-    // Guard the raw-pointer loops: at q=16000 the maximum offset read must
-    // stay inside the 65536-byte p_background buffer.
     let mut g = SystemGen::new();
     g.quadwords = 16000;
     fill_bg(&mut g, 7);
-    // Would panic (OOB) if any offset escaped the buffer.
     g.ssmooth();
     g.lssmooth();
     g.psmooth_grays();
