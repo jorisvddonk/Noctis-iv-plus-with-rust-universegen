@@ -1,4 +1,4 @@
-# Fetched/assembled Turbo C++ 3.0 (DOS) toolchain (large binaries).
+# Fetched/assembled Borland C++ 3.1 (DOS) toolchain (large binaries).
 # Acquire with: tests/scripts/fetch-toolchain.sh tests/niv-toolchain
 niv-toolchain/
 

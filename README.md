@@ -65,6 +65,11 @@ Set `NIVDUMP=<dir>` to also write raw `.bin` dumps for binary-level diffing.
 bodies** drawn from the Feltyrion Explorer atlas. It is only a verification
 tool — generation itself never touches it.
 
+The reference fixtures come from a harness that compiles the **unmodified** game
+sources (`tests/harness/NIVTEST.CPP`) with **Borland C++ 3.1** under DOSBox,
+using the exact same compiler flags as the game's `NOCTIS.CFG`
+(`-ml -3 -f287 -O -Oe -Ob -Z -k- -h -vi-`). Turbo C is never used.
+
 ```bash
 uv run python3 tests/db/bulk_sectors.py one_iter        # process next unprocessed star
 uv run python3 tests/db/bulk_sectors.py db-report --short  # condensed status

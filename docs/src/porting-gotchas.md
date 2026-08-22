@@ -1,7 +1,7 @@
 # Noctis IV Plus → Rust: porting gotchas
 
 This document records the non-obvious behaviours of the original
-Turbo/Borland C++ 3.0 generator that the Rust port (`tests/nivgen`)
+Borland C++ 3.1 generator that the Rust port (`tests/nivgen`)
 had to reproduce **bit-for-bit**. Each item was discovered the hard way
 (a fixture diverged and we had to probe the real compiler under DOSBox).
 Read this before touching `rng.rs`, `system.rs`, or `f80.rs`.
@@ -288,7 +288,7 @@ C, but the explicit `wrapping_add` is correct everywhere.)
 
 
 
-The ground truth is the **unmodified C source** built with the TC 3.0
+The ground truth is the **unmodified C source** built with the Borland C++ 3.1
 toolchain under DOSBox (driven by `tests/scripts/run-niv-tests.sh
 --rebuild`). Fixtures in `tests/results/*.OUT` are CRLF and committed as
 the reference. To probe a specific behaviour of the real RTL, drop a tiny
@@ -353,7 +353,7 @@ Fix: compare the **original** byte against `ah` *before* the subtraction:
 ### 10d. `unsigned px, py` are 16-bit — negative values must wrap mod 2^16
 
 The global `unsigned px, py` (line 4446 in NOCTIS-0.CPP) are **16-bit**
-`unsigned` (Turbo C++ 3.0). Assignments like `px = cx + cos(a)*gr` compute
+`unsigned` (Borland C++ 3.1). Assignments like `px = cx + cos(a)*gr` compute
 a `double`, truncate it toward zero (C assignment), then store it in a
 16-bit `unsigned`, i.e. wrap modulo 65536. For craters with small `cx`,
 the cosine term can make `px` negative, e.g. `px = 12 + (-0.6)*53 ≈ -20`.
@@ -397,13 +397,10 @@ round-to-nearest-even).
 The actual compiler used by Noctis IV is **Borland C++ 3.1** (not Turbo C++ 3.0).
 The toolchain is available at `https://archive.org/download/bcpp31/BCPP31.ZIP`.
 
-* BCPP 3.1 uses `BCC.EXE` instead of `TCC.EXE`, but library names (`C0L.OBJ`,
-  `FP87.LIB`, `MATHL.LIB`, `CL.LIB`) are identical.
-* `BUILD.BAT` auto-detects `BCC.EXE` or `TCC.EXE`.
-* `run-niv-tests.sh` auto-detects toolchain layout (BCPP31/ or TC/ subdirectory).
-* BCPP 3.1 produces **identical output** to TC 3.0 for all tested planet types
-  (1, 2, 4, 5, 7, 8). The `wave()` garbage base differs between builds as
-  documented in §9c/§9f.
+* BCPP 3.1 uses `BCC.EXE`; library names (`C0L.OBJ`, `FP87.LIB`, `MATHL.LIB`,
+  `CL.LIB`) match the game's `NOCTIS.MAK`.
+* `BUILD.BAT` uses `BCC.EXE` only (Turbo C++ 3.0 / TCC is **not** supported).
+* `run-niv-tests.sh` auto-detects the toolchain layout (`BCPP31/`).
 * Use `run-niv-tests.sh --local --toolchain niv-toolchain/BCPP31` for native
   DOSBox-X builds on macOS.
 

@@ -1,22 +1,23 @@
-Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+Borland C++  Version 3.1 Copyright (c) 1992 Borland International
 noctis-0.cpp:
 
-	Available memory 3436236
-Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+	Available memory 3480964
+Borland C++  Version 3.1 Copyright (c) 1992 Borland International
 noctis-1.cpp:
 
-	Available memory 3456116
-Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+	Available memory 3499484
+Borland C++  Version 3.1 Copyright (c) 1992 Borland International
 nivtest.cpp:
+Warning nivtest.cpp 748: 'has(int,char * *,const char *)' is declared but never used
 
-	Available memory 3935772
-Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+	Available memory 3968948
+Borland C++  Version 3.1 Copyright (c) 1992 Borland International
 nivhash.c:
 
-	Available memory 4117724
-Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+	Available memory 4175900
+Borland C++  Version 3.1 Copyright (c) 1992 Borland International
 nivstubs.c:
 
-	Available memory 4128300
-Turbo Link  Version 5.0 Copyright (c) 1992 Borland International
+	Available memory 4186476
+Turbo Link  Version 5.1 Copyright (c) 1992 Borland International
 Error: Undefined symbol __randseed in module noctis-0.cpp

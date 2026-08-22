@@ -86,7 +86,7 @@ fn make_bg() -> Vec<u8> {
 /// Wrap a `double`/`f64` value the way Borland's 16-bit `int` would when a
 /// C expression like `10 * nearstar_p_orb_seed[n]` (whose operands are `int`)
 /// is passed to `random()`/`zrandom()`. The product is computed in `int` (which
-/// is 16-bit under Turbo C++), so it wraps modulo 65536. E.g.
+/// is 16-bit under Borland C++), so it wraps modulo 65536. E.g.
 /// `10 * 3309 = 33091 -> (int)-32445`. Without this, large seed-derived
 /// arguments would not overflow and the sign of the resulting zrandom would flip.
 fn i16(x: f64) -> i32 {

@@ -14,13 +14,13 @@ for f in "$SRC"/*.h "$SRC"/*.H; do cp "$f" "$WORK/" 2>/dev/null; done
 
 cat > "$WORK/BUILD.BAT" <<'REOF'
 @echo off
-c:\bin\bcc -c -ml -3 -f287 -O -Z -k- -h -vi- -IC:\INCLUDE NOCTIS-0.CPP >NUL
+c:\bin\bcc -c -ml -3 -f287 -O -Oe -Ob -Z -k- -h -vi- -wamp -wuse -weas -wpre -IC:\INCLUDE NOCTIS-0.CPP >NUL
 if errorlevel 1 goto fail
-c:\bin\bcc -c -ml -3 -f287 -O -Z -k- -h -vi- -IC:\INCLUDE NOCTIS-1.CPP >NUL
+c:\bin\bcc -c -ml -3 -f287 -O -Oe -Ob -Z -k- -h -vi- -wamp -wuse -weas -wpre -IC:\INCLUDE NOCTIS-1.CPP >NUL
 if errorlevel 1 goto fail
-c:\bin\bcc -c -ml -3 -f287 -O -Z -k- -h -vi- -IC:\INCLUDE RAWSYS3.CPP >NUL
+c:\bin\bcc -c -ml -3 -f287 -O -Oe -Ob -Z -k- -h -vi- -wamp -wuse -weas -wpre -IC:\INCLUDE RAWSYS3.CPP >NUL
 if errorlevel 1 goto fail
-c:\bin\bcc -c -ml -3 -f287 -O -Z -k- -h -vi- -IC:\INCLUDE NIVSTUBS.CPP >NUL
+c:\bin\bcc -c -ml -3 -f287 -O -Oe -Ob -Z -k- -h -vi- -wamp -wuse -weas -wpre -IC:\INCLUDE NIVSTUBS.CPP >NUL
 if errorlevel 1 goto fail
 c:\bin\tlink /x/i/n/c/P-/A=16/LC:\LIB @LINK.RSP >NUL
 if errorlevel 1 goto fail

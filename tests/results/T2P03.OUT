@@ -1,6 +1,6 @@
 === PLANET TEXTURE ===
-PLANET body=0 type=6 (large, not consistent, covered with dense clouds.) owner=-1 seedval=15771628.187269
-  rtperiod=681 rotation=0 term_start=134 term_end=264
-surface_map      len=46080  fnv=57184B42 crc=808EAF89
-atmo_overlay     len=32400  fnv=47197D33 crc=14748A43
-palette64        len=192    fnv=D795646F crc=EA1BAEF3
+PLANET body=32 type=3 (medium size, felisian, breathable atmosphere, suitable for life.) owner=5 seedval=93834658.208334
+  rtperiod=788 rotation=0 term_start=134 term_end=264
+surface_map      len=46080  fnv=E9460402 crc=B49E27E8
+atmo_overlay     len=32400  fnv=97D3C5CD crc=6C511CFF
+palette64        len=192    fnv=A2AE1326 crc=510718D2

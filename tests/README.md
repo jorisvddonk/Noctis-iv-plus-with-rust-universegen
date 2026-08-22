@@ -1,7 +1,7 @@
 # Noctis IV Plus — Universe Generation Test Harness
 
 This directory holds a harness that compiles the **unmodified** Noctis IV Plus
-generation code (Borland/Turbo C++ 3.0 for DOS) and emits stable hashes of the
+generation code (Borland C++ 3.1 for DOS) and emits stable hashes of the
 generated universe data, so the generator can later be ported to other
 languages bug-for-bug.
 
@@ -18,10 +18,10 @@ tests/
     LINK.RSP      TLINK response file (large model, FP87/MATHL/CL libs)
     RUN.BAT       runs all 5 test sets, writes .OUT hash files
   scripts/
-    fetch-toolchain.sh   download + reconstruct Turbo C++ 3.0 (Borland spanned)
+    fetch-toolchain.sh   download + reconstruct Borland C++ 3.1 (archive.org bcpp31)
     run-niv-tests.sh      macOS wrapper: builds in DOSBox (Apple container) + copies results
   results/        committed .OUT hash reference fixtures
-  niv-toolchain/  (git-ignored) assembled TC3.0 toolchain
+  niv-toolchain/  (git-ignored) assembled Borland C++ 3.1 toolchain
 ```
 
 The real generation sources (`source/NOCTIS-0.CPP`, `source/NOCTIS-1.CPP` and
@@ -47,7 +47,7 @@ tests/scripts/run-niv-tests.sh --dump     # also copy raw .DMP binaries
 ```
 
 Requires the Apple `container` CLI, `curl`, and network access for the first
-toolchain fetch (archive.org `tc-3.0`). The harness runs under plain `dosbox`
+toolchain fetch (archive.org `bcpp31`). The harness runs under plain `dosbox`
 0.74-3 inside a `debian:bookworm-slim` Linux/arm64 container with
 `SDL_VIDEODRIVER=dummy`.
 

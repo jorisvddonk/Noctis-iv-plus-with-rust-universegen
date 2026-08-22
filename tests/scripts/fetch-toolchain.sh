@@ -26,6 +26,11 @@
 set -euo pipefail
 
 OUT_DIR="${1:-$(cd "$(dirname "$0")/.." && pwd)/niv-toolchain}"
+# resolve to an absolute path so it stays valid after we cd into $WORK
+case "$OUT_DIR" in
+	/*) ;;
+	*) OUT_DIR="$(pwd)/$OUT_DIR" ;;
+esac
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -33,7 +38,7 @@ mkdir -p "$OUT_DIR/BCPP31/BIN" "$OUT_DIR/BCPP31/INCLUDE" "$OUT_DIR/BCPP31/LIB"
 cd "$WORK"
 
 echo "[fetch] downloading Borland C++ 3.1 spanned archive (bcpp31) ..."
-URL="https://archive.org/download/bcpp31/bcpp31.zip"
+URL="https://archive.org/download/bcpp31/BCPP31.ZIP"
 if ! curl -fsSL "$URL" -o bcpp31.zip; then
 	echo "[fetch] ERROR: download failed (network or item unavailable)." >&2
 	echo "[fetch] Try placing bcpp31.zip manually in $OUT_DIR and re-run." >&2
@@ -41,7 +46,7 @@ if ! curl -fsSL "$URL" -o bcpp31.zip; then
 fi
 
 echo "[fetch] inspecting archive for spanned volumes ..."
-VOLSETS=$(unzip -l bcpp31.zip | awk '{print $4}' | grep -iE '\.CA[0-9]+$' | sed -E 's/\.CA[0-9]+$//' | sort -u)
+VOLSETS=$(unzip -l bcpp31.zip | awk '{print $4}' | grep -iE '\.CA[0-9]+$' | sed -E 's/\.CA[0-9]+$//' | sort -u) || true
 
 reconstruct() {
 	local base="$1"
@@ -73,10 +78,10 @@ find extracted -type f \( -iname 'bcc.exe' -o -iname 'tlink.exe' -o -iname 'tasm
 	-o -iname 'dpmi*' \) | head -200 | xargs -I{} cp {} "$OUT_DIR/BCPP31/BIN/" 2>/dev/null || true
 
 echo "[fetch] collecting headers ..."
-find extracted -type f \( -iname '*.h' -o -iname '*.hpp' \) -exec cp -t "$OUT_DIR/BCPP31/INCLUDE" {} + 2>/dev/null || true
+find extracted -type f \( -iname '*.h' -o -iname '*.hpp' \) -exec cp '{}' "$OUT_DIR/BCPP31/INCLUDE/" \; 2>/dev/null || true
 
 echo "[fetch] collecting libraries + startup objects ..."
-find extracted -type f \( -iname '*.lib' -o -iname '*.obj' \) -exec cp -t "$OUT_DIR/BCPP31/LIB" {} + 2>/dev/null || true
+find extracted -type f \( -iname '*.lib' -o -iname '*.obj' \) -exec cp '{}' "$OUT_DIR/BCPP31/LIB/" \; 2>/dev/null || true
 
 echo "[fetch] done. Toolchain at: $OUT_DIR"
 echo "[fetch] BIN: $(ls "$OUT_DIR/BCPP31/BIN" | tr '\n' ' ')"

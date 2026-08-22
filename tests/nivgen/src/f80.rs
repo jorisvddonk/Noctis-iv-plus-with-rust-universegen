@@ -1,6 +1,6 @@
 //! Minimal x87 `long double` (80-bit float) emulator.
 //!
-//! Borland Turbo C++ 3.0 with `-f287` performs *all* floating-point
+//! Borland C++ 3.1 with `-f287` performs *all* floating-point
 //! arithmetic via the 80x87 FPU, which keeps a 64-bit mantissa (plus
 //! explicit integer bit) and rounds to nearest-even. This is strictly more
 //! precise than IEEE `f64` (53-bit mantissa), and for the Noctis seed

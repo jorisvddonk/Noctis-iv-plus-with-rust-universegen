@@ -10,7 +10,7 @@
 #   2. Cross-compiles + links inside DOSBox running in either:
 #        --container  Apple `container` (Linux arm64, Debian bookworm-slim)
 #        --local      macOS-native DOSBox-X (brew-installed)
-#      The toolchain is Turbo/Borland C++ 3.0.
+#      The toolchain is Borland C++ 3.1.
 #   3. Runs RUN.BAT which emits stable FNV-1a + CRC32 hashes of the generated
 #      universe data (plus optional raw dumps).
 #   4. Copies the .OUT result files back to <repo>/tests/results/.
@@ -48,12 +48,10 @@ if [ -z "$MODE" ]; then
 	exit 2
 fi
 
-# Auto-detect toolchain layout:
+# Auto-detect toolchain layout (Borland C++ 3.1 only):
 #   BCPP31 (Borland C++ 3.1): BIN/ is at toolchain root
 if [ -f "$TOOLCHAIN/BIN/BCC.EXE" ]; then
 	TC_MOUNT="$TOOLCHAIN"
-elif [ -f "$TOOLCHAIN/TC/BIN/BCC.EXE" ]; then
-	TC_MOUNT="$TOOLCHAIN/TC"
 else
 	echo "[run] toolchain not found at $TOOLCHAIN; fetching ..."
 	"$SCRIPT_DIR/fetch-toolchain.sh" "$TOOLCHAIN"

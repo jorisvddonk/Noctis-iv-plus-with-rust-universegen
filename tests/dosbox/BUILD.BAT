@@ -12,14 +12,21 @@ rem Drives (set up by the caller's dosbox conf):
 rem   C: = Borland C++ 3.1 toolchain (C:\BIN  C:\INCLUDE  C:\LIB)
 rem   D: = working dir (this build dir; source + harness copied here)
 rem
-rem Flags mirror the game's NOCTIS.CFG:
-rem   -ml  large memory model
-rem   -2   80286 instructions
+rem Flags mirror the game's NOCTIS.CFG exactly:
+rem   -ml   large memory model
+rem   -3    80386 instructions
 rem   -f287 hardware FPU codegen
-rem   -O -Z optimizations
+rem   -O    optimize for speed (jump optimization)
+rem   -Oe   register variables
+rem   -Ob   inline built-in functions
+rem   -Z    suppress register reloads
+rem   -k-   no standard stack frame
+rem   -h    fast huge pointers
+rem   -vi-  no inline expansion of inline functions
+rem   -wamp -wuse -weas -wpre  warning suppressions
 rem ======================================================================
 
-set CFLAGS=-ml -2 -f287 -O -Z -IC:\INCLUDE
+set CFLAGS=-ml -3 -f287 -O -Oe -Ob -Z -k- -h -vi- -wamp -wuse -weas -wpre -IC:\INCLUDE
 
 rem compiler: BCC.EXE (Borland C++ 3.1) only
 if exist C:\BIN\BCC.EXE set CC=C:\BIN\BCC.EXE

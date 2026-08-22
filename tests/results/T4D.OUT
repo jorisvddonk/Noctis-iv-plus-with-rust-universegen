@@ -1,5 +1,7 @@
 === SURFACE SECTOR (texture) ===
-SURFTEX body=0 type=6 lon=0 lat=60 sctype=2 albedo=32
+; DBG global_surface_seed=3697701
+SURFTEX body=5 type=6 lon=0 lat=60 sctype=2 albedo=32
   T_SCALE=32 quartz=0 groundflares=0 gtx=1
-  rockscaling=500.000 rockpeaking=250.000 rockdensity=15 treescaling=5907.022
-surf_texture     len=65536  fnv=AAA78345 crc=10B830AE
+  rockscaling=500.000 rockpeaking=250.000 rockdensity=15 treescaling=3571.572
+surf_texture     len=65024  fnv=206035C5 crc=17339B45
+sky_texture      len=46080  fnv=BFD92DC5 crc=FD1B433F
