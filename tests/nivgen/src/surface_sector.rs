@@ -944,10 +944,12 @@ impl SystemGen {
                 eprintln!("[R_RNG] T4 random(2)={}", sw);
                 match sw {
                         0 => {
-                        // C RTL: random(100) first (right operand of -), then random(200)
-                        let _r100 = self.rng.random(100);
+                        // C evaluates arithmetic left-to-right: random(200) first, then random(100)
+                        // (same as case 7's identical expression at line ~1269; type-7 matches 100%).
+                        // Commit 807e0a45 wrongly generalized function-arg RTL to binary -/+.
                         let _r200 = self.rng.random(200);
-                        eprintln!("[R_RNG] T5 random(100)={} random(200)={}", _r100, _r200);
+                        let _r100 = self.rng.random(100);
+                        eprintln!("[R_RNG] T5 random(200)={} random(100)={}", _r200, _r100);
                         n = self.albedo + _r200 - _r100;
                         let hf_raw = self.rng.random(10);
                         eprintln!("[R_RNG] T6 random(10)={}", hf_raw);

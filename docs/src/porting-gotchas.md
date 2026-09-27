@@ -720,6 +720,22 @@ argument, assume right-to-left evaluation and consume the values in reverse.
 `contrast`'s params are also Borland `float`, so each argument expression
 rounds to f32 (`as f32 as f64`).
 
+**Correction (2026-09-28): the RTL rule applies ONLY to function-call
+arguments, NOT to binary `+`/`-` operands.** `n = albedo + random(200) -
+random(100)` evaluates LEFT-to-right (`random(200)` first). Generalizing RTL
+to this expression (commit 807e0a45) broke every type-2 `sw==0` rand landing
+(ZUNGDARK BETA bodies 4/13/21: rand-hm + rand-oc + rand-stex all diverged,
+because `n` changed → crater count changed → `p_background` writes and all
+downstream RNG shifted). Evidence:
+- Case 7 has the IDENTICAL expression (`NOCTIS-1.CPP:2521`) ported LTR
+  (`surface_sector.rs` `_n_l = random(200)` first) and type-7 matches 100%.
+- Type-1's `(15 + 16*random(2)) * random(2)` genuinely IS right-first (29/29
+  match), so binary `*` goes right-first while binary `+`/`-` goes
+  left-first — matching Borland's stack codegen (MUL wants its right operand
+  in AX first; ADD/SUB evaluate left first).
+- Reverting T5 to LTR took the local DB from 58/61 to 61/61 sectors and
+  rand-stex from 58/61 to 61/61.
+
 ## 21. `wave()` inline-asm `add ax, 4` is a no-op on the write offset (2026-07-19)
 
 In `wave()` (type 6) the inline asm does `add ax, 4` before writing to
