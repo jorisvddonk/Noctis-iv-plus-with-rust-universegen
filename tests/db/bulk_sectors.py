@@ -367,7 +367,7 @@ def load_star(conn, star):
             out = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
             if not os.path.exists(out):
                 continue
-            t = open(out).read()
+            t = open(out, encoding="utf-8", errors="replace").read()
             hm = HM_RE.findall(t)
             oc = OC_RE.findall(t)
             if hm:
@@ -386,7 +386,7 @@ def load_star(conn, star):
             # Surftex fixture (separate file)
             stex_out = os.path.join(SECT_DIR, fname(star, body, f"{kind}_stex", lon, lat))
             if os.path.exists(stex_out):
-                tt = open(stex_out).read()
+                tt = open(stex_out, encoding="utf-8", errors="replace").read()
                 sk = SKY_RE.findall(tt)
                 st = STEX_RE.findall(tt)
                 if sk: up[sky_col] = sk[0]
@@ -443,7 +443,7 @@ def rust_star(conn, star):
             fpath = os.path.join(SECT_DIR, fname(star, body, kind, lon, lat))
             gap = None
             if os.path.exists(fpath):
-                m = GAP_RE.search(open(fpath).read())
+                m = GAP_RE.search(open(fpath, encoding="utf-8", errors="replace").read())
                 if m:
                     gap = m.group(1)
             if not gap:
@@ -881,7 +881,7 @@ def syshash_star_canon(conn, star, build_flag=False):
             print(f"  {star}: no canonical system output (empty/failed)")
             return
 
-        text = open(out_path).read()
+        text = open(out_path, encoding="utf-8", errors="replace").read()
         canon_hash = system_output_hash(text)
         ensure_syshash_table(conn)
         existing = conn.execute("SELECT id FROM system_hashes WHERE star_id=?", (sid,)).fetchone()

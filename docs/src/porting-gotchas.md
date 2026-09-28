@@ -1070,3 +1070,35 @@ at y=&minus;8554) produce the wrong class (class 1 instead of 5) and
 consequently the wrong planet count and planet types. With the fix,
 PITSTOP 12 correctly yields class 5, 2 planets (types 8=quartz,
 4=rocky/creased), matching the starmap and Feltyrion Explorer.
+
+## 31. Sector runs MUST be fed the per-landing farmalloc gap; C harness is boot-nondeterministic (2026-09-28)
+
+Two related findings from closing the last remote residuals (all 46
+oc-only `sect_*_oc` mismatches + 3 stale XENOFELYS fixtures):
+
+**Gap feed (runner requirement, not a code bug).** The inclination loop
+reads `p_surfacemap[ptr+200]` for ptr up to 39999, i.e. 16 farmalloc
+header bytes (`oc_gap`) then `objectschart[0..183]`. The header varies per
+landing (captured per fixture as `orig_sect_{def,rand}_gap`). When a header
+byte straddles an `incl` threshold (20/15/10) vs the Rust default gap
+(`00×12 C5 09 F0 54`), the `random(2/3/4)` gates flip and the RNG stream
+desyncs for the whole tail — e.g. PREKNIRN|7 rand: true gap
+`00×14 E9 51` vs default flips ptr 39812 (`incl` 197 vs 0). Verified: all
+53 affected landings across types 0,1,2,3,4,5,7,8,9 reproduce C byte-exact
+once nivgen gets `-gap <orig_sect_*_gap>`. The remote runner fed the
+default gap (remote `rust_sect_rand_oc` == local default-gap output), so
+every remaining remote oc-only residual is a runner input gap, not a port
+bug. `bulk_sectors.py rust_sector_hashes()` already passes per-landing
+gaps; any other runner must do the same.
+
+**C boot nondeterminism.** Two identical local DOSBox-X boots (same
+NIVTEST.EXE, same RUN.BAT) gave different C hashes on 8 then 5 different
+XENOFELYS bodies (hm/oc/sky/stex mixed, incl. DEF landings with seed-0
+RNG). Rust is deterministic and matches the remote canonicals on those
+bodies. So the C reference itself flips boot-to-boot for a heap-sensitive
+subset — "match orig" is only defined per canonical run. Suspect:
+uninitialized host-backed RAM behind farmalloc (gap-adjacent OOB reads);
+the hashed regions themselves are fully initialized in-port. Do not chase
+fresh-local-vs-remote single-body diffs without first re-running the C
+boot: if it flips, it is harness noise (same class as the TWENDZ fixture
+variance and the excluded display bands).
