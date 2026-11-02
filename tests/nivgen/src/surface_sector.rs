@@ -326,6 +326,13 @@ impl SystemGen {
                 for &ni in &neigh {
                     if ni >= 0 && ni < 40000 {
                         self.p_surfacemap[ni as usize] = pk;
+                    } else if ni >= 40000 && ni < 40016 {
+                        // The 16-byte farmalloc header between p_surfacemap and
+                        // objectschart. C scribbles over it here and the object
+                        // loop later reads the scribbled bytes, so dropping these
+                        // writes leaves the header at its initial value and changes
+                        // the object chart (this is what made ~42 bodies differ).
+                        self.oc_gap[(ni - 40000) as usize] = pk;
                     } else if ni >= 40016 && ni < 80016 {
                         // C writes past p_surfacemap land in the objectschart
                         // region (16-byte farmalloc header + objectschart data)

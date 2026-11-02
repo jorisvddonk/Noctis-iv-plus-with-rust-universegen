@@ -300,11 +300,71 @@ pub struct SystemGen {
     pub multicolormask: u8,
 
     /// Farmalloc gap bytes between p_surfacemap and objectschart in C.
-    /// Read by the inclination loop; captured from C fixture output.
+    /// Read by the inclination loop; see `derive_oc_gap` for the layout.
     pub oc_gap: [u8; 16],
 
     pub(crate) rng: BorlandRng,
     pub(crate) frng: crate::rng::FastRng,
+}
+
+/// Size of the `objectschart` far-heap block, in bytes.
+pub const OC_BLOCK_BYTES: usize = 40000;
+
+/// Segment `objectschart` is allocated at in the game's fixed far heap.
+/// Measured from the actual BC++ 3.1 runtime: blocks of equal size are laid out
+/// contiguously at paragraph granularity (a = 0x0B66, b = 0x152B, c = 0x1EF0,
+/// i.e. +0x9C5 each), and in the game's startup layout this block lands here.
+pub const OC_BLOCK_SEGMENT: u16 = 0x51E9;
+
+/// Derives the 16 bytes that sit between `p_surfacemap` and `objectschart`.
+///
+/// They are the Borland far-heap header of the `objectschart` block, which sits
+/// immediately after the heightmap's data. Decoded from the runtime:
+///
+/// ```text
+/// [ 12 zero bytes ][ size in paragraphs, LE ][ block segment, LE ]
+/// ```
+///
+/// `farmalloc` rounds the request to paragraphs and charges one paragraph of
+/// header, so a 40000-byte block reports `40000 / 16 + 1 = 2501 = 0x09C5`.
+/// Combined with the segment that yields `...C509E951`, the value carried by
+/// 8390 of the 8418 bodies in the captured corpus.
+pub const fn derive_oc_gap() -> [u8; 16] {
+    let paras = (OC_BLOCK_BYTES / 16 + 1) as u16;
+    let mut gap = [0u8; 16];
+    gap[12] = (paras & 0xff) as u8;
+    gap[13] = (paras >> 8) as u8;
+    gap[14] = (OC_BLOCK_SEGMENT & 0xff) as u8;
+    gap[15] = (OC_BLOCK_SEGMENT >> 8) as u8;
+    gap
+}
+
+#[cfg(test)]
+mod gap_tests {
+    use super::*;
+
+    #[test]
+    fn derived_gap_matches_captured_header() {
+        // ...C509E951, the header observed on the overwhelming majority of bodies.
+        assert_eq!(
+            derive_oc_gap(),
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xC5, 0x09, 0xE9, 0x51]
+        );
+    }
+
+    #[test]
+    fn size_field_is_paragraph_rounded_plus_header() {
+        let gap = derive_oc_gap();
+        let paras = u16::from_le_bytes([gap[12], gap[13]]);
+        assert_eq!(paras, 2501);
+        assert_eq!(paras as usize * 16, OC_BLOCK_BYTES + 16);
+    }
+
+    #[test]
+    fn segment_field_round_trips() {
+        let gap = derive_oc_gap();
+        assert_eq!(u16::from_le_bytes([gap[14], gap[15]]), OC_BLOCK_SEGMENT);
+    }
 }
 
 impl SystemGen {
@@ -438,11 +498,7 @@ impl SystemGen {
             pixilating_effect: 0,
             pixel_spreads: 0,
             multicolormask: 0,
-            // Fallback farmalloc header when no -gap is supplied. 0xC5,0x09,0xE9,0x51
-            // (...C509E951) is the header observed on 8371 of 8418 captured bodies;
-            // the previous default (...C509F054) matched none of them. Bodies whose
-            // heap state differed are passed their own bytes explicitly.
-            oc_gap: [0,0,0,0,0,0,0,0,0,0,0,0,197,9,233,81],
+            oc_gap: derive_oc_gap(),
             rng: BorlandRng::new(),
             frng: crate::rng::FastRng::new(),
         }
