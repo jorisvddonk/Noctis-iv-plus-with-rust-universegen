@@ -438,7 +438,11 @@ impl SystemGen {
             pixilating_effect: 0,
             pixel_spreads: 0,
             multicolormask: 0,
-            oc_gap: [0,0,0,0,0,0,0,0,0,0,0,0,197,9,240,84],
+            // Fallback farmalloc header when no -gap is supplied. 0xC5,0x09,0xE9,0x51
+            // (...C509E951) is the header observed on 8371 of 8418 captured bodies;
+            // the previous default (...C509F054) matched none of them. Bodies whose
+            // heap state differed are passed their own bytes explicitly.
+            oc_gap: [0,0,0,0,0,0,0,0,0,0,0,0,197,9,233,81],
             rng: BorlandRng::new(),
             frng: crate::rng::FastRng::new(),
         }
