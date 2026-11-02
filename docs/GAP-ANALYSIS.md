@@ -176,6 +176,31 @@ test harness.
 The reference is now a property of the algorithm, not of the executing binary:
 rebuilding the harness no longer changes any output.
 
+## Validations run (all passing)
+
+| check | scope | result |
+|---|---|---|
+| `validate_gap.ts` | 388 stars, 8,418 bodies, 33,672 sector hashes, engine run with **no** `-gap` | **0 mismatches** |
+| `crosscheck_c_vs_rust.ts` (sector) | 8 fixtures covering every former outlier family, C and rust run live | **32/32** |
+| `crosscheck_c_vs_rust.ts` (surftex) | same fixtures, `surf_texture`/`sky_texture` | **32/32** |
+| harness wrapper path | rust, 5 stars, all 11 compared fields, no `-gap` | **1,605 comparisons, 0** |
+| determinism | same body run 3x | identical |
+
+## Retiring orig
+
+Two branches carry the change:
+
+- `Noctis-IV-Plus` `feat/derive-gap` — `derive_oc_gap()` in the engine, the
+  `oc_gap` write fix in `felisian_srf_darkline`, `canonicalise_gap()` in the
+  harness, the validation tooling and this document.
+- `sheetbot_internal` `feat/no-orig` — the pipeline stops reading
+  `orig_sect_*_gap` and stops passing `-gap`.
+
+Activation is deliberately separate from the work: deploy the sheetbot branch and
+pause the `nivgen verify orig` task. The `orig_*` columns stay as the frozen
+reference (accuracy is still computed against them), but the C build no longer
+runs and is no longer needed to generate anything.
+
 ## Tooling added
 
 - `tests/nivgen/tools/validate_gap.ts` — runs the engine with **no** `-gap` (i.e.
