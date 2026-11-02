@@ -97,5 +97,70 @@ const worker = async () => {
 };
 await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, worker));
 console.log(`\n${checks} checks, ${failures} mismatches`);
-console.log(failures === 0 ? "RESULT: C and rust agree on every fixture" : "RESULT: MISMATCHES");
-Deno.exit(failures === 0 ? 0 : 1);
+console.log(failures === 0 ? "RESULT: sector hashes agree" : "RESULT: SECTOR MISMATCHES");
+
+// --- surftex cross-check -----------------------------------------------------
+// build_surface() also runs in the surftex path, so the gap could in principle
+// reach the texture hashes too. Compare them explicitly.
+function parseTex(t: string) {
+  return {
+    stex: t.match(/^surf_texture\s+len=\d+\s+fnv=(\w+)/m)?.[1],
+    sky: t.match(/^sky_texture\s+len=\d+\s+fnv=(\w+)/m)?.[1],
+  };
+}
+function cTex(f: typeof FIXTURES[number], lon: number, lat: number) {
+  const work = Deno.makeTempDirSync({ prefix: "xtex_" });
+  const dump = `${work}/D`;
+  Deno.mkdirSync(dump, { recursive: true });
+  try {
+    Deno.writeTextFileSync(`${work}/RUN.BAT`,
+      `NIVTEST.EXE surftex -x ${f.x} -y ${f.y} -z ${f.z} -p ${f.body} -lon ${lon} -lat ${lat} -o D:\\TEX.OUT\r\nexit\r\n`);
+    Deno.writeTextFileSync(`${work}/niv.conf`, [
+      "[cpu]", "cputype=486", "cycles=max", "core=dynamic",
+      "[dos]", "xms=true", "ems=true",
+      "[sdl]", "startup_verbosity=quiet",
+      "[autoexec]",
+      `mount c ${TOOLCHAIN}`, `mount d ${work}`, `mount e ${EXE_DIR}`,
+      "path C:\\BIN;E:\\", "d:",
+      "copy E:\\NIVTEST.EXE D:\\NIVTEST.EXE >NUL", "call RUN.BAT", "exit",
+    ].join("\r\n"));
+    new Deno.Command("dosbox-x", {
+      args: ["-conf", `${work}/niv.conf`, "-exit"], cwd: REPO,
+      env: { SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" },
+      stdout: "null", stderr: "null",
+    }).outputSync();
+    return parseTex(Deno.readTextFileSync(`${work}/TEX.OUT`));
+  } finally {
+    try { Deno.removeSync(work, { recursive: true }); } catch { /* ignore */ }
+  }
+}
+function rustTex(f: typeof FIXTURES[number], lon: number, lat: number) {
+  const p = new Deno.Command(BIN, {
+    args: ["surftex", "-x", String(f.x), "-y", String(f.y), "-z", String(f.z), "-p", String(f.body),
+      "-lon", String(lon), "-lat", String(lat)],
+    cwd: REPO, stdout: "piped", stderr: "null",
+  }).outputSync();
+  return parseTex(new TextDecoder().decode(p.stdout));
+}
+
+let texFailures = 0, texChecks = 0;
+const texQueue = [...FIXTURES];
+const texWorker = async () => {
+  for (;;) {
+    const f = texQueue.shift();
+    if (!f) return;
+    for (const [tag, lon, lat] of [["def", 0, 60], ["rand", f.lon, f.lat]] as [string, number, number][]) {
+      const c = cTex(f, lon, lat);
+      const r = rustTex(f, lon, lat);
+      for (const field of ["stex", "sky"] as const) {
+        texChecks++;
+        const ok = c[field] === r[field];
+        if (!ok) texFailures++;
+        console.log(`${ok ? "ok  " : "FAIL"} ${f.label.padEnd(30)} ${tag}_${field}  C=${c[field]} rust=${r[field]}`);
+      }
+    }
+  }
+};
+await Promise.all(Array.from({ length: Math.min(2, texQueue.length) }, texWorker));
+console.log(`\nsurftex: ${texChecks} checks, ${texFailures} mismatches`);
+Deno.exit(texFailures === 0 && failures === 0 ? 0 : 1);
