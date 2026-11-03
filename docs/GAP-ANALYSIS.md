@@ -196,10 +196,16 @@ Two branches carry the change:
 - `sheetbot_internal` `feat/no-orig` — the pipeline stops reading
   `orig_sect_*_gap` and stops passing `-gap`.
 
-Activation is deliberately separate from the work: deploy the sheetbot branch and
-pause the `nivgen verify orig` task. The `orig_*` columns stay as the frozen
-reference (accuracy is still computed against them), but the C build no longer
-runs and is no longer needed to generate anything.
+Activated 2026-11-03 23:49Z: the sheetbot branch was deployed to the server
+(`nivgen_common.ts` sha256 `eafa6669…`, served) and `nivgen verify orig` was set
+to PAUSED. The rust engine immediately started a full re-verification at
+`414f2822` (355 stars stale, 10 per cycle) and every cycle reports matches. The
+`orig_*` columns remain the frozen reference for accuracy; the C build no longer
+runs.
+
+One consequence worth knowing: `canonicalise_gap()` changed the harness's source
+hash, so if `orig` is ever resumed it will rebuild and re-verify every star once
+with the canonical layout (which is the intended behaviour).
 
 ## Tooling added
 
