@@ -468,3 +468,38 @@ targeted runs above.
 
 The oracle's engine stamp was set back to `aa7490d9` to match the pristine build,
 so the pipeline does not re-verify the corpus for no reason.
+
+### Branch survey (both lino repos, all 36 refs each)
+
+- No `macos-rtm01.bin` / `rtm01.bin` in **any** ref of either repo. The only
+  runtime image on disk is untracked: `noctis-lino-beta20/src/linoleum_macos64/rtm01.bin`
+  (Mach-O x86_64, Aug 18). Everything in git under `build/` is
+  `*/accepted/compiler114m.exe`.
+- Our checkout matches `upstream/master` for `work/vhground.txt`,
+  `work/grnd.txt`, `work/vhnivgen.txt`.
+
+**A fix for felisian bodies exists on `sector/hashes` and is not in our tree.**
+Commit `40b591d` ("vhground: fix type-1 heightmap craters + felisian objectschart
+wrap") adds, for the felisian darkline neighbour writes:
+
+```
+( neighbor writes: location+1, -1, +align, -align, with the C wrap
+  objectschart if 40016<=i<80016 (C far-heap layout), else skip. )
+? A '< 40016 -> VHGND felisian put done;
+? A '>= 80016 -> VHGND felisian put done;
+( i in 40016..80016: objectschart[i-40016] )
+A - 40016; A + ROBJ; [MBptr] = A; [MBval] = [VHGNDtmp]; => MEM put byte;
+```
+
+`grep -n "40016\|80016" work/vhground.txt` in our tree returns **nothing**, i.e.
+the shipped `build/nivtest` predates that wrap and simply drops those writes.
+That is the same class of bug I had to fix in the rust port (which now writes them
+into `oc_gap` for `40000..40016` and then `objectschart`). Note the branch's fix
+starts at `40016` and therefore still skips the 16-byte header, so even it may not
+be complete.
+
+**Next step, once a lino build is available:** build `build/nivtest` from
+`sector/hashes` (or cherry-pick `40b591d` onto the current source) and re-run
+`validate_gap.ts --engine lino --star DUO` and `--star "HIGHWAY 18"`. If the
+heightmap still differs, extend the wrap to `40000..40016` the way the rust port
+does.
