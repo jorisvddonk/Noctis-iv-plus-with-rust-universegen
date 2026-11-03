@@ -186,7 +186,7 @@ rebuilding the harness no longer changes any output.
 | harness wrapper path | rust, 5 stars, all 11 compared fields, no `-gap` | **1,605 comparisons, 0** |
 | determinism | same body run 3x | identical |
 
-## Retiring orig
+## What this does and does not remove
 
 Two branches carry the change:
 
@@ -196,16 +196,33 @@ Two branches carry the change:
 - `sheetbot_internal` `feat/no-orig` — the pipeline stops reading
   `orig_sect_*_gap` and stops passing `-gap`.
 
-Activated 2026-11-03 23:49Z: the sheetbot branch was deployed to the server
-(`nivgen_common.ts` sha256 `eafa6669…`, served) and `nivgen verify orig` was set
-to PAUSED. The rust engine immediately started a full re-verification at
-`414f2822` (355 stars stale, 10 per cycle) and every cycle reports matches. The
-`orig_*` columns remain the frozen reference for accuracy; the C build no longer
-runs.
+The C build remains the **source of truth**. What is removed is the *capture
+dependency in generation*: ports no longer need 16 bytes harvested from a DOS
+run in order to produce the same output. Verification still runs the C harness —
+that is the whole point of the exercise.
 
-One consequence worth knowing: `canonicalise_gap()` changed the harness's source
-hash, so if `orig` is ever resumed it will rebuild and re-verify every star once
-with the canonical layout (which is the intended behaviour).
+Deployed 2026-11-03 23:49Z (`nivgen_common.ts` sha256 `eafa6669…`, served). The
+`nivgen verify orig` task was briefly paused and then restored, so both engines
+re-verify against C:
+
+- rust `414f2822`: 355 stars stale, rolling refresh, 10 per cycle.
+- orig `9371069c`: 379 stars stale, because `canonicalise_gap()` changed the
+  harness source hash and therefore the engine version.
+
+**Trade-off to be aware of.** `canonicalise_gap()` changes the harness, so C's
+output for the 47 non-canonical bodies is now pinned rather than inherited from
+whatever the executable's memory layout happened to be. Evidence that this is
+not "fitting the oracle to the port":
+
+- for the 42 intrinsic bodies the pinned build reproduces the *existing* stored
+  hashes exactly (`ANDROI|6` → `286F815D`, `TUCANO|9` → `573EB960`, …), and
+- for the 5 contaminated ones the pinned build agrees with what a lone C run
+  produces; only the batched captures disagreed.
+
+Without the pin, "the source of truth" changes identity every time the harness is
+rebuilt (one added `printf` shifted every body `0x51E9 → 0x51F3`), which makes
+verification meaningless. With it, C produces a stable answer and the port can be
+held to it.
 
 ## Tooling added
 
