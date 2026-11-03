@@ -287,6 +287,101 @@ flandom()+0.75`), which is on the felisian tree path — consistent with only ty
 3 being affected, but the 48/49.5 boundary suggests lino also carries a subtly
 different `latitude` value (or a different tree predicate), not just the branch.
 
+**Where the source is.** I was wrong earlier to say it was missing: the lino game
+source is in the repo, in Lino's text format under `work/` (`work/vhgame.txt`,
+`work/vhground.txt`, `work/grnd.txt`, `work/vhnivgen.txt`, …). The harness source
+is derived from it by `tools/nivtest.py::derive_main()` (splices `VHNIV run` into
+`vhgame.txt` and emits `work/nivtestmain.txt`).
+
+Prime suspects, from reading those files:
+
+- `work/vhground.txt:410-412` computes the landing latitude as integer
+  `(|lat-60| * 3) / 2`, which truncates 49.5 to 49, while C keeps the float
+  `|lat-60| * 1.5` (`NOCTIS-1.CPP:3484`). `work/vhnivgen.txt:317-329` does the
+  same arithmetic with a doubling trick for the seed comparison.
+- `work/grnd.txt:391-405` implements the C tree branch
+  (`NOCTIS-1.CPP:2007`: `if (latitude > 45) treepeaking = flandom()*0.9+0.1;
+  else treepeaking = flandom()+0.75;`) as `? A '<= 45 -> GR prol tree2`.
+
+The 48 → 49.5 boundary in the sweep is exactly where a float-vs-truncated
+comparison can flip, so the latitude arithmetic is the first place to look.
+
+**Blocker: the build, not the source.** Rebuilding `build/nivtest` needs the
+macOS x86_64 toolchain path: `build/compile_nivtest_linux.sh` requires
+`build/macos-rtm01.bin` (not present in the repo) plus `xvfb-run`/`setarch`;
+`tests/linoharness.py::build` shells out to PowerShell, which is not installed
+here; the container path (`finch`, `lino-workspace`) has no VM on this machine
+(`finch vm status` → `Nonexistent`). The Linux compiler in the tree is a 32-bit
+ELF and compiling with `--sys:linux` instead of `--sys:macos` would change the
+very allocator layout under test, so it is not a valid substitute.
+
+So fixing these two bodies needs a machine that can run the lino build (or the
+`lino-workspace` image). The verification work above is complete and does not
+depend on that.
+
+## Tooling added
+
+- `tests/nivgen/tools/validate_gap.ts` — runs the engine with **no** `-gap` (i.e.
+  derived header) and compares all four sector hashes per body against the frozen
+  corpus. Resumable, parallel, exits non-zero on any mismatch.
+- `tests/nivgen/tools/probe_c_gap.ts` — runs the C harness alone, in a fresh
+  DOSBox process, for every body whose header is non-canonical, to classify it as
+  intrinsic vs batch contamination.
+- `tests/nivgen/tools/recapture_orig.ts` — re-derives `orig` sector hashes for
+  named bodies with the canonical harness (used for the five contaminated
+  captures).
+- `tests/nivgen/tools/crosscheck_c_vs_rust.ts` — runs C and rust side by side on
+  fixed fixtures and compares hashes, independently of the corpus.
+
+## Verification matrix (no gap injected)
+
+Both engines were run exactly as the pipeline now invokes them (no `-gap`) and
+compared against the `orig_*` columns, which hold the C build's output.
+
+| engine | scope | checks | mismatches |
+|---|---|---|---|
+| rust | 388 stars / 8,418 bodies, sector hashes | 33,672 | **0** |
+| rust | 20 stars, sector + textures | 2,360 | **0** |
+| lino | 388 stars / 7,982 bodies, sector hashes | 31,928 | **4** (2 bodies) |
+| lino | 20 stars, sector + textures | 2,360 | **0** |
+| lino | 120 stars, sector + textures | 18,440 | **2** (same `DUO|2`) |
+
+Plus live C-vs-rust cross-checks (`crosscheck_c_vs_rust.ts`, sector and
+surftex, 8 fixtures): 64/64.
+
+## Lino: two genuine, non-gap failures
+
+`DUO|2` and `HIGHWAY 18|41` differ on `sect_rand_hm` *and* `sect_rand_oc`. Both
+are **type 3 (felisian)** bodies at high absolute latitude, and both already
+failed in the corpus *before* the gap handling changed (they are two of lino's
+long-standing accuracy errors), so this is not caused by dropping the gap.
+
+`DUO|2` reproduced with identical context on both engines:
+
+```
+C   : SECTOR body=2 type=3 lon=354 lat=96 sctype=2 albedo=32 night=0
+      global_surface_seed=3564502   heightmap fnv=4436CC17  objectchart fnv=9A540C29
+lino: SECTOR body=2 type=3 lon=354 lat=96 sctype=2 albedo=32 night=0
+      global_surface_seed=3564502   heightmap fnv=F6AAE59F  objectchart fnv=80255058
+```
+
+19,851 of 40,000 heightmap bytes differ and byte 0 already differs, i.e. the
+divergence starts at the beginning of `build_surface`, not in the object pass.
+Latitude sweep on the same body (lon 354) narrows it sharply:
+
+```
+lat    60  65  70  75  80  85  90  91  92 | 93  94  95  96  97  98  99
+lino    ok  ok  ok  ok  ok  ok  ok  ok  ok | DIFF DIFF DIFF DIFF DIFF DIFF DIFF
+rust    ok  ok  ok  ok  ok  ok  ok  ok  ok | ok  ok  ok  ok  ok  ok  ok
+```
+
+`latitude = |landing_lat - 60| * 1.5`, so the split sits between 48 and 49.5.
+The only latitude branch in that region of `build_surface` is
+`NOCTIS-1.CPP:2007` (`latitude > 45 ? treepeaking = flandom()*0.9+0.1 :
+flandom()+0.75`), which is on the felisian tree path — consistent with only type
+3 being affected, but the 48/49.5 boundary suggests lino also carries a subtly
+different `latitude` value (or a different tree predicate), not just the branch.
+
 **Blocker:** the lino game source is not on this machine. `build/build_nivtest.sh`
 compiles it inside a container (`NOLINO_RUNTIME=finch`, `NOLINO_CTR=lino-workspace`,
 sources at `/workspace/nivtest-src`); the Finch VM does not exist here
