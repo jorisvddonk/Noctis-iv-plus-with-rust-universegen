@@ -388,3 +388,24 @@ sources at `/workspace/nivtest-src`); the Finch VM does not exist here
 (`finch vm status` → `Nonexistent`) and the source is absent from both
 `noctis-lino` and `noctis-lino-beta20` and from eland. Fixing these two bodies
 needs either the workspace image or a machine that can run the lino build.
+
+### What the divergence looks like numerically
+
+At `lat=93` the two heightmaps differ in 30,014 of 40,000 bytes, spread over the
+whole surface (x 0..199, z 0..199), with this distribution of `C - lino`:
+
+```
+(-1, 7553) (1, 7428) (-2, 5035) (2, 4997) (-3, 2532) (3, 2469)
+```
+
+Symmetric ±1..3 offsets applied globally. A different branch (a tree or ruin pass
+taking the other path) would change isolated regions *and* desynchronise the RNG,
+producing large scattered differences instead. This is a small value difference
+applied per pixel, which is what a latitude-derived quantity looks like when
+`latitude` loses its half: `work/vhground.txt:410-412` computes
+`(|lat-60| * 3) / 2` (integer, truncating 49.5 -> 49) while C keeps the float
+`|lat-60| * 1.5` (`NOCTIS-1.CPP:3484`).
+
+That is the cheapest thing to try first once a lino build is available: keep the
+half (e.g. carry `latitude*2` as `3*|lat-60|` and halve only where a float is
+genuinely needed), then re-run `validate_gap.ts --engine lino --star DUO`.
