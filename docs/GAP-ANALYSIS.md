@@ -249,6 +249,7 @@ compared against the `orig_*` columns, which hold the C build's output.
 | rust | 20 stars, sector + textures | 2,360 | **0** |
 | lino | 388 stars / 7,982 bodies, sector hashes | 31,928 | **4** (2 bodies) |
 | lino | 20 stars, sector + textures | 2,360 | **0** |
+| lino | 120 stars, sector + textures | 18,440 | **2** (same `DUO|2`) |
 
 Plus live C-vs-rust cross-checks (`crosscheck_c_vs_rust.ts`, sector and
 surftex, 8 fixtures): 64/64.
