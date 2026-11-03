@@ -209,7 +209,22 @@ re-verify against C:
 - orig `9371069c`: 379 stars stale, because `canonicalise_gap()` changed the
   harness source hash and therefore the engine version.
 
-**Trade-off to be aware of.** `canonicalise_gap()` changes the harness, so C's
+**Reverted — C is immutable.** An earlier iteration added `canonicalise_gap()` to
+`tests/harness/NIVTEST.CPP` to pin the header. That is a change to the oracle, so
+it has been reverted: `NIVTEST.CPP` is now byte-identical to upstream and a
+rebuild reports the original engine version `aa7490d9`. The oracle is the
+pristine C build, invoked one body per process; the ports must match it, never
+the other way round. Everything below that depends on the derivation is
+port-side (`derive_oc_gap()` and the `oc_gap` write in `felisian_srf_darkline`),
+which needs no C change.
+
+The five bodies that only reproduced under batched DOSBox sessions
+(VENE'EREIB 20-23, TRIUMPHANT|35) were therefore re-captured by running the
+pristine oracle **one body per process** — an invocation choice, not a source
+change. All 8,418 bodies now match the pristine oracle for both ports (lino
+except the two felisian bodies described below).
+
+Historical note on the earlier (now reverted) trade-off: `canonicalise_gap()` changes the harness, so C's
 output for the 47 non-canonical bodies is now pinned rather than inherited from
 whatever the executable's memory layout happened to be. Evidence that this is
 not "fitting the oracle to the port":

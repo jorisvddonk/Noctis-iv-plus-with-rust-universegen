@@ -547,31 +547,6 @@ static void setup_landing(int argc, char **argv, int n)
 	}
 }
 
-/* Canonicalise the 16 bytes that sit between p_surfacemap and objectschart.
- *
- * build_surface()'s object loop reads p_surfacemap[ptr + 200] for ptr up to
- * 39999, i.e. up to 200 bytes past the 40000-byte buffer, so that garbage is
- * load-bearing: it decides how many times the RNG advances and therefore the
- * whole object chart. In a real DOS build those bytes are the buffer's far-heap
- * trailer (12 zero bytes, size in paragraphs, segment), which depends on the
- * program's code size and on which bodies ran before it in the same session.
- *
- * That made generation depend on the harness binary rather than on the game:
- * adding one printf to this file moved every body's header from ...C509E951 to
- * ...C509F351. Pin it instead, so the reference is a property of the algorithm
- * and not of this executable's memory layout. See docs/GAP-ANALYSIS.md.
- *
- * 40000 bytes = 2500 paragraphs + 1 header paragraph = 2501 = 0x09C5.
- */
-static void canonicalise_gap(void)
-{
-	static const unsigned char canon[16] = {
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xC5, 0x09, 0xE9, 0x51
-	};
-	int i;
-	for (i = 0; i < 16; i++) p_surfacemap[40000UL + (unsigned long)i] = canon[i];
-}
-
 static void report_sector_heightmap(int n)
 {
 	out("SECTOR body=%d type=%d lon=%d lat=%d sctype=%d albedo=%d night=%d\n",
@@ -638,7 +613,6 @@ static int cmd_sector(int argc, char **argv)
 	gen_planet_surface(p);
 	setup_landing(argc, argv, p);
 	out("=== SURFACE SECTOR (heightmap) ===\n");
-	canonicalise_gap();
 	build_surface();
 	report_sector_heightmap(p);
 	return 0;
@@ -660,7 +634,6 @@ static int cmd_surftex(int argc, char **argv)
 	setup_landing(argc, argv, p);
 	out("=== SURFACE SECTOR (texture) ===\n");
 	out("; DBG global_surface_seed=%ld\n", (long)global_surface_seed);
-	canonicalise_gap();
 	build_surface();
 
 	/* planetary_main per-type overrides (NOCTIS-1.CPP:3636-3674). */
