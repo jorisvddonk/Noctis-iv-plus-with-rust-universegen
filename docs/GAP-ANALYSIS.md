@@ -409,3 +409,27 @@ applied per pixel, which is what a latitude-derived quantity looks like when
 That is the cheapest thing to try first once a lino build is available: keep the
 half (e.g. carry `latitude*2` as `3*|lat-60|` and halve only where a float is
 genuinely needed), then re-run `validate_gap.ts --engine lino --star DUO`.
+
+### Ruled out: integer truncation of latitude
+
+Tempting, but wrong. `lat=96` gives `|96-60| * 1.5 = 54` exactly, so a
+float-vs-integer latitude is identical for both engines there, yet they still
+diverge. Confirmed by patching the C harness to truncate the same way
+(`latitude = (int)(abs(lat-60) * 1.5)`) and rebuilding:
+
+```
+lat 96, C with truncated latitude : fnv=4436CC17   (unchanged, still differs from lino)
+lat 92, C with truncated latitude : fnv=E0BA8671   (unchanged, still matches lino)
+```
+
+So the divergence is not in `latitude`'s fractional part. The harness was
+reverted afterwards and verified (`MIDORI|1` → `47283EBA / 2BC8CFD1`), and the
+corpus was not touched by the patched build (latest `orig_updated_at` is
+05:15:44Z, before the patch window; harness srchash is back to `9371069c`).
+
+What remains: at `lat=96` both engines have identical seed (3564502), identical
+`sctype` (2), identical `albedo` (32), and an integral latitude (54), yet the
+whole heightmap is offset by symmetric ±1..3. That is a numeric difference inside
+the generation passes, not an input difference — the next step is a trace inside
+`work/grnd.txt` (or a float-precision audit of the passes that feed
+`p_surfacemap`) on a machine that can rebuild lino.
