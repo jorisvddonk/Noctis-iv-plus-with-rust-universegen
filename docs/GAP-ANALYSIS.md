@@ -448,3 +448,23 @@ whole heightmap is offset by symmetric ±1..3. That is a numeric difference insi
 the generation passes, not an input difference — the next step is a trace inside
 `work/grnd.txt` (or a float-precision audit of the passes that feed
 `p_surfacemap`) on a machine that can rebuild lino.
+
+### Post-revert re-validation (pristine oracle, no gap)
+
+After restoring `NIVTEST.CPP` byte-identical to upstream (rebuild reports
+`aa7490d9`, the original engine version), both ports were re-checked against the
+corpus with no `-gap`:
+
+| engine | scope | checks | mismatches |
+|---|---|---|---|
+| rust | 60 stars / 1,021 bodies, sector | 4,084 | **0** |
+| lino | 60 stars / 1,021 bodies, sector | 4,084 | **0** |
+| rust | VENE'EREIB (80 bodies) + TRIUMPHANT (41 bodies) | 484 | **0** |
+| lino | VENE'EREIB (80 bodies) + TRIUMPHANT (41 bodies) | 484 | **0** |
+
+The earlier full-corpus runs (rust 0/33,672, lino 4/31,928) still stand: only the
+five batch-ambiguous bodies changed in the corpus, and those are covered by the
+targeted runs above.
+
+The oracle's engine stamp was set back to `aa7490d9` to match the pristine build,
+so the pipeline does not re-verify the corpus for no reason.
